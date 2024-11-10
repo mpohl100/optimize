@@ -1,6 +1,6 @@
 /// A trait for activation functions used in neural networks.
 /// Provides methods for forward pass (activation) and backward pass (gradient computation).
-pub trait ActivationTrait where Self: Clone {
+pub trait ActivationTrait {
     /// Applies the activation function to the input vector.
     ///
     /// # Arguments

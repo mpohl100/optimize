@@ -1,10 +1,11 @@
 use crate::nn::layer::Layer;
 use crate::nn::layer::dense_layer::DenseLayer;
-use crate::nn::activation::{ activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tabh::Tanh };
+use crate::nn::activation::{ activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh };
 use crate::nn::neuralnet::shape::*;
 
+use std::boxed::Box;
 
-#[derive(Clone)]
+/// A neural network.
 pub struct NeuralNetwork {
     layers: Vec<Box<dyn Layer>>,
     activations: Vec<Box<dyn ActivationTrait>>,
@@ -14,6 +15,7 @@ pub struct NeuralNetwork {
 impl NeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
     pub fn new(shape: NeuralNetworkShape) -> Self {
+        let shape_clone = shape.clone();
         let mut network = NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
@@ -21,7 +23,7 @@ impl NeuralNetwork {
         };
 
         // Initialize layers and activations based on the provided shape.
-        for layer_shape in &network.shape.layers {
+        for layer_shape in shape_clone.layers {
             // Here you would instantiate the appropriate Layer and Activation objects.
             let layer = Box::new(DenseLayer::new(layer_shape.input_size(), layer_shape.output_size()));
             let activation = match layer_shape.activation {
@@ -43,9 +45,9 @@ impl NeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input.
-    pub fn forward(&self, input: Vec<f64>) -> Vec<f64> {
-        let mut output = input;
-        for (layer, activation) in self.layers.iter().zip(&self.activations) {
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        let mut output = input.to_vec();
+        for (layer, activation) in self.layers.iter_mut().zip(&self.activations) {
             output = layer.forward(&output);
             output = activation.forward(&output);
         }
@@ -66,10 +68,10 @@ impl NeuralNetwork {
         for _ in 0..epochs {
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
-                let output = self.forward(input.clone());
+                let output = self.forward(&input.as_slice());
 
                 // Calculate loss gradient (e.g., mean squared error)
-                let mut grad_output: Vec<f64> = output.iter()
+                let grad_output: Vec<f64> = output.iter()
                     .zip(target)
                     .map(|(o, t)| o - t)
                     .collect();
@@ -86,8 +88,8 @@ impl NeuralNetwork {
     }
 
     /// Makes a prediction based on a single input by performing a forward pass.
-    pub fn predict(&self, input: Vec<f64>) -> Vec<f64> {
-        self.forward(input)
+    pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+        self.forward(&input.as_slice())
     }
 
     /// Returns the input size of the first layer in the network.
@@ -104,8 +106,8 @@ impl NeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::activation::{ActivationTrait, ReLU, Sigmoid};
-    use crate::nn::layer::{DenseLayer, Layer};
+    use crate::nn::activation::{activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid};
+    use crate::nn::layer::{dense_layer::DenseLayer, Layer};
     use crate::nn::neuralnet::shape::{ActivationType, LayerShape};
 
     struct MockLayer {
@@ -135,7 +137,7 @@ mod tests {
 
     struct MockActivation;
 
-    impl Activation for MockActivation {
+    impl ActivationTrait for MockActivation {
         fn forward(&self, input: &[f64]) -> Vec<f64> {
             input.to_vec() // Mock pass-through
         }
@@ -149,8 +151,11 @@ mod tests {
     fn test_neural_network_forward() {
         let mut nn = NeuralNetwork::new(NeuralNetworkShape {
             layers: vec![LayerShape {
-                input_size: 3,
-                output_size: 3,
+                layer_type: LayerType::Dense {
+                    input_size: 3,
+                    output_size: 3,
+                },
+                activation: ActivationType::ReLU,
             }],
         });
 
@@ -171,8 +176,11 @@ mod tests {
     fn test_neural_network_train() {
         let mut nn = NeuralNetwork::new(NeuralNetworkShape {
             layers: vec![LayerShape {
-                input_size: 3,
-                output_size: 3,
+                layer_type: LayerType::Dense {
+                    input_size: 3,
+                    output_size: 3,
+                },
+                activation: ActivationType::ReLU,
             }],
         });
 
