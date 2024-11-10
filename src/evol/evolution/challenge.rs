@@ -1,4 +1,4 @@
-use crate::phenotype::Phenotype;
+use crate::evol::phenotype::Phenotype;
 
 pub trait Challenge<Pheno: Phenotype> {
     /// Calculates the fitness score of a given phenotype.
