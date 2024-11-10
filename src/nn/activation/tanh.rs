@@ -1,7 +1,10 @@
+use super::activate::ActivationTrait;
+
 /// Tanh activation function.
+#[derive(Clone)]
 pub struct Tanh;
 
-impl Activation for Tanh {
+impl ActivationTrait for Tanh {
     fn forward(&self, input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| x.tanh()).collect()
     }

@@ -1,7 +1,10 @@
+use super::activate::ActivationTrait;
+
 /// Sigmoid activation function.
+#[derive(Clone)]
 pub struct Sigmoid;
 
-impl Activation for Sigmoid {
+impl ActivationTrait for Sigmoid {
     fn forward(&self, input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
     }

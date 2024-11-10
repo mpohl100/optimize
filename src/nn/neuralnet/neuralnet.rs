@@ -1,11 +1,13 @@
-pub use crate::nn::layer::Layer;
-pub use crate::nn::activation::Activation;
-pub use crate::nn::neuralnet::shape::NeuralNetworkShape;
+use crate::nn::layer::Layer;
+use crate::nn::layer::dense_layer::DenseLayer;
+use crate::nn::activation::{ activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tabh::Tanh };
+use crate::nn::neuralnet::shape::*;
 
-#[derive(Debug, Clone)]
+
+#[derive(Clone)]
 pub struct NeuralNetwork {
     layers: Vec<Box<dyn Layer>>,
-    activations: Vec<Box<dyn Activation>>,
+    activations: Vec<Box<dyn ActivationTrait>>,
     shape: NeuralNetworkShape,
 }
 
@@ -23,8 +25,9 @@ impl NeuralNetwork {
             // Here you would instantiate the appropriate Layer and Activation objects.
             let layer = Box::new(DenseLayer::new(layer_shape.input_size(), layer_shape.output_size()));
             let activation = match layer_shape.activation {
-                ActivationType::ReLU => Box::new(ReLUActivation) as Box<dyn Activation>,
-                ActivationType::Sigmoid => Box::new(SigmoidActivation) as Box<dyn Activation>,
+                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -34,7 +37,7 @@ impl NeuralNetwork {
     }
 
     /// Adds an activation and a layer to the neural network.
-    fn add_activation_and_layer(&mut self, activation: Box<dyn Activation>, layer: Box<dyn Layer>) {
+    fn add_activation_and_layer(&mut self, activation: Box<dyn ActivationTrait>, layer: Box<dyn Layer>) {
         self.activations.push(activation);
         self.layers.push(layer);
     }
@@ -101,7 +104,7 @@ impl NeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::activation::{Activation, ReLUActivation, SigmoidActivation};
+    use crate::nn::activation::{ActivationTrait, ReLU, Sigmoid};
     use crate::nn::layer::{DenseLayer, Layer};
     use crate::nn::neuralnet::shape::{ActivationType, LayerShape};
 
