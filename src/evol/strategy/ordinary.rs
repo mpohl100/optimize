@@ -4,8 +4,8 @@
 //! parent is considered as the winner of the previous generation, and the remaining
 //! parents are used to create new individuals through crossover and mutation.
 use super::BreedStrategy;
-use crate::evol::phenotype::Phenotype;
 use crate::evol::evolution;
+use crate::evol::phenotype::Phenotype;
 use crate::evol::rng;
 use std::fmt::Error;
 
