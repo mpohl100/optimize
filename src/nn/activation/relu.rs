@@ -1,9 +1,10 @@
-use std::iter::zip;
+use super::activate::ActivationTrait;
 
 /// ReLU (Rectified Linear Unit) activation function.
+#[derive(Clone)]
 pub struct ReLU;
 
-impl Activation for ReLU {
+impl ActivationTrait for ReLU {
     fn forward(&self, input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| if x > 0.0 { x } else { 0.0 }).collect()
     }

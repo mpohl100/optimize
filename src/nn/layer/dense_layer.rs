@@ -1,6 +1,8 @@
+use super::layer::Layer;
 use rand::Rng;
 
 /// A fully connected neural network layer (Dense layer).
+#[derive(Clone)]
 pub struct DenseLayer {
     weights: Vec<Vec<f64>>, // Weight matrix (output_size x input_size)
     biases: Vec<f64>,       // Bias vector (output_size)
