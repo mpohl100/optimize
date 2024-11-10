@@ -97,3 +97,93 @@ impl NeuralNetwork {
         self.shape.layers.last().map_or(0, |layer| layer.output_size())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::nn::activation::{Activation, ReLUActivation, SigmoidActivation};
+    use crate::nn::layer::{DenseLayer, Layer};
+    use crate::nn::neuralnet::shape::{ActivationType, LayerShape};
+
+    struct MockLayer {
+        input_size: usize,
+        output_size: usize,
+    }
+
+    impl Layer for MockLayer {
+        fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+            input.to_vec() // Mock pass-through
+        }
+
+        fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+            grad_output.to_vec() // Mock pass-through
+        }
+
+        fn update_weights(&mut self, _learning_rate: f64) {}
+
+        fn input_size(&self) -> usize {
+            self.input_size
+        }
+
+        fn output_size(&self) -> usize {
+            self.output_size
+        }
+    }
+
+    struct MockActivation;
+
+    impl Activation for MockActivation {
+        fn forward(&self, input: &[f64]) -> Vec<f64> {
+            input.to_vec() // Mock pass-through
+        }
+
+        fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
+            grad_output.to_vec() // Mock pass-through
+        }
+    }
+
+    #[test]
+    fn test_neural_network_forward() {
+        let mut nn = NeuralNetwork::new(NeuralNetworkShape {
+            layers: vec![LayerShape {
+                input_size: 3,
+                output_size: 3,
+            }],
+        });
+
+        nn.add_activation_and_layer(
+            Box::new(MockActivation),
+            Box::new(MockLayer {
+                input_size: 3,
+                output_size: 3,
+            }),
+        );
+
+        let input = vec![1.0, 2.0, 3.0];
+        let output = nn.forward(&input);
+        assert_eq!(output, input);
+    }
+
+    #[test]
+    fn test_neural_network_train() {
+        let mut nn = NeuralNetwork::new(NeuralNetworkShape {
+            layers: vec![LayerShape {
+                input_size: 3,
+                output_size: 3,
+            }],
+        });
+
+        nn.add_activation_and_layer(
+            Box::new(MockActivation),
+            Box::new(MockLayer {
+                input_size: 3,
+                output_size: 3,
+            }),
+        );
+
+        let inputs = vec![vec![1.0, 2.0, 3.0]];
+        let targets = vec![vec![0.0, 1.0, 2.0]];
+
+        nn.train(&inputs, &targets, 0.01, 1);
+    }
+}
