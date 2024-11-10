@@ -10,7 +10,7 @@
 //! phenotype satisfies the constraints set up by the `Magnitude` trait.
 use std::{fmt::Error, marker::PhantomData};
 
-use crate::{
+use crate::evol::{
     evolution::options::EvolutionOptions, phenotype::Phenotype, rng::RandomNumberGenerator,
 };
 

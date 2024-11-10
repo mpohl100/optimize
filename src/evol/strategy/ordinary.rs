@@ -4,7 +4,9 @@
 //! parent is considered as the winner of the previous generation, and the remaining
 //! parents are used to create new individuals through crossover and mutation.
 use super::BreedStrategy;
-use crate::phenotype::Phenotype;
+use crate::evol::phenotype::Phenotype;
+use crate::evol::evolution;
+use crate::evol::rng;
 use std::fmt::Error;
 
 /// # OrdinaryStrategy
@@ -39,8 +41,8 @@ where
     fn breed(
         &self,
         parents: &[Pheno],
-        evol_options: &crate::evolution::options::EvolutionOptions,
-        rng: &mut crate::rng::RandomNumberGenerator,
+        evol_options: &evolution::options::EvolutionOptions,
+        rng: &mut rng::RandomNumberGenerator,
     ) -> Result<Vec<Pheno>, Error> {
         let mut children: Vec<Pheno> = Vec::new();
         let winner_previous_generation = parents[0].clone();
@@ -65,7 +67,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{
+    use crate::evol::{
         evolution::options::EvolutionOptions, phenotype::Phenotype, rng::RandomNumberGenerator,
         strategy::BreedStrategy,
     };
