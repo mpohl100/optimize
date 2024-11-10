@@ -13,6 +13,8 @@ pub enum ActivationType {
     ReLU,
     /// Sigmoid activation function.
     Sigmoid,
+    /// Tanh (Hyperbolic Tangent) activation function.
+    Tanh,
 }
 
 /// Struct representing the shape and configuration of a neural network layer.
