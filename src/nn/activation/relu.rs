@@ -6,7 +6,10 @@ pub struct ReLU;
 
 impl ActivationTrait for ReLU {
     fn forward(&self, input: &[f64]) -> Vec<f64> {
-        input.iter().map(|&x| if x > 0.0 { x } else { 0.0 }).collect()
+        input
+            .iter()
+            .map(|&x| if x > 0.0 { x } else { 0.0 })
+            .collect()
     }
 
     fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
@@ -16,7 +19,6 @@ impl ActivationTrait for ReLU {
             .collect()
     }
 }
-
 
 #[cfg(test)]
 mod tests {

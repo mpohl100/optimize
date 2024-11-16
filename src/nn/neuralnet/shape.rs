@@ -3,7 +3,10 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
-    Dense { input_size: usize, output_size: usize },
+    Dense {
+        input_size: usize,
+        output_size: usize,
+    },
 }
 
 /// Enum representing the type of activation function used in a layer.
