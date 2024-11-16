@@ -1,2 +1,2 @@
 pub mod evol;
-pub mod nn;
+pub mod neural;
