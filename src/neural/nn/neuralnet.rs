@@ -86,6 +86,7 @@ impl NeuralNetwork {
         epochs: usize,
     ) {
         for _ in 0..epochs {
+            print!("Epoch: {}\r", epochs);
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
                 let output = self.forward(input.as_slice());
