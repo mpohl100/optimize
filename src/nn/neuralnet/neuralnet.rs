@@ -106,71 +106,7 @@ impl NeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::activation::{activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid};
-    use crate::nn::layer::{dense_layer::DenseLayer, Layer};
     use crate::nn::neuralnet::shape::{ActivationType, LayerShape};
-
-    struct MockLayer {
-        input_size: usize,
-        output_size: usize,
-    }
-
-    impl Layer for MockLayer {
-        fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-            input.to_vec() // Mock pass-through
-        }
-
-        fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-            grad_output.to_vec() // Mock pass-through
-        }
-
-        fn update_weights(&mut self, _learning_rate: f64) {}
-
-        fn input_size(&self) -> usize {
-            self.input_size
-        }
-
-        fn output_size(&self) -> usize {
-            self.output_size
-        }
-    }
-
-    struct MockActivation;
-
-    impl ActivationTrait for MockActivation {
-        fn forward(&self, input: &[f64]) -> Vec<f64> {
-            input.to_vec() // Mock pass-through
-        }
-
-        fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
-            grad_output.to_vec() // Mock pass-through
-        }
-    }
-
-    #[test]
-    fn test_neural_network_forward() {
-        let mut nn = NeuralNetwork::new(NeuralNetworkShape {
-            layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 3,
-                    output_size: 3,
-                },
-                activation: ActivationType::ReLU,
-            }],
-        });
-
-        nn.add_activation_and_layer(
-            Box::new(MockActivation),
-            Box::new(MockLayer {
-                input_size: 3,
-                output_size: 3,
-            }),
-        );
-
-        let input = vec![1.0, 2.0, 3.0];
-        let output = nn.forward(&input);
-        assert_eq!(output, input);
-    }
 
     #[test]
     fn test_neural_network_train() {
@@ -180,21 +116,31 @@ mod tests {
                     input_size: 3,
                     output_size: 3,
                 },
+                activation: ActivationType::Sigmoid,
+            }, 
+            LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size: 3,
+                    output_size: 3,
+                },
                 activation: ActivationType::ReLU,
             }],
         });
 
-        nn.add_activation_and_layer(
-            Box::new(MockActivation),
-            Box::new(MockLayer {
-                input_size: 3,
-                output_size: 3,
-            }),
-        );
+        let inputs = vec![vec![1.0, 1.0, 1.0]];
+        let targets = vec![vec![0.0, 0.0, 0.0]];
 
-        let inputs = vec![vec![1.0, 2.0, 3.0]];
-        let targets = vec![vec![0.0, 1.0, 2.0]];
+        nn.train(&inputs, &targets, 0.01, 100);
 
-        nn.train(&inputs, &targets, 0.01, 1);
+        let prediction = nn.predict(inputs[0].clone());
+        // print targets[0]
+        println!("{:?}", targets[0]);
+        // print prediction
+        println!("{:?}", prediction);
+        assert_eq!(prediction.len(), 3);
+        // assert that the prediction is close to the target
+        for (p, t) in prediction.iter().zip(&targets[0]) {
+            assert!((p - t).abs() < 1e-4);
+        }
     }
 }

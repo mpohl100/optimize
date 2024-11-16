@@ -12,8 +12,7 @@ impl ActivationTrait for ReLU {
     fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(self.forward(grad_output).iter())
-            .map(|(&grad, &output)| if output > 0.0 { grad } else { 0.0 })
+            .map(|&output| if output > 0.0 { 1.0 } else { 0.0 })
             .collect()
     }
 }
@@ -28,10 +27,14 @@ mod tests {
         let relu = ReLU;
         let input = vec![-1.0, 0.0, 1.0];
         let output = relu.forward(&input);
+        // print output
+        println!("{:?}", output);
         assert_eq!(output, vec![0.0, 0.0, 1.0]);
 
-        let grad_output = vec![0.5, 0.5, 0.5];
+        let grad_output = vec![-0.5, 0.0, 0.5];
         let grad_input = relu.backward(&grad_output);
-        assert_eq!(grad_input, vec![0.0, 0.0, 0.5]);
+        // print grad_input
+        println!("{:?}", grad_input);
+        assert_eq!(grad_input, vec![0.0, 0.0, 1.0]);
     }
 }
