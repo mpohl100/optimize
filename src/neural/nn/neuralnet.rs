@@ -1,7 +1,9 @@
-use crate::nn::activation::{activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh};
-use crate::nn::layer::dense_layer::DenseLayer;
-use crate::nn::layer::Layer;
-use crate::nn::neuralnet::shape::*;
+use crate::neural::activation::{
+    activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh,
+};
+use crate::neural::layer::dense_layer::DenseLayer;
+use crate::neural::layer::Layer;
+use crate::neural::nn::shape::*;
 
 use std::boxed::Box;
 
@@ -86,7 +88,7 @@ impl NeuralNetwork {
         for _ in 0..epochs {
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
-                let output = self.forward(&input.as_slice());
+                let output = self.forward(input.as_slice());
 
                 // Calculate loss gradient (e.g., mean squared error)
                 let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
@@ -104,7 +106,7 @@ impl NeuralNetwork {
 
     /// Makes a prediction based on a single input by performing a forward pass.
     pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
-        self.forward(&input.as_slice())
+        self.forward(input.as_slice())
     }
 
     /// Returns the input size of the first layer in the network.
@@ -127,7 +129,7 @@ impl NeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::nn::neuralnet::shape::{ActivationType, LayerShape};
+    use crate::neural::nn::shape::{ActivationType, LayerShape};
 
     #[test]
     fn test_neural_network_train() {

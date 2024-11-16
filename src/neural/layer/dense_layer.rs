@@ -1,4 +1,4 @@
-use super::layer::Layer;
+use super::layer_trait::Layer;
 use rand::Rng;
 
 /// A fully connected neural network layer (Dense layer).
@@ -53,6 +53,7 @@ impl DenseLayer {
 }
 
 impl Layer for DenseLayer {
+    #[allow(clippy::needless_range_loop)]
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         // Store input for potential use in backward pass (not needed in this function)
         self.input_cache = input.to_vec().clone();
@@ -74,6 +75,7 @@ impl Layer for DenseLayer {
         output
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
         // Initialize grad_input with the size of input_cache, filled with zeros
         let mut grad_input = vec![0.0; self.input_cache.len()];
@@ -98,6 +100,7 @@ impl Layer for DenseLayer {
         grad_input
     }
 
+    #[allow(clippy::needless_range_loop)]
     fn update_weights(&mut self, learning_rate: f64) {
         // Update weights and biases using the accumulated gradients
         for i in 0..self.weights.len() {
