@@ -1,4 +1,4 @@
-use super::data_importer::{self, DataImporter};
+use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
 use crate::neural::nn::neuralnet::NeuralNetwork;
 
@@ -12,7 +12,7 @@ pub struct TrainingSession {
 
 impl TrainingSession {
     // Constructor
-    fn new(
+    pub fn new(
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
     ) -> Result<Self, Box<dyn Error>> {
@@ -45,7 +45,7 @@ impl TrainingSession {
     }
 
     // Train method
-    fn train(&mut self) -> Result<f64, Box<dyn Error>> {
+    pub fn train(&mut self) -> Result<f64, Box<dyn Error>> {
         // Prepare the data
         let data = self.data_importer.get_data();
         let inputs = data.data;
