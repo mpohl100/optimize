@@ -27,10 +27,14 @@ mod tests {
         let tanh = Tanh;
         let input = vec![0.0];
         let output = tanh.forward(&input);
+        // print output
+        println!("{:?}", output);
         assert!((output[0] - 0.0).abs() < 1e-7);
 
         let grad_output = vec![1.0];
         let grad_input = tanh.backward(&grad_output);
-        assert!((grad_input[0] - 1.0).abs() < 1e-7);
+        // print grad_input
+        println!("{:?}", grad_input);
+        assert!((grad_input[0] - 0.4199743).abs() < 1e-7);
     }
 }

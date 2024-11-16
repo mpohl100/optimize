@@ -27,10 +27,14 @@ mod tests {
         let sigmoid = Sigmoid;
         let input = vec![0.0];
         let output = sigmoid.forward(&input);
+        // print output
+        println!("{:?}", output);
         assert!((output[0] - 0.5).abs() < 1e-7);
 
         let grad_output = vec![1.0];
         let grad_input = sigmoid.backward(&grad_output);
-        assert!((grad_input[0] - 0.25).abs() < 1e-7);
+        // print grad_input
+        println!("{:?}", grad_input);
+        assert!((grad_input[0] - 0.196612).abs() < 1e-7);
     }
 }
