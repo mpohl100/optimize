@@ -126,9 +126,9 @@ mod tests {
     fn test_simple_neural_net() {
         // Define the neural network shape
         let nn_shape = NeuralNetworkShape{ layers: vec![
-            LayerShape{layer_type: LayerType::Dense{input_size: 784, output_size: 784}, activation: ActivationType::ReLU},
-            LayerShape{layer_type: LayerType::Dense{input_size: 784, output_size: 128}, activation: ActivationType::ReLU},
-            LayerShape{layer_type: LayerType::Dense{input_size: 128, output_size: 10}, activation: ActivationType::Sigmoid},
+            LayerShape{layer_type: LayerType::Dense{input_size: 128, output_size: 128}, activation: ActivationType::ReLU},
+            LayerShape{layer_type: LayerType::Dense{input_size: 128, output_size: 64}, activation: ActivationType::ReLU},
+            LayerShape{layer_type: LayerType::Dense{input_size: 64, output_size: 10}, activation: ActivationType::Sigmoid},
         ]};
 
         // Define training parameters
