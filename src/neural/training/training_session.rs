@@ -1,5 +1,5 @@
-use super::training_params::TrainingParams;
 use super::data_importer::{self, DataImporter};
+use super::training_params::TrainingParams;
 use crate::neural::nn::neuralnet::NeuralNetwork;
 
 use std::error::Error;
@@ -12,7 +12,10 @@ pub struct TrainingSession {
 
 impl TrainingSession {
     // Constructor
-    fn new(params: TrainingParams, data_importer: Box<dyn DataImporter>) -> Result<Self, Box<dyn Error>> {
+    fn new(
+        params: TrainingParams,
+        data_importer: Box<dyn DataImporter>,
+    ) -> Result<Self, Box<dyn Error>> {
         // Validate parameters
         if params.num_training_samples() == 0 {
             return Err("Number of training samples must be positive".into());
@@ -34,7 +37,11 @@ impl TrainingSession {
         }
 
         let shape = params.shape().clone();
-        Ok(Self { params, neural_network: NeuralNetwork::new(shape), data_importer })
+        Ok(Self {
+            params,
+            neural_network: NeuralNetwork::new(shape),
+            data_importer,
+        })
     }
 
     // Train method
@@ -66,7 +73,12 @@ impl TrainingSession {
         }
 
         // Train the neural network
-        nn.train(&training_inputs, &training_targets, self.params.learning_rate(), self.params.epochs());
+        nn.train(
+            &training_inputs,
+            &training_targets,
+            self.params.learning_rate(),
+            self.params.epochs(),
+        );
 
         // Verification phase
         let mut success_count = 0;
@@ -80,7 +92,11 @@ impl TrainingSession {
             let target = &targets[sample_idx];
 
             // Check if the output matches the target
-            if output.iter().zip(target.iter()).all(|(&out, &t)| (out - t).abs() < self.params.tolerance()) {
+            if output
+                .iter()
+                .zip(target.iter())
+                .all(|(&out, &t)| (out - t).abs() < self.params.tolerance())
+            {
                 success_count += 1;
             }
         }
@@ -93,16 +109,16 @@ impl TrainingSession {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::neural::nn::shape::NeuralNetworkShape;
+    use crate::neural::nn::shape::{ActivationType, LayerShape, LayerType};
     use crate::neural::training::data_importer::{DataImporter, SessionData};
-    use crate::neural::nn::shape::NeuralNetworkShape; 
-    use crate::neural::nn::shape::{LayerType, ActivationType, LayerShape};
 
     // Mock DataImporter implementation for testing
-    struct MockDataImporter{
+    struct MockDataImporter {
         shape: NeuralNetworkShape,
     }
 
-    impl MockDataImporter{
+    impl MockDataImporter {
         fn new(shape: NeuralNetworkShape) -> Self {
             Self { shape }
         }
@@ -125,24 +141,47 @@ mod tests {
     #[test]
     fn test_simple_neural_net() {
         // Define the neural network shape
-        let nn_shape = NeuralNetworkShape{ layers: vec![
-            LayerShape{layer_type: LayerType::Dense{input_size: 128, output_size: 128}, activation: ActivationType::ReLU},
-            LayerShape{layer_type: LayerType::Dense{input_size: 128, output_size: 64}, activation: ActivationType::ReLU},
-            LayerShape{layer_type: LayerType::Dense{input_size: 64, output_size: 10}, activation: ActivationType::Sigmoid},
-        ]};
+        let nn_shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::Sigmoid,
+                },
+            ],
+        };
 
         // Define training parameters
-        let training_params = TrainingParams::new(
-            nn_shape.clone(),700,300, 0.01, 10, 0.1,
-        );
+        let training_params = TrainingParams::new(nn_shape.clone(), 700, 300, 0.01, 10, 0.1);
 
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
-        let mut training_session = TrainingSession::new(training_params, Box::new(data_importer)).expect("Failed to create TrainingSession");
+        let mut training_session = TrainingSession::new(training_params, Box::new(data_importer))
+            .expect("Failed to create TrainingSession");
 
         // Train the neural network and check the success rate
         let success_rate = training_session.train().expect("Training failed");
-        assert!(success_rate >= 0.9, "Expected success rate >= 0.9, got {}", success_rate);
+        assert!(
+            success_rate >= 0.9,
+            "Expected success rate >= 0.9, got {}",
+            success_rate
+        );
     }
 }

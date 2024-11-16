@@ -53,4 +53,3 @@ impl TrainingParams {
         self.tolerance
     }
 }
-
