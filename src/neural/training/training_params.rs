@@ -11,7 +11,7 @@ pub struct TrainingParams {
 }
 
 impl TrainingParams {
-    fn new(
+    pub fn new(
         shape: NeuralNetworkShape,
         num_training_samples: usize,
         num_verification_samples: usize,
