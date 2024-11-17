@@ -106,6 +106,13 @@ impl TrainingSession {
     }
 
     pub fn save_model(&self, model_directory: String) -> Result<(), Box<dyn Error>> {
+        // remove the directory if it exists
+        if std::fs::metadata(&model_directory).is_ok() {
+            std::fs::remove_dir_all(&model_directory)?;
+        }
+        // create directory if it doesn't exist
+        std::fs::create_dir_all(&model_directory)?;
+        
         let shape = self.neural_network.shape();
         shape.to_yaml(model_directory.clone());
         self.neural_network.save_layers(model_directory)?;
