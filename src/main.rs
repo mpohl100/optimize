@@ -82,5 +82,7 @@ fn main() {
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
     println!("Success rate: {}", success_rate);
-    training_session.save_model(model_directory.clone()).expect("Failed to save model");
+    training_session
+        .save_model(model_directory.clone())
+        .expect("Failed to save model");
 }
