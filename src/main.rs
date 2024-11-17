@@ -68,6 +68,8 @@ fn main() {
 
     // Train the neural network and check the success rate
     let success_rate = training_session.train().expect("Training failed");
+    // print the success rate
+    println!("Success rate: {}", success_rate);
     assert!(
         success_rate >= 0.9,
         "Expected success rate >= 0.9, got {}",

@@ -16,3 +16,7 @@ harness = false
 [[bench]]
 name = "bench_bounded"
 harness = false
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
