@@ -129,6 +129,13 @@ impl NeuralNetwork {
     pub fn shape(&self) -> &NeuralNetworkShape {
         &self.shape
     }
+
+    pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        for (i, layer) in self.layers.iter().enumerate() {
+            layer.save(&format!("{}/layer_{}", model_directory, i))?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

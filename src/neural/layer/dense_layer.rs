@@ -1,6 +1,11 @@
 use super::layer_trait::Layer;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
+use std::error::Error;
+use std::io::Write;
 
 /// A fully connected neural network layer (Dense layer).
 #[derive(Clone)]
@@ -121,6 +126,57 @@ impl Layer for DenseLayer {
     fn output_size(&self) -> usize {
         self.weights.rows()
     }
+
+    fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        // Save weights and biases to a file at the specified path
+        let mut file = File::create(path)?;
+        writeln!(file, "{} {}", self.weights.rows(), self.weights.cols())?;
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                write!(file, "{} ", self.weights.get_unchecked(i, j))?;
+            }
+            writeln!(file, "")?;
+        }
+        for i in 0..self.biases.len() {
+            write!(file, "{} ", self.biases[i])?;
+        }
+        writeln!(file, "")?;
+        Ok(())
+    }
+
+    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>{
+        // Read weights and biases from a file at the specified path
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let mut lines = reader.lines();
+        if let Some(Ok(line)) = lines.next() {
+            let mut parts = line.split_whitespace();
+            let rows = parts.next().unwrap().parse::<usize>()?;
+            let cols = parts.next().unwrap().parse::<usize>()?;
+            self.weights = Matrix::new(rows, cols);
+            for i in 0..rows {
+                if let Some(Ok(line)) = lines.next() {
+                    let mut parts = line.split_whitespace();
+                    for j in 0..cols {
+                        if let Some(part) = parts.next() {
+                            *self.weights.get_mut_unchecked(i, j) = part.parse::<f64>()?;
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(Ok(line)) = lines.next() {
+            let mut parts = line.split_whitespace();
+            for i in 0..self.biases.len() {
+                if let Some(part) = parts.next() {
+                    self.biases[i] = part.parse::<f64>()?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+
 }
 
 #[cfg(test)]

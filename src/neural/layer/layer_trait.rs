@@ -1,4 +1,5 @@
-/// A trait representing a layer in a neural network.
+use std::error::Error;
+// A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
 pub trait Layer {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
@@ -44,4 +45,10 @@ pub trait Layer {
     ///
     /// * A `usize` value representing the number of output neurons.
     fn output_size(&self) -> usize;
+
+    /// Saves the layer to a file at the specified path.
+    fn save(&self, path: &str) -> Result<(), Box<dyn Error>>;
+
+    /// Reads the layer from a file at the specified path.
+    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
 }
