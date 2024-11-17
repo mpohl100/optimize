@@ -4,6 +4,15 @@ use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
 
+use clap::Parser;
+
+/// Command line arguments
+#[derive(Parser)]
+struct Args {
+    /// Directory where the model shall be saved
+    model_directory: String,
+}
+
 // Mock DataImporter implementation for testing
 struct MockDataImporter {
     shape: NeuralNetworkShape,
@@ -30,6 +39,9 @@ impl DataImporter for MockDataImporter {
 }
 
 fn main() {
+    let args = Args::parse();
+    let model_directory = &args.model_directory;
+
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
@@ -70,9 +82,5 @@ fn main() {
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
     println!("Success rate: {}", success_rate);
-    assert!(
-        success_rate >= 0.9,
-        "Expected success rate >= 0.9, got {}",
-        success_rate
-    );
+    training_session.save_model(model_directory).expect("Failed to save model");
 }
