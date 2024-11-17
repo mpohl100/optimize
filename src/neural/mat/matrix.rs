@@ -1,5 +1,5 @@
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Matrix<T> {
@@ -32,11 +32,6 @@ where
             cols,
             data: vec![T::default(); rows * cols],
         }
-    }
-
-    // Default constructor (1x1 matrix)
-    pub fn default() -> Self {
-        Self::new(1, 1)
     }
 
     // Get a mutable reference to an element at (x, y)
