@@ -1,10 +1,10 @@
 use super::layer_trait::Layer;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
 use std::error::Error;
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::io::Write;
 
 /// A fully connected neural network layer (Dense layer).
@@ -135,16 +135,16 @@ impl Layer for DenseLayer {
             for j in 0..self.weights.cols() {
                 write!(file, "{} ", self.weights.get_unchecked(i, j))?;
             }
-            writeln!(file, "")?;
+            writeln!(file)?;
         }
         for i in 0..self.biases.len() {
             write!(file, "{} ", self.biases[i])?;
         }
-        writeln!(file, "")?;
+        writeln!(file)?;
         Ok(())
     }
 
-    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>{
+    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -175,8 +175,6 @@ impl Layer for DenseLayer {
         }
         Ok(())
     }
-
-
 }
 
 #[cfg(test)]

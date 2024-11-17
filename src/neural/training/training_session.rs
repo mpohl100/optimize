@@ -115,7 +115,7 @@ impl TrainingSession {
         }
         // create directory if it doesn't exist
         std::fs::create_dir_all(&model_directory)?;
-        
+
         let shape = self.neural_network.shape();
         shape.to_yaml(model_directory.clone());
         self.neural_network.save_layers(model_directory)?;
@@ -124,7 +124,7 @@ impl TrainingSession {
         if std::fs::metadata(&backup_directory).is_ok() {
             std::fs::remove_dir_all(&backup_directory)?;
         }
-        
+
         Ok(())
     }
 }

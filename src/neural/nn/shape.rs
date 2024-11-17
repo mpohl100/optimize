@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
-use serde::{Serialize, Deserialize};
 
 /// Enum representing the type of layer in a neural network.
 /// Each variant includes the input size and output size of the layer.
