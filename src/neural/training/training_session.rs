@@ -104,6 +104,13 @@ impl TrainingSession {
         // Return the accuracy as the fraction of successful predictions
         Ok(success_count as f64 / self.params.num_verification_samples() as f64)
     }
+
+    pub fn save_model(&self, model_directory: String) -> Result<(), Box<dyn Error>> {
+        let shape = self.neural_network.shape();
+        shape.to_yaml(model_directory.clone());
+        self.neural_network.save_layers(model_directory)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

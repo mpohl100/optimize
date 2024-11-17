@@ -125,6 +125,10 @@ impl NeuralNetwork {
             .last()
             .map_or(0, |layer| layer.output_size())
     }
+
+    pub fn shape(&self) -> &NeuralNetworkShape {
+        &self.shape
+    }
 }
 
 #[cfg(test)]

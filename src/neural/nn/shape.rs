@@ -1,6 +1,10 @@
+use std::fs::File;
+use std::io::Write;
+use serde::{Serialize, Deserialize};
+
 /// Enum representing the type of layer in a neural network.
 /// Each variant includes the input size and output size of the layer.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
     Dense {
@@ -10,7 +14,7 @@ pub enum LayerType {
 }
 
 /// Enum representing the type of activation function used in a layer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActivationType {
     /// ReLU (Rectified Linear Unit) activation function.
     ReLU,
@@ -21,7 +25,7 @@ pub enum ActivationType {
 }
 
 /// Struct representing the shape and configuration of a neural network layer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayerShape {
     /// The type of the layer (e.g., Dense) with input and output sizes.
     pub layer_type: LayerType,
@@ -56,7 +60,7 @@ impl LayerShape {
 }
 
 /// Struct representing the shape and configuration of an entire neural network.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NeuralNetworkShape {
     /// A vector of `LayerShape` structs, representing each layer in the neural network.
     pub layers: Vec<LayerShape>,
@@ -91,6 +95,14 @@ impl NeuralNetworkShape {
         }
 
         true
+    }
+
+    pub fn to_yaml(&self, model_directory: String) {
+        let yaml = serde_yaml::to_string(self).unwrap();
+        // Create file in shape.yaml in model_directory and put the yaml there
+        let path = format!("{}/shape.yaml", model_directory);
+        let mut file = File::create(path).unwrap();
+        file.write_all(yaml.as_bytes()).unwrap();
     }
 }
 
