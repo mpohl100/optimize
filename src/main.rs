@@ -15,6 +15,7 @@ struct Args {
 }
 
 // Mock DataImporter implementation for testing
+#[derive(Clone)]
 struct MockDataImporter {
     shape: NeuralNetworkShape,
 }
@@ -75,6 +76,23 @@ fn main() {
 
     // Create a training session using the mock data importer
     let data_importer = MockDataImporter::new(nn_shape);
+
+    let training_session = TrainingSession::from_disk(model_directory, training_params.clone(), Box::new(data_importer.clone()));
+    match training_session {
+        Ok(mut training_session) => {
+            // Train the neural network and check the success rate
+            let success_rate = training_session.train().expect("Training failed");
+            // print the success rate
+            println!("Success rate: {}", success_rate);
+            training_session
+                .save_model(model_directory.clone())
+                .expect("Failed to save model");
+            return;
+        }
+        Err(e) => {
+            println!("Failed to load model: {}", e);
+        }
+    }
 
     let mut training_session = TrainingSession::new(training_params, Box::new(data_importer))
         .expect("Failed to create TrainingSession");
