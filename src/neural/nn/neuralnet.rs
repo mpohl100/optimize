@@ -44,7 +44,7 @@ impl NeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
-    pub fn from_disk(model_directory: String) -> NeuralNetwork{
+    pub fn from_disk(model_directory: &String) -> NeuralNetwork{
         let shape = NeuralNetworkShape::from_disk(&model_directory);
         let mut network = NeuralNetwork {
             layers: Vec::new(),
