@@ -45,12 +45,16 @@ impl TrainingSession {
     }
 
     // Load a model from disk and create a training session
-    pub fn from_disk(model_directory: &String, params: TrainingParams, data_importer: Box<dyn DataImporter>) -> Result<TrainingSession, Box<dyn Error>> {
+    pub fn from_disk(
+        model_directory: &String,
+        params: TrainingParams,
+        data_importer: Box<dyn DataImporter>,
+    ) -> Result<TrainingSession, Box<dyn Error>> {
         // if the directory does not esist, return an error
         if std::fs::metadata(model_directory).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = NeuralNetwork::from_disk(&model_directory);
+        let nn = NeuralNetwork::from_disk(model_directory);
         Ok(TrainingSession {
             params,
             neural_network: nn,
@@ -126,12 +130,11 @@ impl TrainingSession {
             // copy the directory to a backup
             std::fs::rename(&model_directory, &backup_directory)?;
             std::fs::create_dir_all(&model_directory)?;
-        }
-        else {
+        } else {
             // create directory if it doesn't exist
             std::fs::create_dir_all(&model_directory)?;
         }
-        
+
         let shape = self.neural_network.shape();
         shape.to_yaml(model_directory.clone());
         self.neural_network.save_layers(model_directory)?;

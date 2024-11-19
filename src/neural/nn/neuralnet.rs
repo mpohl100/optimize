@@ -44,8 +44,8 @@ impl NeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
-    pub fn from_disk(model_directory: &String) -> NeuralNetwork{
-        let shape = NeuralNetworkShape::from_disk(&model_directory);
+    pub fn from_disk(model_directory: &String) -> NeuralNetwork {
+        let shape = NeuralNetworkShape::from_disk(model_directory);
         let mut network = NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
@@ -54,9 +54,14 @@ impl NeuralNetwork {
 
         for i in 0..shape.layers.len() {
             let layer = match &shape.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size } => {
+                LayerType::Dense {
+                    input_size,
+                    output_size,
+                } => {
                     let mut layer = DenseLayer::new(*input_size, *output_size);
-                    layer.read(&format!("{}/layers/layer_{}", model_directory, i)).unwrap();
+                    layer
+                        .read(&format!("{}/layers/layer_{}", model_directory, i))
+                        .unwrap();
                     Box::new(layer) as Box<dyn Layer>
                 }
             };
