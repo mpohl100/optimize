@@ -131,8 +131,10 @@ impl NeuralNetwork {
     }
 
     pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // make a layers subdirectory
+        std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(&format!("{}/layer_{}", model_directory, i))?;
+            layer.save(&format!("{}/layers/layer_{}", model_directory, i))?;
         }
         Ok(())
     }
