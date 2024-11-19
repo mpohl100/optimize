@@ -48,6 +48,11 @@ impl LayerShape {
         }
     }
 
+    /// Returns the type of the layer.
+    pub fn layer_type(&self) -> LayerType {
+        self.layer_type.clone()
+    }
+
     /// Checks if the layer shape is valid.
     ///
     /// # Returns
@@ -67,6 +72,14 @@ pub struct NeuralNetworkShape {
 }
 
 impl NeuralNetworkShape {
+    /// Creates a new `NeuralNetworkShape` with the given layers.
+    pub fn from_disk(model_directory: &String) -> Self {
+        let path = format!("{}/shape.yaml", model_directory);
+        let file = File::open(path).unwrap();
+        let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
+        shape
+    }
+    
     /// Checks if the neural network shape is valid.
     ///
     /// # Returns
