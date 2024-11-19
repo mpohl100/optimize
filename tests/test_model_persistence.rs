@@ -4,16 +4,6 @@ use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
 
-use clap::Parser;
-
-/// Command line arguments
-#[derive(Parser)]
-struct Args {
-    /// Directory where the model shall be saved
-    #[clap(long)]
-    model_directory: String,
-}
-
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
 struct MockDataImporter {
@@ -40,10 +30,7 @@ impl DataImporter for MockDataImporter {
     }
 }
 
-fn main() {
-    let args = Args::parse();
-    let model_directory = &args.model_directory;
-
+fn train_model(model_directory: String) {
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
@@ -78,7 +65,7 @@ fn main() {
     let data_importer = MockDataImporter::new(nn_shape);
 
     let training_session = TrainingSession::from_disk(
-        model_directory,
+        &model_directory,
         training_params.clone(),
         Box::new(data_importer.clone()),
     );
@@ -108,4 +95,37 @@ fn main() {
     training_session
         .save_model(model_directory.clone())
         .expect("Failed to save model");
+}
+
+#[test]
+fn new_model_is_persisted() {
+    // Arrange
+    let model_directory = "tests/test_model_persistence".to_string();
+
+    // Act
+    train_model(model_directory.clone());
+
+    // Assert
+    // Check if the model directory exists
+    assert!(std::path::Path::new(&model_directory).exists());
+
+    // Clean up
+    std::fs::remove_dir_all(&model_directory).unwrap();
+}
+
+#[test]
+fn already_trained_model_is_loaded() {
+    // Arrange
+    let model_directory = "tests/test_model_persistence".to_string();
+    train_model(model_directory.clone());
+
+    // Act
+    train_model(model_directory.clone());
+
+    // Assert
+    // Check if the model directory exists
+    assert!(std::path::Path::new(&model_directory).exists());
+
+    // Clean up
+    std::fs::remove_dir_all(&model_directory).unwrap();
 }

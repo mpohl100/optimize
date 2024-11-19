@@ -79,7 +79,7 @@ impl NeuralNetworkShape {
         let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
         shape
     }
-    
+
     /// Checks if the neural network shape is valid.
     ///
     /// # Returns
