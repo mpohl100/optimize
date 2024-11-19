@@ -10,6 +10,7 @@ use clap::Parser;
 #[derive(Parser)]
 struct Args {
     /// Directory where the model shall be saved
+    #[clap(long)]
     model_directory: String,
 }
 
