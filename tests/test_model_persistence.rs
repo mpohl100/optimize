@@ -100,7 +100,7 @@ fn train_model(model_directory: String) {
 #[test]
 fn new_model_is_persisted() {
     // Arrange
-    let model_directory = "tests/test_model_persistence".to_string();
+    let model_directory = "tests/test_model_persistence_1".to_string();
 
     // Act
     train_model(model_directory.clone());
@@ -116,7 +116,7 @@ fn new_model_is_persisted() {
 #[test]
 fn already_trained_model_is_loaded() {
     // Arrange
-    let model_directory = "tests/test_model_persistence".to_string();
+    let model_directory = "tests/test_model_persistence_2".to_string();
     train_model(model_directory.clone());
 
     // Act
@@ -125,7 +125,13 @@ fn already_trained_model_is_loaded() {
     // Assert
     // Check if the model directory exists
     assert!(std::path::Path::new(&model_directory).exists());
+    // Check that backup directory is removed
+    assert!(!std::path::Path::new(&format!("{}_backup", model_directory)).exists());
 
     // Clean up
     std::fs::remove_dir_all(&model_directory).unwrap();
+    // Remove the backup directory if it exists
+    if std::path::Path::new(&format!("{}_backup", model_directory)).exists() {
+        std::fs::remove_dir_all(&format!("{}_backup", model_directory)).unwrap();
+    }
 }
