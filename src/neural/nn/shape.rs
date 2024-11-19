@@ -117,6 +117,26 @@ impl NeuralNetworkShape {
         let mut file = File::create(path).unwrap();
         file.write_all(yaml.as_bytes()).unwrap();
     }
+
+    /// Returns the layer at the specified index.
+    pub fn get_layer(&self, index: usize) -> LayerShape {
+        self.layers[index].clone()
+    }
+
+    /// Returns the number of layers in the neural network shape.
+    pub fn len(&self) -> usize {
+        self.layers.len()
+    }
+
+    /// Adds a new layer at the specified position.
+    pub fn add_layer(&mut self, position: usize, layer: LayerShape) {
+        self.layers.insert(position, layer);
+    }
+
+    /// Changes layer at the specified position.
+    pub fn change_layer(&mut self, position: usize, layer: LayerShape) {
+        self.layers[position] = layer;
+    }
 }
 
 #[cfg(test)]
