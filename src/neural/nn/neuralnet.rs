@@ -8,6 +8,7 @@ use crate::neural::nn::shape::*;
 use std::boxed::Box;
 
 /// A neural network.
+#[derive(Debug, Clone)]
 pub struct NeuralNetwork {
     layers: Vec<Box<dyn Layer>>,
     activations: Vec<Box<dyn ActivationTrait>>,

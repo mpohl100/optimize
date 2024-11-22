@@ -1,7 +1,8 @@
+use dyn_clone::DynClone;
 use std::error::Error;
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
-pub trait Layer {
+pub trait Layer: std::fmt::Debug + DynClone {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
     /// # Arguments
@@ -52,3 +53,5 @@ pub trait Layer {
     /// Reads the layer from a file at the specified path.
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
 }
+
+dyn_clone::clone_trait_object!(Layer);

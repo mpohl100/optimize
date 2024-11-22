@@ -1,7 +1,7 @@
 use super::activate::ActivationTrait;
 
 /// Sigmoid activation function.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Sigmoid;
 
 impl ActivationTrait for Sigmoid {

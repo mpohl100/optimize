@@ -3,7 +3,7 @@ use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct NeuralNetworkPhenotype{
     nn_shape: NeuralNetworkShape,
     nn: NeuralNetwork,
