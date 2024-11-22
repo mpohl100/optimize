@@ -1,3 +1,4 @@
+use crate::gen::pheno::annotated_nn_shape::{AnnotatedNeuralNetworkShape, LayerChangeType};
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh,
 };
@@ -196,6 +197,70 @@ impl NeuralNetwork {
         }
 
         Ok(())
+    }
+
+    pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape){
+        for (i, layer) in shape.layers.iter().enumerate() {
+            match layer.change_type {
+                LayerChangeType::Add => {
+                    let new_layer = match &layer.layer.layer_type() {
+                        LayerType::Dense {
+                            input_size,
+                            output_size,
+                        } => {
+                            let layer = DenseLayer::new(*input_size, *output_size);
+                            layer
+                        }
+                    };
+                    let activation = match layer.layer.activation {
+                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
+                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
+                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                    };
+                    self.add_activation_and_layer_at_position(i, activation, Box::new(new_layer));
+                },
+                LayerChangeType::Remove => {
+                    self.layers.remove(i);
+                    self.activations.remove(i);
+                },
+                LayerChangeType::Change => {
+                    let mut changed = false;
+                    match &layer.layer.layer_type() {
+                        LayerType::Dense {
+                            input_size,
+                            output_size,
+                        } => {
+                            if *input_size != self.layers[i].input_size() || *output_size != self.layers[i].output_size() {
+                                self.layers[i].resize(*input_size, *output_size);
+                                changed = true;
+                            }
+                        }
+                    };
+                    if changed{
+                        continue;
+                    }
+                    let activation = match layer.layer.activation {
+                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
+                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
+                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                    };
+                    self.activations[i] = activation;
+                },
+                LayerChangeType::None => {
+
+                },
+            }
+        }
+    } 
+
+    fn add_activation_and_layer_at_position(
+        &mut self,
+        position: usize,
+        activation: Box<dyn ActivationTrait>,
+        layer: Box<dyn Layer>,
+    ) {
+        self.activations.insert(position, activation);
+        self.layers.insert(position, layer);
     }
 }
 

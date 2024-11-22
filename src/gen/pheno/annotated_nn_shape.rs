@@ -1,7 +1,7 @@
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
-enum LayerChangeType {
+pub enum LayerChangeType {
     Add,
     Remove,
     Change,
