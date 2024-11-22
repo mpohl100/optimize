@@ -1,7 +1,7 @@
 use super::activate::ActivationTrait;
 
 /// ReLU (Rectified Linear Unit) activation function.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReLU;
 
 impl ActivationTrait for ReLU {

@@ -1,6 +1,8 @@
+use dyn_clone::DynClone;
+
 /// A trait for activation functions used in neural networks.
 /// Provides methods for forward pass (activation) and backward pass (gradient computation).
-pub trait ActivationTrait {
+pub trait ActivationTrait: std::fmt::Debug + DynClone {
     /// Applies the activation function to the input vector.
     ///
     /// # Arguments
@@ -24,3 +26,5 @@ pub trait ActivationTrait {
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
     fn backward(&self, grad_output: &[f64]) -> Vec<f64>;
 }
+
+dyn_clone::clone_trait_object!(ActivationTrait);

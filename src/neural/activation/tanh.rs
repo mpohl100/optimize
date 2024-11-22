@@ -1,7 +1,7 @@
 use super::activate::ActivationTrait;
 
 /// Tanh activation function.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Tanh;
 
 impl ActivationTrait for Tanh {

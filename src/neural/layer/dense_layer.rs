@@ -8,7 +8,7 @@ use std::io::BufReader;
 use std::io::Write;
 
 /// A fully connected neural network layer (Dense layer).
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct DenseLayer {
     weights: Matrix<f64>,      // Weight matrix (output_size x input_size)
     biases: Vec<f64>,          // Bias vector (output_size)
