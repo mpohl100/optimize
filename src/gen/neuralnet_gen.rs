@@ -1,5 +1,13 @@
-use learn::neural::nn::neural_network::NeuralNetwork;
-use learn::neural::nn::shape::NeuralNetworkShape;
+use crate::neural::nn::neuralnet::NeuralNetwork;
+use crate::neural::nn::shape::NeuralNetworkShape;
+
+use crate::evol::evolution::EvolutionLauncher;
+use crate::evol::evolution::EvolutionOptions;
+use crate::evol::strategy::OrdinaryStrategy;
+use crate::evol::rng::RandomNumberGenerator;
+
+use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
+use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
 
 struct NeuralNetworkGenerator{
     model_directory: String,
@@ -15,15 +23,15 @@ impl NeuralNetworkGenerator {
         }
     }
 
-    pub fn from_disk(model_directory: String) -> Self {
-        let nn = NeuralNetwork::from_disk(model_directory.clone());
+    pub fn from_disk(model_directory: &String) -> Self {
+        let nn = NeuralNetwork::from_disk(model_directory);
         Self {
             current_winner: nn,
-            model_directory: model_directory,
+            model_directory: model_directory.clone(),
         }
     }
 
-    pub fn generate(&self){
+    pub fn generate(&mut self){
         let mut rng = RandomNumberGenerator::new();
         let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
         let options = EvolutionOptions::default();
@@ -31,7 +39,8 @@ impl NeuralNetworkGenerator {
         let strategy = OrdinaryStrategy;
         let launcher: EvolutionLauncher<NeuralNetworkPhenotype, OrdinaryStrategy, NeuralNetworkChallenge> =
             EvolutionLauncher::new(strategy, challenge);
-        let result = launcher.evolve(starting_value, &options, &mut rng);
-        self.current_winner = result.unwrap().get_phenotype().get_nn();
+        let result = launcher.evolve(&options, starting_value, &mut rng);
+        self.current_winner = result.unwrap().pheno.get_nn().clone();
+        self.current_winner.save(self.model_directory.clone());
     }
 }

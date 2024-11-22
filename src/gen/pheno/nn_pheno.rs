@@ -2,9 +2,10 @@ use crate::neural::nn::neuralnet::NeuralNetwork;
 use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
+use super::nn_mutater::NeuralNetworkMutater;
 
 #[derive(Debug, Clone)]
-struct NeuralNetworkPhenotype{
+pub struct NeuralNetworkPhenotype{
     nn_shape: NeuralNetworkShape,
     nn: NeuralNetwork,
 }
@@ -29,8 +30,8 @@ impl Phenotype for NeuralNetworkPhenotype {
     }
 
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
-        let mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(self.nn_shape.clone());
-        self.nn.adapt_to_shape(mutated_shape);
+        let mut mutater = NeuralNetworkMutater::new(rng);
+        let _mutated_shape = mutater.mutate_shape(self.nn_shape.clone());
+        //self.nn.adapt_to_shape(mutated_shape);
     }
 }

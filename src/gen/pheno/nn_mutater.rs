@@ -5,7 +5,7 @@ use crate::neural::nn::shape::LayerType;
 use crate::evol::rng::RandomNumberGenerator;
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 
-struct NeuralNetworkMutater<'a>{
+pub struct NeuralNetworkMutater<'a>{
     rng: &'a mut RandomNumberGenerator,
 }
 
@@ -16,26 +16,25 @@ impl<'a> NeuralNetworkMutater<'a>{
         }
     }
 
-    pub fn mutate_shape(&self, shape: NeuralNetworkShape) -> AnnotatedNeuralNetworkShape {
+    pub fn mutate_shape(&mut self, shape: NeuralNetworkShape) -> AnnotatedNeuralNetworkShape {
         let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape.clone());
-        let mut rng = &self.rng;
-        let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
+        let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
         match random_number {
             0 => {
-                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
-                let layers = fetch_added_layers(rng, &shape, position);
+                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let layers = fetch_added_layers(self.rng, &shape, position);
                 mutated_shape.add_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             1 => {
                 let activation = ActivationType::Sigmoid;
-                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
                 let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
                 mutated_shape.change_layer(position, layer);
             },
             2 => {
-                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
                 let shape_len = shape.len();
                 match position {
                     0 => {
