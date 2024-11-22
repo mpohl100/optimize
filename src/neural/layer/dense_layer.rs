@@ -175,6 +175,17 @@ impl Layer for DenseLayer {
         }
         Ok(())
     }
+
+    fn resize(&mut self, input_size: usize, output_size: usize) {
+        let old_weights = self.weights.clone();
+        let old_biases = self.biases.clone();
+        // Resize the layer to the input dimensions
+        self.weights = Matrix::new(output_size, input_size);
+        self.biases = vec![0.0; output_size];
+        self.input_cache = vec![0.0; input_size];
+        self.weight_grads = Matrix::new(output_size, input_size);
+        self.bias_grads = vec![0.0; output_size];
+    }
 }
 
 #[cfg(test)]

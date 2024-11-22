@@ -41,6 +41,6 @@ impl NeuralNetworkGenerator {
             EvolutionLauncher::new(strategy, challenge);
         let result = launcher.evolve(&options, starting_value, &mut rng);
         self.current_winner = result.unwrap().pheno.get_nn().clone();
-        self.current_winner.save(self.model_directory.clone());
+        let _ = self.current_winner.save(self.model_directory.clone());
     }
 }

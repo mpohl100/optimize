@@ -52,6 +52,9 @@ pub trait Layer: std::fmt::Debug + DynClone {
 
     /// Reads the layer from a file at the specified path.
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
+
+    /// Resizes the layer to the input dimensions.
+    fn resize(&mut self, input_size: usize, output_size: usize);
 }
 
 dyn_clone::clone_trait_object!(Layer);
