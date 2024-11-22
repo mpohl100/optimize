@@ -173,6 +173,30 @@ impl NeuralNetwork {
         }
         Ok(())
     }
+
+    pub fn save(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // remove the directory if it exists
+        let backup_directory = format!("{}_backup", model_directory);
+        if std::fs::metadata(&model_directory).is_ok() {
+            // copy the directory to a backup
+            std::fs::rename(&model_directory, &backup_directory)?;
+            std::fs::create_dir_all(&model_directory)?;
+        } else {
+            // create directory if it doesn't exist
+            std::fs::create_dir_all(&model_directory)?;
+        }
+
+        let shape = self.shape();
+        shape.to_yaml(model_directory.clone());
+        self.save_layers(model_directory)?;
+
+        // if backup directory exists, remove it
+        if std::fs::metadata(&backup_directory).is_ok() {
+            std::fs::remove_dir_all(&backup_directory)?;
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
