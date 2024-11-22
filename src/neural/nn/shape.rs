@@ -73,6 +73,11 @@ pub struct NeuralNetworkShape {
 
 impl NeuralNetworkShape {
     /// Creates a new `NeuralNetworkShape` with the given layers.
+    pub fn new(layers: Vec<LayerShape>) -> Self {
+        Self { layers }
+    }
+    
+    /// Creates a new `NeuralNetworkShape` with the given layers from disk.
     pub fn from_disk(model_directory: &String) -> Self {
         let path = format!("{}/shape.yaml", model_directory);
         let file = File::open(path).unwrap();

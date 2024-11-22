@@ -1,7 +1,9 @@
-use learn::neural::nn::neural_network::NeuralNetwork;
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::evol::phenotype::Phenotype;
+use crate::neural::nn::neuralnet::NeuralNetwork;
+use crate::neural::nn::shape::NeuralNetworkShape;
+use crate::evol::phenotype::Phenotype;
+use crate::evol::rng::RandomNumberGenerator;
 
+#[derive(Debug)]
 struct NeuralNetworkPhenotype{
     nn_shape: NeuralNetworkShape,
     nn: NeuralNetwork,
@@ -9,9 +11,9 @@ struct NeuralNetworkPhenotype{
 
 impl NeuralNetworkPhenotype {
     pub fn new(nn: NeuralNetwork) -> Self {
-        let nn_shape = nn.get_shape();
+        let nn_shape = nn.shape();
         Self {
-            nn_shape: nn_shape,
+            nn_shape: nn_shape.clone(),
             nn: nn,
         }
     }
