@@ -251,6 +251,7 @@ impl NeuralNetwork {
                 },
             }
         }
+        self.shape = shape.to_neural_network_shape();
     } 
 
     fn add_activation_and_layer_at_position(
