@@ -1,37 +1,41 @@
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::ActivationType;
-use learn::evol::rng::RandomNumberGenerator;
+use crate::neural::nn::shape::NeuralNetworkShape;
+use crate::neural::nn::shape::LayerShape;
+use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::LayerType;
+use crate::evol::rng::RandomNumberGenerator;
+use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 
-struct NeuralNetworkMutater{
-    rng: &mut RandomNumberGenerator,
+struct NeuralNetworkMutater<'a>{
+    rng: &'a mut RandomNumberGenerator,
 }
 
-impl NeuralNetworkMutater{
-    pub fn new(rng: &mut RandomNumberGenerator) -> Self {
+impl<'a> NeuralNetworkMutater<'a>{
+    pub fn new(rng: &'a mut RandomNumberGenerator) -> Self {
         Self {
             rng: rng,
         }
     }
 
-    pub fn mutate_shape(&self, shape: NeuralNetworkShape) -> NeuralNetworkShape {
-        let mut mutated_shape = shape.clone();
-        let mut rng = self.rng;
+    pub fn mutate_shape(&self, shape: NeuralNetworkShape) -> AnnotatedNeuralNetworkShape {
+        let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape.clone());
+        let mut rng = &self.rng;
         let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
         match random_number {
             0 => {
-                let layers = fetch_added_layers(rng, &shape);
-                mutated_shape.add_layer(position, layers[0]);
-                mutated_shape.add_layer(position + 1, layers[1]);
+                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let layers = fetch_added_layers(rng, &shape, position);
+                mutated_shape.add_layer(position, layers[0].clone());
+                mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             1 => {
                 let activation = ActivationType::Sigmoid;
-                let position = *rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
-                let mut layer = mutated_shape.get_layer(position);
+                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
-                mutated_shape.change_layer(position, activation);
+                mutated_shape.change_layer(position, layer);
             },
             2 => {
-                let position = *rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
                 let shape_len = shape.len();
                 match position {
                     0 => {
@@ -41,7 +45,7 @@ impl NeuralNetworkMutater{
                         let new_layer = LayerShape {
                             layer_type: LayerType::Dense {
                                 input_size: input_size,
-                                output_size: layer.get_output_size(),
+                                output_size: layer.output_size(),
                             },
                             activation: layer.activation,
                         };
@@ -53,7 +57,7 @@ impl NeuralNetworkMutater{
                         let layer = mutated_shape.get_layer(position - 1);
                         let new_layer = LayerShape {
                             layer_type: LayerType::Dense {
-                                input_size: layer.get_input_size(),
+                                input_size: layer.input_size(),
                                 output_size: output_size,
                             },
                             activation: layer.activation,
@@ -65,8 +69,8 @@ impl NeuralNetworkMutater{
                         let layer = mutated_shape.get_layer(position);
                         let new_layer = LayerShape {
                             layer_type: LayerType::Dense {
-                                input_size: mutated_shape.get_layer(position - 1).get_output_size(),
-                                output_size: layer.get_output_size(),
+                                input_size: mutated_shape.get_layer(position - 1).output_size(),
+                                output_size: layer.output_size(),
                             },
                             activation: layer.activation,
                         };
@@ -82,7 +86,7 @@ impl NeuralNetworkMutater{
     }
 }
 
-fn fetch_activation_type(&mut rng: RandomNumberGenerator) -> ActivationType {
+fn fetch_activation_type(rng: &mut RandomNumberGenerator) -> ActivationType {
     let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
     match random_number {
         0 => ActivationType::ReLU,
@@ -92,20 +96,19 @@ fn fetch_activation_type(&mut rng: RandomNumberGenerator) -> ActivationType {
     }
 }
 
-fn fetch_added_layers(rng: &mut RandomNumberGenerator, shape: &NeuralNetworkShape) -> Vec<LayerShape> {
+fn fetch_added_layers(rng: &mut RandomNumberGenerator, shape: &NeuralNetworkShape, position: usize) -> Vec<LayerShape> {
     let activation = fetch_activation_type(rng);
-    let position = *rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
-    let inner_size = *rng.fetch_uniform(1.0, 1024.0, 1).pop_front().unwrap() as usize;
+    let inner_size = rng.fetch_uniform(1.0, 1024.0, 1).pop_front().unwrap() as usize;
 
     let begin_size = match position {
-        0 => shape.get_layer(0).get_input_size(),
-        _ => shape.get_layer(position - 1).get_output_size(),
+        0 => shape.get_layer(0).input_size(),
+        _ => shape.get_layer(position - 1).output_size(),
     };
 
-    let shape_len = shape.len();
+    let shape_len = shape.len() - 1;
     let end_size = match position {
-        shape_len => shape.get_layer(shape.len() - 1).get_output_size(),
-        _ => shape.get_layer(position).get_input_size(),
+        shape_len => shape.get_layer(shape.len() - 1).output_size(),
+        _ => shape.get_layer(position).input_size(),
     };
 
     let first_layer = LayerShape {
