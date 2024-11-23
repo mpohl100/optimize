@@ -27,9 +27,9 @@ impl NeuralNetworkGenerator {
         let nn = NeuralNetwork::new(params.shape().clone());
         Self {
             current_winner: nn,
-            params: params,
-            model_directory: model_directory,
-            data_importer: data_importer,
+            params,
+            model_directory,
+            data_importer,
         }
     }
 
@@ -45,7 +45,7 @@ impl NeuralNetworkGenerator {
             current_winner: nn,
             params: changed_params,
             model_directory: model_directory.clone(),
-            data_importer: data_importer,
+            data_importer,
         }
     }
 
