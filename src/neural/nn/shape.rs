@@ -129,7 +129,7 @@ impl NeuralNetworkShape {
     }
 
     /// Returns the number of layers in the neural network shape.
-    pub fn len(&self) -> usize {
+    pub fn num_layers(&self) -> usize {
         self.layers.len()
     }
 

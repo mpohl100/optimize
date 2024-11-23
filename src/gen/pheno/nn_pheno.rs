@@ -15,7 +15,7 @@ impl NeuralNetworkPhenotype {
         let nn_shape = nn.shape();
         Self {
             nn_shape: nn_shape.clone(),
-            nn: nn,
+            nn,
         }
     }
 

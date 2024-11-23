@@ -208,8 +208,7 @@ impl NeuralNetwork {
                             input_size,
                             output_size,
                         } => {
-                            let layer = DenseLayer::new(*input_size, *output_size);
-                            layer
+                            Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer>
                         }
                     };
                     let activation = match layer.layer.activation {
@@ -217,7 +216,7 @@ impl NeuralNetwork {
                         ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
                         ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
                     };
-                    self.add_activation_and_layer_at_position(i, activation, Box::new(new_layer));
+                    self.add_activation_and_layer_at_position(i, activation, new_layer);
                 }
                 LayerChangeType::Remove => {
                     self.layers.remove(i);

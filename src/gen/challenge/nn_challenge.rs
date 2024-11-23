@@ -12,8 +12,8 @@ pub struct NeuralNetworkChallenge {
 impl NeuralNetworkChallenge {
     pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter>) -> Self {
         Self {
-            params: params,
-            data_importer: data_importer,
+            params,
+            data_importer,
         }
     }
 }
