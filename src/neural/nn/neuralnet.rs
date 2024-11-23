@@ -207,9 +207,7 @@ impl NeuralNetwork {
                         LayerType::Dense {
                             input_size,
                             output_size,
-                        } => {
-                            Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer>
-                        }
+                        } => Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer>,
                     };
                     let activation = match layer.layer.activation {
                         ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
