@@ -1,9 +1,10 @@
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
-use learn::neural::training::data_importer::{self, DataImporter, SessionData};
+use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 
 use clap::Parser;
+use learn::neural::training::training_params::TrainingParams;
 
 /// Command line arguments
 #[derive(Parser)]
@@ -70,9 +71,11 @@ fn main() {
         ],
     };
 
+    let training_params = TrainingParams::new(nn_shape.clone(), 700, 300, 0.01, 10, 0.01);
+
     let data_importer = MockDataImporter::new(nn_shape.clone());
 
-    let mut nn_generator = NeuralNetworkGenerator::new(nn_shape, model_directory.clone());
+    let mut nn_generator = NeuralNetworkGenerator::new(training_params, Box::new(data_importer), model_directory.clone());
     nn_generator.generate();
     nn_generator.save();
 }
