@@ -24,3 +24,7 @@ harness = false
 [[bin]]
 name = "main"
 path = "src/main.rs"
+
+[[bin]]
+name = "nn_generator"
+path = "src/nn_generator.rs"
