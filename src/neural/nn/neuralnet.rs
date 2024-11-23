@@ -199,7 +199,7 @@ impl NeuralNetwork {
         Ok(())
     }
 
-    pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape){
+    pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
         for (i, layer) in shape.layers.iter().enumerate() {
             match layer.change_type {
                 LayerChangeType::Add => {
@@ -218,11 +218,11 @@ impl NeuralNetwork {
                         ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
                     };
                     self.add_activation_and_layer_at_position(i, activation, Box::new(new_layer));
-                },
+                }
                 LayerChangeType::Remove => {
                     self.layers.remove(i);
                     self.activations.remove(i);
-                },
+                }
                 LayerChangeType::Change => {
                     let mut changed = false;
                     match &layer.layer.layer_type() {
@@ -230,13 +230,15 @@ impl NeuralNetwork {
                             input_size,
                             output_size,
                         } => {
-                            if *input_size != self.layers[i].input_size() || *output_size != self.layers[i].output_size() {
+                            if *input_size != self.layers[i].input_size()
+                                || *output_size != self.layers[i].output_size()
+                            {
                                 self.layers[i].resize(*input_size, *output_size);
                                 changed = true;
                             }
                         }
                     };
-                    if changed{
+                    if changed {
                         continue;
                     }
                     let activation = match layer.layer.activation {
@@ -245,14 +247,12 @@ impl NeuralNetwork {
                         ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
                     };
                     self.activations[i] = activation;
-                },
-                LayerChangeType::None => {
-
-                },
+                }
+                LayerChangeType::None => {}
             }
         }
         self.shape = shape.to_neural_network_shape();
-    } 
+    }
 
     fn add_activation_and_layer_at_position(
         &mut self,

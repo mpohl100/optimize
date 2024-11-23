@@ -1,11 +1,11 @@
-use crate::neural::nn::neuralnet::NeuralNetwork;
-use crate::neural::nn::shape::NeuralNetworkShape;
+use super::nn_mutater::NeuralNetworkMutater;
 use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
-use super::nn_mutater::NeuralNetworkMutater;
+use crate::neural::nn::neuralnet::NeuralNetwork;
+use crate::neural::nn::shape::NeuralNetworkShape;
 
 #[derive(Debug, Clone)]
-pub struct NeuralNetworkPhenotype{
+pub struct NeuralNetworkPhenotype {
     nn_shape: NeuralNetworkShape,
     nn: NeuralNetwork,
 }

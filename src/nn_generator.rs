@@ -1,7 +1,7 @@
+use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
-use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
@@ -44,8 +44,8 @@ fn main() {
     let args = Args::parse();
     let model_directory = &args.model_directory;
 
-     // Define the neural network shape
-     let nn_shape = NeuralNetworkShape {
+    // Define the neural network shape
+    let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
                 layer_type: LayerType::Dense {
@@ -75,7 +75,11 @@ fn main() {
 
     let data_importer = MockDataImporter::new(nn_shape.clone());
 
-    let mut nn_generator = NeuralNetworkGenerator::new(training_params, Box::new(data_importer), model_directory.clone());
+    let mut nn_generator = NeuralNetworkGenerator::new(
+        training_params,
+        Box::new(data_importer),
+        model_directory.clone(),
+    );
     nn_generator.generate();
     nn_generator.save();
 }

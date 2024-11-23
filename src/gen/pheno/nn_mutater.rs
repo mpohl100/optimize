@@ -1,19 +1,17 @@
-use crate::neural::nn::shape::NeuralNetworkShape;
-use crate::neural::nn::shape::LayerShape;
-use crate::neural::nn::shape::ActivationType;
-use crate::neural::nn::shape::LayerType;
-use crate::evol::rng::RandomNumberGenerator;
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
+use crate::evol::rng::RandomNumberGenerator;
+use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::LayerShape;
+use crate::neural::nn::shape::LayerType;
+use crate::neural::nn::shape::NeuralNetworkShape;
 
-pub struct NeuralNetworkMutater<'a>{
+pub struct NeuralNetworkMutater<'a> {
     rng: &'a mut RandomNumberGenerator,
 }
 
-impl<'a> NeuralNetworkMutater<'a>{
+impl<'a> NeuralNetworkMutater<'a> {
     pub fn new(rng: &'a mut RandomNumberGenerator) -> Self {
-        Self {
-            rng: rng,
-        }
+        Self { rng: rng }
     }
 
     pub fn mutate_shape(&mut self, shape: NeuralNetworkShape) -> AnnotatedNeuralNetworkShape {
@@ -21,20 +19,32 @@ impl<'a> NeuralNetworkMutater<'a>{
         let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
         match random_number {
             0 => {
-                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = self
+                    .rng
+                    .fetch_uniform(0.0, shape.len() as f32, 1)
+                    .pop_front()
+                    .unwrap() as usize;
                 let layers = fetch_added_layers(self.rng, &shape, position);
                 mutated_shape.add_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
-            },
+            }
             1 => {
                 let activation = ActivationType::Sigmoid;
-                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = self
+                    .rng
+                    .fetch_uniform(0.0, shape.len() as f32, 1)
+                    .pop_front()
+                    .unwrap() as usize;
                 let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
                 mutated_shape.change_layer(position, layer);
-            },
+            }
             2 => {
-                let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
+                let position = self
+                    .rng
+                    .fetch_uniform(0.0, shape.len() as f32, 1)
+                    .pop_front()
+                    .unwrap() as usize;
                 let shape_len = shape.len() - 1;
                 if position == 0 {
                     let input_size = shape.get_layer(0).input_size();
@@ -48,8 +58,7 @@ impl<'a> NeuralNetworkMutater<'a>{
                         activation: layer.activation,
                     };
                     mutated_shape.change_layer(0, new_layer);
-                }
-                else if position == shape_len {
+                } else if position == shape_len {
                     let output_size = shape.get_layer(position).output_size();
                     mutated_shape.remove_layer(position);
                     let layer = mutated_shape.get_layer(position - 1);
@@ -61,8 +70,7 @@ impl<'a> NeuralNetworkMutater<'a>{
                         activation: layer.activation,
                     };
                     mutated_shape.change_layer(position - 1, new_layer);
-                }
-                else {
+                } else {
                     mutated_shape.remove_layer(position);
                     let layer = mutated_shape.get_layer(position);
                     let new_layer = LayerShape {
@@ -74,7 +82,7 @@ impl<'a> NeuralNetworkMutater<'a>{
                     };
                     mutated_shape.change_layer(position, new_layer);
                 }
-            },
+            }
             _ => {
                 panic!("Invalid random number generated");
             }
@@ -93,7 +101,11 @@ fn fetch_activation_type(rng: &mut RandomNumberGenerator) -> ActivationType {
     }
 }
 
-fn fetch_added_layers(rng: &mut RandomNumberGenerator, shape: &NeuralNetworkShape, position: usize) -> Vec<LayerShape> {
+fn fetch_added_layers(
+    rng: &mut RandomNumberGenerator,
+    shape: &NeuralNetworkShape,
+    position: usize,
+) -> Vec<LayerShape> {
     let activation = fetch_activation_type(rng);
     let inner_size = rng.fetch_uniform(1.0, 1024.0, 1).pop_front().unwrap() as usize;
 
