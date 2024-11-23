@@ -52,4 +52,8 @@ impl TrainingParams {
     pub fn tolerance(&self) -> f64 {
         self.tolerance
     }
+
+    pub fn set_shape(&mut self, shape: NeuralNetworkShape) {
+        self.shape = shape;
+    }
 }

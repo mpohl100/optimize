@@ -16,30 +16,26 @@ impl TrainingSession {
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
     ) -> Result<Self, Box<dyn Error>> {
-        // Validate parameters
-        if params.num_training_samples() == 0 {
-            return Err("Number of training samples must be positive".into());
-        }
-        if params.num_verification_samples() == 0 {
-            return Err("Number of verification samples must be positive".into());
-        }
-        if params.learning_rate() <= 0.0 {
-            return Err("Learning rate must be positive".into());
-        }
-        if params.learning_rate() >= 1.0 {
-            return Err("Learning rate must be less than 1".into());
-        }
-        if params.epochs() == 0 {
-            return Err("Number of epochs must be positive".into());
-        }
-        if !params.shape().is_valid() {
-            return Err("Invalid neural network shape".into());
-        }
-
+        validate_params(params.clone())?;
         let shape = params.shape().clone();
         Ok(Self {
             params,
             neural_network: NeuralNetwork::new(shape),
+            data_importer,
+        })
+    }
+
+    pub fn from_network(
+        nn: NeuralNetwork,
+        params: TrainingParams,
+        data_importer: Box<dyn DataImporter>,
+    ) -> Result<TrainingSession, Box<dyn Error>> {
+        let mut changed_params = params.clone();
+        changed_params.set_shape(nn.shape().clone());
+        validate_params(changed_params.clone())?;
+        Ok(TrainingSession {
+            params: changed_params,
+            neural_network: nn,
             data_importer,
         })
     }
@@ -126,6 +122,28 @@ impl TrainingSession {
     pub fn save_model(&self, model_directory: String) -> Result<(), Box<dyn Error>> {
         self.neural_network.save(model_directory)
     }
+}
+
+fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
+    if params.num_training_samples() == 0 {
+        return Err("Number of training samples must be positive".into());
+    }
+    if params.num_verification_samples() == 0 {
+        return Err("Number of verification samples must be positive".into());
+    }
+    if params.learning_rate() <= 0.0 {
+        return Err("Learning rate must be positive".into());
+    }
+    if params.learning_rate() >= 1.0 {
+        return Err("Learning rate must be less than 1".into());
+    }
+    if params.epochs() == 0 {
+        return Err("Number of epochs must be positive".into());
+    }
+    if !params.shape().is_valid() {
+        return Err("Invalid neural network shape".into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
