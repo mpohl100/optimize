@@ -35,46 +35,44 @@ impl<'a> NeuralNetworkMutater<'a>{
             },
             2 => {
                 let position = self.rng.fetch_uniform(0.0, shape.len() as f32, 1).pop_front().unwrap() as usize;
-                let shape_len = shape.len();
-                match position {
-                    0 => {
-                        let input_size = shape.get_layer(0).input_size();
-                        mutated_shape.remove_layer(0);
-                        let layer = mutated_shape.get_layer(0);
-                        let new_layer = LayerShape {
-                            layer_type: LayerType::Dense {
-                                input_size: input_size,
-                                output_size: layer.output_size(),
-                            },
-                            activation: layer.activation,
-                        };
-                        mutated_shape.change_layer(0, new_layer);
-                    },
-                    shape_len => {
-                        let output_size = shape.get_layer(position).output_size();
-                        mutated_shape.remove_layer(position);
-                        let layer = mutated_shape.get_layer(position - 1);
-                        let new_layer = LayerShape {
-                            layer_type: LayerType::Dense {
-                                input_size: layer.input_size(),
-                                output_size: output_size,
-                            },
-                            activation: layer.activation,
-                        };
-                        mutated_shape.change_layer(position - 1, new_layer);
-                    }
-                    _ => {
-                        mutated_shape.remove_layer(position);
-                        let layer = mutated_shape.get_layer(position);
-                        let new_layer = LayerShape {
-                            layer_type: LayerType::Dense {
-                                input_size: mutated_shape.get_layer(position - 1).output_size(),
-                                output_size: layer.output_size(),
-                            },
-                            activation: layer.activation,
-                        };
-                        mutated_shape.change_layer(position, new_layer);
-                    }
+                let shape_len = shape.len() - 1;
+                if position == 0 {
+                    let input_size = shape.get_layer(0).input_size();
+                    mutated_shape.remove_layer(0);
+                    let layer = mutated_shape.get_layer(0);
+                    let new_layer = LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: input_size,
+                            output_size: layer.output_size(),
+                        },
+                        activation: layer.activation,
+                    };
+                    mutated_shape.change_layer(0, new_layer);
+                }
+                else if position == shape_len {
+                    let output_size = shape.get_layer(position).output_size();
+                    mutated_shape.remove_layer(position);
+                    let layer = mutated_shape.get_layer(position - 1);
+                    let new_layer = LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: layer.input_size(),
+                            output_size: output_size,
+                        },
+                        activation: layer.activation,
+                    };
+                    mutated_shape.change_layer(position - 1, new_layer);
+                }
+                else {
+                    mutated_shape.remove_layer(position);
+                    let layer = mutated_shape.get_layer(position);
+                    let new_layer = LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: mutated_shape.get_layer(position - 1).output_size(),
+                            output_size: layer.output_size(),
+                        },
+                        activation: layer.activation,
+                    };
+                    mutated_shape.change_layer(position, new_layer);
                 }
             },
             _ => {
@@ -104,11 +102,12 @@ fn fetch_added_layers(rng: &mut RandomNumberGenerator, shape: &NeuralNetworkShap
         _ => shape.get_layer(position - 1).output_size(),
     };
 
-    let shape_len = shape.len() - 1;
-    let end_size = match position {
-        shape_len => shape.get_layer(shape.len() - 1).output_size(),
-        _ => shape.get_layer(position).input_size(),
-    };
+    let end_size;
+    if position == shape.len() - 1 {
+        end_size = shape.get_layer(shape.len() - 1).output_size();
+    } else {
+        end_size = shape.get_layer(position).input_size();
+    }
 
     let first_layer = LayerShape {
         layer_type: LayerType::Dense {

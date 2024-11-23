@@ -1,5 +1,4 @@
 use crate::neural::nn::neuralnet::NeuralNetwork;
-use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::neural::training::data_importer::DataImporter;
 
 use crate::evol::evolution::EvolutionLauncher;
