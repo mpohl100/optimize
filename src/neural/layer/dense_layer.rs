@@ -185,6 +185,17 @@ impl Layer for DenseLayer {
         self.input_cache = vec![0.0; input_size];
         self.weight_grads = Matrix::new(output_size, input_size);
         self.bias_grads = vec![0.0; output_size];
+
+        for i in 0..output_size {
+            for j in 0..input_size {
+                if i < old_weights.rows() && j < old_weights.cols() {
+                    *self.weights.get_mut_unchecked(i, j) = *old_weights.get_unchecked(i, j);
+                }
+            }
+            if i < old_biases.len() {
+                self.biases[i] = old_biases[i];
+            }
+        }
     }
 }
 

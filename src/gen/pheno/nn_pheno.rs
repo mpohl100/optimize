@@ -29,7 +29,7 @@ impl NeuralNetworkPhenotype {
 }
 
 impl Phenotype for NeuralNetworkPhenotype {
-    fn crossover(&mut self, other: &Self) {
+    fn crossover(&mut self, _other: &Self) {
         // do nothing in crossover as it is hard to guess which feature of which neural net to pick
     }
 
