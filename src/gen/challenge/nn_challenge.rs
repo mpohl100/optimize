@@ -19,9 +19,10 @@ impl NeuralNetworkChallenge {
 }
 
 impl Challenge<NeuralNetworkPhenotype> for NeuralNetworkChallenge{
-    fn score(&self, phenotype: &NeuralNetworkPhenotype) -> f64 {
+    fn score(&self, phenotype: &mut NeuralNetworkPhenotype) -> f64 {
         let mut training_session = TrainingSession::from_network(phenotype.get_nn(),self.params.clone(),self.data_importer.clone()).unwrap();
         let result = training_session.train();
+        phenotype.set_nn(training_session.get_nn().clone());
         result.unwrap()
     }
 } 

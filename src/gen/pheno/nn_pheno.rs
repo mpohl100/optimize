@@ -22,6 +22,10 @@ impl NeuralNetworkPhenotype {
     pub fn get_nn(&self) -> NeuralNetwork {
         self.nn.clone()
     }
+
+    pub fn set_nn(&mut self, nn: NeuralNetwork) {
+        self.nn = nn;
+    }
 }
 
 impl Phenotype for NeuralNetworkPhenotype {
@@ -32,6 +36,6 @@ impl Phenotype for NeuralNetworkPhenotype {
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
         let mut mutater = NeuralNetworkMutater::new(rng);
         let mutated_shape = mutater.mutate_shape(self.nn_shape.clone());
-        //self.nn.adapt_to_shape(mutated_shape);
+        self.nn.adapt_to_shape(mutated_shape);
     }
 }
