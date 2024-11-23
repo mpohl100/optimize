@@ -76,7 +76,7 @@ where
 
             fitness.clear();
 
-            candidates.iter().for_each(|candidate| {
+            candidates.iter_mut().for_each(|candidate| {
                 let score = self.challenge.score(candidate);
                 fitness.push(EvolutionResult {
                     pheno: candidate.clone(),

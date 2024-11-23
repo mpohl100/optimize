@@ -119,8 +119,14 @@ impl TrainingSession {
         Ok(success_count as f64 / self.params.num_verification_samples() as f64)
     }
 
+    /// Save the model to disk
     pub fn save_model(&self, model_directory: String) -> Result<(), Box<dyn Error>> {
         self.neural_network.save(model_directory)
+    }
+
+    /// get the resulting neural network
+    pub fn get_nn(&self) -> &NeuralNetwork {
+        &self.neural_network
     }
 }
 

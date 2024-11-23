@@ -56,7 +56,7 @@ impl XCoordinateChallenge {
 }
 
 impl Challenge<XCoordinate> for XCoordinateChallenge {
-    fn score(&self, phenotype: &XCoordinate) -> f64 {
+    fn score(&self, phenotype: &mut XCoordinate) -> f64 {
         let x = phenotype.get_x();
         let delta = x - self.target;
         1.0 / delta.powi(2)
