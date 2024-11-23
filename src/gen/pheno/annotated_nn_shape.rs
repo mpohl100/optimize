@@ -15,10 +15,7 @@ pub struct AnnotatedLayerShape {
 
 impl AnnotatedLayerShape {
     pub fn new(layer: LayerShape, change_type: LayerChangeType) -> Self {
-        Self {
-            layer,
-            change_type,
-        }
+        Self { layer, change_type }
     }
 }
 
@@ -28,14 +25,21 @@ pub struct AnnotatedNeuralNetworkShape {
 
 impl AnnotatedNeuralNetworkShape {
     pub fn new(layers: NeuralNetworkShape) -> Self {
-        let annotated_layers = layers.layers.iter().map(|layer| AnnotatedLayerShape::new(layer.clone(), LayerChangeType::None)).collect();
+        let annotated_layers = layers
+            .layers
+            .iter()
+            .map(|layer| AnnotatedLayerShape::new(layer.clone(), LayerChangeType::None))
+            .collect();
         Self {
             layers: annotated_layers,
         }
     }
 
     pub fn add_layer(&mut self, position: usize, layer: LayerShape) {
-        self.layers.insert(position, AnnotatedLayerShape::new(layer, LayerChangeType::Add));
+        self.layers.insert(
+            position,
+            AnnotatedLayerShape::new(layer, LayerChangeType::Add),
+        );
     }
 
     pub fn remove_layer(&mut self, position: usize) {
@@ -51,7 +55,11 @@ impl AnnotatedNeuralNetworkShape {
     }
 
     pub fn to_neural_network_shape(&self) -> NeuralNetworkShape {
-        let layers = self.layers.iter().map(|annotated_layer| annotated_layer.layer.clone()).collect();
+        let layers = self
+            .layers
+            .iter()
+            .map(|annotated_layer| annotated_layer.layer.clone())
+            .collect();
         NeuralNetworkShape::new(layers)
     }
 }
