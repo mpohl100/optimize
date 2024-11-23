@@ -10,27 +10,33 @@ use crate::evol::rng::RandomNumberGenerator;
 
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
+use crate::neural::training::training_params::TrainingParams;
 
 pub struct NeuralNetworkGenerator{
     model_directory: String,
+    params: TrainingParams,
     current_winner: NeuralNetwork,
     data_importer: Box<dyn DataImporter>,
 }
 
 impl NeuralNetworkGenerator {
-    pub fn new(shape: NeuralNetworkShape, data_importer: Box<dyn DataImporter>, model_directory: String) -> Self {
-        let nn = NeuralNetwork::new(shape);
+    pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter>, model_directory: String) -> Self {
+        let nn = NeuralNetwork::new(params.shape().clone());
         Self {
             current_winner: nn,
+            params: params,
             model_directory: model_directory,
             data_importer: data_importer,
         }
     }
 
-    pub fn from_disk(data_importer: Box<dyn DataImporter>, model_directory: &String) -> Self {
+    pub fn from_disk(params: TrainingParams, data_importer: Box<dyn DataImporter>, model_directory: &String) -> Self {
         let nn = NeuralNetwork::from_disk(model_directory);
+        let mut changed_params = params.clone();
+        changed_params.set_shape(nn.shape().clone());
         Self {
             current_winner: nn,
+            params: changed_params,
             model_directory: model_directory.clone(),
             data_importer: data_importer,
         }
@@ -41,7 +47,7 @@ impl NeuralNetworkGenerator {
         let mut rng = RandomNumberGenerator::new();
         let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
         let options = EvolutionOptions::new(1, LogLevel::Verbose, 1, 4);
-        let challenge = NeuralNetworkChallenge::new(self.data_importer.clone());
+        let challenge = NeuralNetworkChallenge::new(self.params.clone(),self.data_importer.clone());
         let strategy = OrdinaryStrategy;
         let launcher: EvolutionLauncher<NeuralNetworkPhenotype, OrdinaryStrategy, NeuralNetworkChallenge> =
             EvolutionLauncher::new(strategy, challenge);

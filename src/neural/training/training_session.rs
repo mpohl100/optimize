@@ -154,6 +154,7 @@ mod tests {
     use crate::neural::training::data_importer::{DataImporter, SessionData};
 
     // Mock DataImporter implementation for testing
+    #[derive(Clone)]
     struct MockDataImporter {
         shape: NeuralNetworkShape,
     }
