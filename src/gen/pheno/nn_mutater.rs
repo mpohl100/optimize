@@ -29,7 +29,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             }
             1 => {
-                let activation = ActivationType::Sigmoid;
+                let activation = fetch_activation_type(self.rng);
                 let position = self
                     .rng
                     .fetch_uniform(0.0, shape.num_layers() as f32, 1)
@@ -110,17 +110,18 @@ fn fetch_added_layers(
     let activation = fetch_activation_type(rng);
     let inner_size = rng.fetch_uniform(1.0, 1024.0, 1).pop_front().unwrap() as usize;
 
-    let begin_size = match position {
-        0 => shape.get_layer(0).input_size(),
-        _ => shape.get_layer(position - 1).output_size(),
-    };
-
+    let begin_size;
     let end_size;
-    if position == shape.num_layers() - 1 {
-        end_size = shape.get_layer(shape.num_layers() - 1).output_size();
+    if position == 0 {
+        begin_size = shape.get_layer(0).input_size();
+        end_size = shape.get_layer(0).input_size();
+    } else if position == shape.num_layers() - 1 {
+        begin_size = shape.get_layer(position).output_size();
+        end_size = shape.get_layer(position).output_size();
     } else {
+        begin_size = shape.get_layer(position - 1).output_size();
         end_size = shape.get_layer(position).input_size();
-    };
+    }
 
     let first_layer = LayerShape {
         layer_type: LayerType::Dense {
