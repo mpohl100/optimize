@@ -75,27 +75,52 @@ impl Args {
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
-struct MockDataImporter {
+struct FileDataImporter {
     shape: NeuralNetworkShape,
+    input_file: String,
+    target_file: String,
 }
 
-impl MockDataImporter {
-    fn new(shape: NeuralNetworkShape) -> Self {
-        Self { shape }
+impl FileDataImporter {
+    fn new(shape: NeuralNetworkShape, input_file: String, target_file: String) -> Self {
+        Self { shape, input_file, target_file }
     }
 }
 
-impl DataImporter for MockDataImporter {
+impl DataImporter for FileDataImporter {
     fn get_data(&self) -> SessionData {
-        let num_samples = 1000;
         let input_size = self.shape.layers[0].input_size(); // Input dimension (e.g., 28x28 image flattened)
         let num_classes = self.shape.layers[self.shape.layers.len() - 1].output_size(); // Number of output classes (e.g., for digit classification)
 
         // Initialize inputs and targets with zeros
-        let data = vec![vec![0.0; input_size]; num_samples];
-        let labels = vec![vec![0.0; num_classes]; num_samples];
+        // read data from input csv file
+        let data = self.read_data(self.input_file.clone());
+        let labels = self.read_data(self.target_file.clone());
+
+        // check that sizes match
+        assert_eq!(data.len(), labels.len());
+        for i in 0..data.len() {
+            assert_eq!(data[i].len(), input_size);
+            assert_eq!(labels[i].len(), num_classes);
+        }
 
         SessionData { data, labels }
+    }
+}
+
+impl FileDataImporter{
+    fn read_data(&self, file: String) -> Vec<Vec<f64>> {
+        let mut rdr = csv::Reader::from_path(file).unwrap();
+        let mut data = Vec::new();
+        for result in rdr.records() {
+            let record = result.unwrap();
+            let mut row = Vec::new();
+            for value in record.iter() {
+                row.push(value.parse::<f64>().unwrap());
+            }
+            data.push(row);
+        }
+        data
     }
 }
 
@@ -107,7 +132,7 @@ fn main() {
 
     let evolution_options = args.get_evolution_options();
 
-    let data_importer = MockDataImporter::new(training_params.shape().clone());
+    let data_importer = FileDataImporter::new(training_params.shape().clone(), args.input_file, args.target_file);
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
