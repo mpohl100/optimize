@@ -1,7 +1,8 @@
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
+use learn::evol::evolution::LogLevel;
+use learn::evol::evolution::EvolutionOptions;
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
@@ -12,6 +13,64 @@ struct Args {
     /// Directory where the model shall be saved
     #[clap(long)]
     model_directory: String,
+    #[clap(long)]
+    shape_file: String,
+
+    // insert the training params here
+    #[clap(long, default_value = "700")]
+    num_training_samples: usize,
+    #[clap(long, default_value = "300")]
+    num_verification_samples: usize,
+    #[clap(long, default_value = "0.01")]
+    learning_rate: f64,
+    #[clap(long, default_value = "100")]
+    epochs: usize,
+    #[clap(long, default_value = "0.1")]
+    tolerance: f64,
+
+    // insert the evolution options here
+    #[clap(long, default_value = "100")]
+    num_generations: usize,
+    #[clap(long, default_value = "1")]
+    log_level: usize,
+    #[clap(long, default_value = "4")]
+    population_size: usize,
+    #[clap(long, default_value = "10")]
+    num_offsprings: usize,
+
+    // insert data importer params here
+    #[clap(long)]
+    input_file: String,
+    #[clap(long)]
+    target_file: String,
+}
+
+impl Args{
+    fn get_training_params(&self) -> TrainingParams {
+        let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
+        TrainingParams::new(
+            shape,
+            self.num_training_samples,
+            self.num_verification_samples,
+            self.learning_rate,
+            self.epochs,
+            self.tolerance,
+        )
+    }
+
+    fn get_evolution_options(&self) -> EvolutionOptions {
+        EvolutionOptions::new(
+            self.num_generations,
+            match self.log_level {
+                0 => LogLevel::None,
+                1 => LogLevel::Minimal,
+                2 => LogLevel::Verbose,
+                _ => LogLevel::None,
+            },
+            self.population_size,
+            self.num_offsprings,
+        )
+    }
 }
 
 // Mock DataImporter implementation for testing
@@ -44,39 +103,15 @@ fn main() {
     let args = Args::parse();
     let model_directory = &args.model_directory;
 
-    // Define the neural network shape
-    let nn_shape = NeuralNetworkShape {
-        layers: vec![
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 128,
-                },
-                activation: ActivationType::ReLU,
-            },
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 64,
-                },
-                activation: ActivationType::ReLU,
-            },
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 10,
-                },
-                activation: ActivationType::Sigmoid,
-            },
-        ],
-    };
+    let training_params = args.get_training_params();
 
-    let training_params = TrainingParams::new(nn_shape.clone(), 700, 300, 0.01, 10, 0.01);
-
-    let data_importer = MockDataImporter::new(nn_shape.clone());
+    let evolution_options = args.get_evolution_options();
+    
+    let data_importer = MockDataImporter::new(training_params.shape().clone());
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
+        evolution_options,
         Box::new(data_importer),
         model_directory.clone(),
     );
