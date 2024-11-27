@@ -1,8 +1,8 @@
+use learn::evol::evolution::EvolutionOptions;
+use learn::evol::evolution::LogLevel;
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
-use learn::evol::evolution::LogLevel;
-use learn::evol::evolution::EvolutionOptions;
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
@@ -45,7 +45,7 @@ struct Args {
     target_file: String,
 }
 
-impl Args{
+impl Args {
     fn get_training_params(&self) -> TrainingParams {
         let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
         TrainingParams::new(
@@ -106,7 +106,7 @@ fn main() {
     let training_params = args.get_training_params();
 
     let evolution_options = args.get_evolution_options();
-    
+
     let data_importer = MockDataImporter::new(training_params.shape().clone());
 
     let mut nn_generator = NeuralNetworkGenerator::new(
