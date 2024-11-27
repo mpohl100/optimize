@@ -83,7 +83,11 @@ struct FileDataImporter {
 
 impl FileDataImporter {
     fn new(shape: NeuralNetworkShape, input_file: String, target_file: String) -> Self {
-        Self { shape, input_file, target_file }
+        Self {
+            shape,
+            input_file,
+            target_file,
+        }
     }
 }
 
@@ -108,7 +112,7 @@ impl DataImporter for FileDataImporter {
     }
 }
 
-impl FileDataImporter{
+impl FileDataImporter {
     fn read_data(&self, file: String) -> Vec<Vec<f64>> {
         let mut rdr = csv::Reader::from_path(file).unwrap();
         let mut data = Vec::new();
@@ -132,7 +136,11 @@ fn main() {
 
     let evolution_options = args.get_evolution_options();
 
-    let data_importer = FileDataImporter::new(training_params.shape().clone(), args.input_file, args.target_file);
+    let data_importer = FileDataImporter::new(
+        training_params.shape().clone(),
+        args.input_file,
+        args.target_file,
+    );
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
