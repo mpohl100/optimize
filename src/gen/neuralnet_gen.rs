@@ -3,7 +3,6 @@ use crate::neural::training::data_importer::DataImporter;
 
 use crate::evol::evolution::EvolutionLauncher;
 use crate::evol::evolution::EvolutionOptions;
-use crate::evol::evolution::LogLevel;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::OrdinaryStrategy;
 
@@ -14,6 +13,7 @@ use crate::neural::training::training_params::TrainingParams;
 pub struct NeuralNetworkGenerator {
     model_directory: String,
     params: TrainingParams,
+    evolution_params: EvolutionOptions,
     current_winner: NeuralNetwork,
     data_importer: Box<dyn DataImporter>,
 }
@@ -21,6 +21,7 @@ pub struct NeuralNetworkGenerator {
 impl NeuralNetworkGenerator {
     pub fn new(
         params: TrainingParams,
+        evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter>,
         model_directory: String,
     ) -> Self {
@@ -28,6 +29,7 @@ impl NeuralNetworkGenerator {
         Self {
             current_winner: nn,
             params,
+            evolution_params,
             model_directory,
             data_importer,
         }
@@ -35,6 +37,7 @@ impl NeuralNetworkGenerator {
 
     pub fn from_disk(
         params: TrainingParams,
+        evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter>,
         model_directory: &String,
     ) -> Self {
@@ -44,6 +47,7 @@ impl NeuralNetworkGenerator {
         Self {
             current_winner: nn,
             params: changed_params,
+            evolution_params,
             model_directory: model_directory.clone(),
             data_importer,
         }
@@ -53,7 +57,7 @@ impl NeuralNetworkGenerator {
     pub fn generate(&mut self) {
         let mut rng = RandomNumberGenerator::new();
         let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
-        let options = EvolutionOptions::new(1, LogLevel::Verbose, 1, 4);
+        let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());
         let strategy = OrdinaryStrategy;

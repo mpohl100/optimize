@@ -85,6 +85,13 @@ impl NeuralNetworkShape {
         shape
     }
 
+    // Creates a new `NeuralNetworkShape` with the given layers from file.
+    pub fn from_file(file_name: String) -> Self {
+        let file = File::open(file_name).unwrap();
+        let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
+        shape
+    }
+
     /// Checks if the neural network shape is valid.
     ///
     /// # Returns
