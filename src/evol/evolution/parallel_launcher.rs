@@ -16,7 +16,7 @@ use std::sync::Arc;
 pub struct ParallelEvolutionLauncher<Pheno, Strategy, Chall>
 where
     Pheno: Phenotype + Sync + Send,
-    Chall: Challenge<Pheno> + Sync + Send,
+    Chall: Challenge<Pheno> + Sync + Send + Clone,
     Strategy: BreedStrategy<Pheno> + Sync + Send,
 {
     strategy: Arc<Mutex<Strategy>>,
@@ -28,7 +28,7 @@ where
 impl<Pheno, Strategy, Chall> ParallelEvolutionLauncher<Pheno, Strategy, Chall>
 where
     Pheno: Phenotype + Sync + Send,
-    Chall: Challenge<Pheno> + Sync + Send,
+    Chall: Challenge<Pheno> + Sync + Send + Clone,
     Strategy: BreedStrategy<Pheno> + Sync + Send,
 {
     /// Creates a new `EvolutionLauncher` instance with the specified breeding strategy and challenge.
@@ -87,7 +87,8 @@ where
             mutexed_fitness.lock().unwrap().clear();
             let ch = self.challenge.clone();
             candidates.par_iter_mut().for_each(|candidate| {
-                let score = ch.lock().unwrap().score(candidate);
+                let cloned_challenge = ch.lock().unwrap().clone();
+                let score = cloned_challenge.score(candidate);
                 let result = EvolutionResult {
                     pheno: candidate.clone(),
                     score,

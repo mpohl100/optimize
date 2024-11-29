@@ -6,6 +6,7 @@ use crate::neural::training::training_session::TrainingSession;
 
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone)]
 pub struct NeuralNetworkChallenge {
     params: TrainingParams,
     data_importer: Arc<Mutex<Box<dyn DataImporter + Send>>>,
