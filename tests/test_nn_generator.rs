@@ -1,3 +1,4 @@
+use learn::evol::evolution::{LogLevel, EvolutionOptions};
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
@@ -65,8 +66,11 @@ fn test_neural_network_generator() {
 
     let data_importer = MockDataImporter::new(nn_shape.clone());
 
+    let evolution_params = EvolutionOptions::new(1, LogLevel::Verbose, 2, 4);
+
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
+        evolution_params,
         Box::new(data_importer),
         model_directory.clone(),
     );
