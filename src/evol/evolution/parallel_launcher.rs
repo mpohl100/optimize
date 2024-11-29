@@ -15,9 +15,9 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct ParallelEvolutionLauncher<Pheno, Strategy, Chall>
 where
-    Pheno: Phenotype,
-    Chall: Challenge<Pheno>,
-    Strategy: BreedStrategy<Pheno>,
+    Pheno: Phenotype + Sync + Send,
+    Chall: Challenge<Pheno> + Sync + Send,
+    Strategy: BreedStrategy<Pheno> + Sync + Send,
 {
     strategy: Arc<Mutex<Strategy>>,
     challenge: Arc<Mutex<Chall>>,
@@ -29,7 +29,7 @@ impl<Pheno, Strategy, Chall> ParallelEvolutionLauncher<Pheno, Strategy, Chall>
 where
     Pheno: Phenotype + Sync + Send,
     Chall: Challenge<Pheno> + Sync + Send,
-    Strategy: BreedStrategy<Pheno>,
+    Strategy: BreedStrategy<Pheno> + Sync + Send,
 {
     /// Creates a new `EvolutionLauncher` instance with the specified breeding strategy and challenge.
     ///

@@ -11,8 +11,8 @@ use std::boxed::Box;
 /// A neural network.
 #[derive(Debug, Clone)]
 pub struct NeuralNetwork {
-    layers: Vec<Box<dyn Layer>>,
-    activations: Vec<Box<dyn ActivationTrait>>,
+    layers: Vec<Box<dyn Layer + Send>>,
+    activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
 }
 
@@ -34,9 +34,9 @@ impl NeuralNetwork {
                 layer_shape.output_size(),
             ));
             let activation = match layer_shape.activation {
-                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
-                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
-                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -64,13 +64,13 @@ impl NeuralNetwork {
                     layer
                         .read(&format!("{}/layers/layer_{}", model_directory, i))
                         .unwrap();
-                    Box::new(layer) as Box<dyn Layer>
+                    Box::new(layer) as Box<dyn Layer + Send>
                 }
             };
             let activation = match shape.layers[i].activation {
-                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
-                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
-                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -82,8 +82,8 @@ impl NeuralNetwork {
     /// Adds an activation and a layer to the neural network.
     fn add_activation_and_layer(
         &mut self,
-        activation: Box<dyn ActivationTrait>,
-        layer: Box<dyn Layer>,
+        activation: Box<dyn ActivationTrait + Send>,
+        layer: Box<dyn Layer + Send>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
@@ -207,12 +207,12 @@ impl NeuralNetwork {
                         LayerType::Dense {
                             input_size,
                             output_size,
-                        } => Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer>,
+                        } => Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer + Send>,
                     };
                     let activation = match layer.layer.activation {
-                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
-                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
-                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                     };
                     self.add_activation_and_layer_at_position(i, activation, new_layer);
                 }
@@ -239,9 +239,9 @@ impl NeuralNetwork {
                         continue;
                     }
                     let activation = match layer.layer.activation {
-                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait>,
-                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait>,
-                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait>,
+                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                     };
                     self.activations[i] = activation;
                 }
@@ -254,8 +254,8 @@ impl NeuralNetwork {
     fn add_activation_and_layer_at_position(
         &mut self,
         position: usize,
-        activation: Box<dyn ActivationTrait>,
-        layer: Box<dyn Layer>,
+        activation: Box<dyn ActivationTrait + Send>,
+        layer: Box<dyn Layer + Send>,
     ) {
         self.activations.insert(position, activation);
         self.layers.insert(position, layer);
