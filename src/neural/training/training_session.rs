@@ -66,7 +66,7 @@ impl TrainingSession {
         let targets = data.labels;
 
         let num_training_samples =
-            (self.params.num_training_samples() * inputs.len() as f64) as usize;
+            (self.params.training_verification_ratio() * inputs.len() as f64) as usize;
 
         let training_inputs = inputs[..num_training_samples].to_vec();
         let training_targets = targets[..num_training_samples].to_vec();
@@ -131,7 +131,7 @@ impl TrainingSession {
 }
 
 fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
-    if params.num_training_samples() >= 0.0 && params.num_training_samples() <= 1.0 {
+    if !(params.training_verification_ratio() >= 0.0 && params.training_verification_ratio() <= 1.0) {
         return Err("Number of training to verification ratio must be between 0.0 and 1.0".into());
     }
     if params.learning_rate() <= 0.0 {
