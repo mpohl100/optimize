@@ -6,10 +6,19 @@ use crate::neural::nn::shape::NeuralNetworkShape;
 
 use std::sync::{Arc, Mutex};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NeuralNetworkPhenotype {
     nn_shape: NeuralNetworkShape,
     nn: Arc<Mutex<NeuralNetwork>>,
+}
+
+impl Clone for NeuralNetworkPhenotype {
+    fn clone(&self) -> Self {
+        Self {
+            nn_shape: self.nn_shape.clone(),
+            nn: Arc::new(Mutex::new(self.get_nn())),
+        }
+    }
 }
 
 impl NeuralNetworkPhenotype {
