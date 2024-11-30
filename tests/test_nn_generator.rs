@@ -62,7 +62,7 @@ fn test_neural_network_generator() {
         ],
     };
 
-    let training_params = TrainingParams::new(nn_shape.clone(), 700, 300, 0.01, 2, 0.1);
+    let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 2, 0.1);
 
     let data_importer = MockDataImporter::new(nn_shape.clone());
 

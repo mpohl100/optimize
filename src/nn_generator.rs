@@ -20,10 +20,8 @@ struct Args {
     shape_file: String,
 
     // insert the training params here
-    #[clap(long, default_value = "700")]
-    num_training_samples: usize,
-    #[clap(long, default_value = "300")]
-    num_verification_samples: usize,
+    #[clap(long, default_value = "0.7")]
+    training_verification_ratio: f64,
     #[clap(long, default_value = "0.01")]
     learning_rate: f64,
     #[clap(long, default_value = "100")]
@@ -62,8 +60,7 @@ impl Args {
             ]);
             return TrainingParams::new(
                 shape,
-                self.num_training_samples,
-                self.num_verification_samples,
+                self.training_verification_ratio,
                 self.learning_rate,
                 self.epochs,
                 self.tolerance,
@@ -79,8 +76,7 @@ impl Args {
         assert_eq!(shape.layers[shape.layers.len() - 1].output_size(), output_size);
         TrainingParams::new(
             shape,
-            self.num_training_samples,
-            self.num_verification_samples,
+            self.training_verification_ratio,
             self.learning_rate,
             self.epochs,
             self.tolerance,
