@@ -65,7 +65,8 @@ impl TrainingSession {
         let inputs = data.data;
         let targets = data.labels;
 
-        let num_training_samples = (self.params.num_training_samples() * inputs.len() as f64) as usize;
+        let num_training_samples =
+            (self.params.num_training_samples() * inputs.len() as f64) as usize;
 
         let training_inputs = inputs[..num_training_samples].to_vec();
         let training_targets = targets[..num_training_samples].to_vec();

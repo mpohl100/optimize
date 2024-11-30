@@ -1,4 +1,4 @@
-use learn::evol::evolution::{LogLevel, EvolutionOptions};
+use learn::evol::evolution::{EvolutionOptions, LogLevel};
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
