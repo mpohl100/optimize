@@ -1,11 +1,11 @@
 use learn::evol::evolution::EvolutionOptions;
 use learn::evol::evolution::LogLevel;
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
+use learn::neural::nn::shape::ActivationType;
 use learn::neural::nn::shape::LayerShape;
+use learn::neural::nn::shape::LayerType;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
-use learn::neural::nn::shape::LayerType;
-use learn::neural::nn::shape::ActivationType;
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
@@ -48,16 +48,21 @@ struct Args {
 
 impl Args {
     fn get_training_params(&self) -> TrainingParams {
-        if self.shape_file.is_empty(){
+        if self.shape_file.is_empty() {
             // deduce shape from input and target files
-            let file_importer = FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+            let file_importer =
+                FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
             let data = file_importer.get_data();
             let input_size = data.data[0].len();
             let output_size = data.labels[0].len();
             // create a shape with one dense layer and the sigmoid activation function
-            let shape = NeuralNetworkShape::new(vec![
-                LayerShape{ layer_type: LayerType::Dense{input_size, output_size}, activation: ActivationType::Sigmoid}
-            ]);
+            let shape = NeuralNetworkShape::new(vec![LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size,
+                    output_size,
+                },
+                activation: ActivationType::Sigmoid,
+            }]);
             return TrainingParams::new(
                 shape,
                 self.training_verification_ratio,
@@ -68,12 +73,16 @@ impl Args {
         }
         let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
         // check dimensions of shape with input and target files
-        let file_importer = FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+        let file_importer =
+            FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
         let data = file_importer.get_data();
         let input_size = data.data[0].len();
         let output_size = data.labels[0].len();
         assert_eq!(shape.layers[0].input_size(), input_size);
-        assert_eq!(shape.layers[shape.layers.len() - 1].output_size(), output_size);
+        assert_eq!(
+            shape.layers[shape.layers.len() - 1].output_size(),
+            output_size
+        );
         TrainingParams::new(
             shape,
             self.training_verification_ratio,
@@ -149,10 +158,7 @@ fn main() {
 
     let evolution_options = args.get_evolution_options();
 
-    let data_importer = FileDataImporter::new(
-        args.input_file,
-        args.target_file,
-    );
+    let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,

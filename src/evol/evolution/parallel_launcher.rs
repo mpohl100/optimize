@@ -8,8 +8,8 @@ use crate::evol::evolution::EvolutionResult;
 use crate::evol::{phenotype::Phenotype, rng::RandomNumberGenerator, strategy::BreedStrategy};
 
 use rayon::prelude::*;
-use std::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 /// Manages the evolution process using a specified breeding strategy and challenge.
 #[derive(Debug, Clone)]
@@ -82,7 +82,12 @@ where
 
         for generation in 0..options.get_num_generations() {
             candidates.clear();
-            candidates.extend(self.strategy.lock().unwrap().breed(&parents, options, rng)?);
+            candidates.extend(
+                self.strategy
+                    .lock()
+                    .unwrap()
+                    .breed(&parents, options, rng)?,
+            );
 
             mutexed_fitness.lock().unwrap().clear();
             let ch = self.challenge.clone();
@@ -98,7 +103,10 @@ where
                 mutexed_fitness.lock().unwrap().push(result);
             });
 
-            mutexed_fitness.lock().unwrap().sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+            mutexed_fitness
+                .lock()
+                .unwrap()
+                .sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
             match options.get_log_level() {
                 LogLevel::Minimal => println!("Generation: {}", generation),
@@ -112,7 +120,9 @@ where
             }
 
             parents.clear();
-            mutexed_fitness.lock().unwrap()
+            mutexed_fitness
+                .lock()
+                .unwrap()
                 .iter()
                 .take(options.get_population_size())
                 .for_each(|fitness_result| parents.push(fitness_result.pheno.clone()));

@@ -31,7 +31,7 @@ impl TrainingParams {
     }
 
     pub fn num_training_samples(&self) -> f64 {
-        self.training_verification_ratio 
+        self.training_verification_ratio
     }
 
     pub fn learning_rate(&self) -> f64 {

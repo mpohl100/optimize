@@ -215,11 +215,14 @@ impl NeuralNetwork {
                         LayerType::Dense {
                             input_size,
                             output_size,
-                        } => Box::new(DenseLayer::new(*input_size, *output_size)) as Box<dyn Layer + Send>,
+                        } => Box::new(DenseLayer::new(*input_size, *output_size))
+                            as Box<dyn Layer + Send>,
                     };
                     let activation = match layer.layer.activation {
                         ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
-                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Sigmoid => {
+                            Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>
+                        }
                         ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                     };
                     self.add_activation_and_layer_at_position(i, activation, new_layer);
@@ -248,7 +251,9 @@ impl NeuralNetwork {
                     }
                     let activation = match layer.layer.activation {
                         ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
-                        ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                        ActivationType::Sigmoid => {
+                            Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>
+                        }
                         ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                     };
                     self.activations[i] = activation;

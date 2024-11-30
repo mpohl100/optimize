@@ -1,8 +1,8 @@
 use crate::neural::nn::neuralnet::NeuralNetwork;
 use crate::neural::training::data_importer::DataImporter;
 
-use crate::evol::evolution::ParallelEvolutionLauncher;
 use crate::evol::evolution::EvolutionOptions;
+use crate::evol::evolution::ParallelEvolutionLauncher;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::OrdinaryStrategy;
 
