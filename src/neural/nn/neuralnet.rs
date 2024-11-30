@@ -122,14 +122,20 @@ impl NeuralNetwork {
         epochs: usize,
     ) {
         for _ in 0..epochs {
-            print!("Epoch: {}\r", epochs);
+            println!("Epoch: {}\r", epochs);
+            let mut loss = 0.0;
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
                 let output = self.forward(input.as_slice());
 
                 // Calculate loss gradient (e.g., mean squared error)
-                let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
-
+                // let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
+                let mut grad_output = Vec::new();
+                for i in 0..output.len() {
+                    let error = output[i] - target[i];
+                    grad_output.push(2.0 * error);
+                    loss += error * error;
+                }
                 // Backward pass
                 self.backward(grad_output);
 
@@ -138,6 +144,8 @@ impl NeuralNetwork {
                     layer.update_weights(learning_rate);
                 }
             }
+            loss /= inputs.len() as f64;
+            println!("Loss: {}\r", loss);
         }
     }
 

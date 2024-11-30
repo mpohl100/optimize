@@ -65,13 +65,10 @@ impl TrainingSession {
         let inputs = data.data;
         let targets = data.labels;
 
-        // Extract training samples
-        if inputs.len() < self.params.num_training_samples() {
-            return Err("Not enough training samples".into());
-        }
+        let num_training_samples = (self.params.num_training_samples() * inputs.len() as f64) as usize;
 
-        let training_inputs = inputs[..self.params.num_training_samples()].to_vec();
-        let training_targets = targets[..self.params.num_training_samples()].to_vec();
+        let training_inputs = inputs[..num_training_samples].to_vec();
+        let training_targets = targets[..num_training_samples].to_vec();
 
         let input_size = training_inputs[0].len();
         println!("Inputs: {} x {}", inputs.len(), inputs[0].len());
@@ -86,6 +83,7 @@ impl TrainingSession {
             return Err("Output size mismatch with neural network".into());
         }
 
+        println!("Training neural network with shape: {:?}", nn.shape());
         // Train the neural network
         nn.train(
             &training_inputs,
@@ -96,8 +94,9 @@ impl TrainingSession {
 
         // Verification phase
         let mut success_count = 0;
-        for i in 0..self.params.num_verification_samples() {
-            let sample_idx = self.params.num_training_samples() + i;
+        let num_verification_samples = inputs.len() - num_training_samples;
+        for i in 0..num_verification_samples {
+            let sample_idx = num_training_samples + i;
             if sample_idx >= inputs.len() {
                 return Err("Not enough verification samples".into());
             }
@@ -116,7 +115,7 @@ impl TrainingSession {
         }
 
         // Return the accuracy as the fraction of successful predictions
-        Ok(success_count as f64 / self.params.num_verification_samples() as f64)
+        Ok(success_count as f64 / num_verification_samples as f64)
     }
 
     /// Save the model to disk
@@ -131,11 +130,8 @@ impl TrainingSession {
 }
 
 fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
-    if params.num_training_samples() == 0 {
-        return Err("Number of training samples must be positive".into());
-    }
-    if params.num_verification_samples() == 0 {
-        return Err("Number of verification samples must be positive".into());
+    if params.num_training_samples() >= 0.0 && params.num_training_samples() <= 1.0 {
+        return Err("Number of training to verification ratio must be between 0.0 and 1.0".into());
     }
     if params.learning_rate() <= 0.0 {
         return Err("Learning rate must be positive".into());
@@ -215,7 +211,7 @@ mod tests {
         };
 
         // Define training parameters
-        let training_params = TrainingParams::new(nn_shape.clone(), 700, 300, 0.01, 10, 0.1);
+        let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1);
 
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
