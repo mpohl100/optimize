@@ -131,7 +131,8 @@ impl TrainingSession {
 }
 
 fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
-    if !(params.training_verification_ratio() >= 0.0 && params.training_verification_ratio() <= 1.0) {
+    if !(params.training_verification_ratio() >= 0.0 && params.training_verification_ratio() <= 1.0)
+    {
         return Err("Number of training to verification ratio must be between 0.0 and 1.0".into());
     }
     if params.learning_rate() <= 0.0 {
