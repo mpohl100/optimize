@@ -1,8 +1,11 @@
 use learn::evol::evolution::EvolutionOptions;
 use learn::evol::evolution::LogLevel;
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
+use learn::neural::nn::shape::LayerShape;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
+use learn::neural::nn::shape::LayerType;
+use learn::neural::nn::shape::ActivationType;
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
@@ -47,7 +50,33 @@ struct Args {
 
 impl Args {
     fn get_training_params(&self) -> TrainingParams {
+        if self.shape_file.is_empty(){
+            // deduce shape from input and target files
+            let file_importer = FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+            let data = file_importer.get_data();
+            let input_size = data.data[0].len();
+            let output_size = data.labels[0].len();
+            // create a shape with one dense layer and the sigmoid activation function
+            let shape = NeuralNetworkShape::new(vec![
+                LayerShape{ layer_type: LayerType::Dense{input_size, output_size}, activation: ActivationType::Sigmoid}
+            ]);
+            return TrainingParams::new(
+                shape,
+                self.num_training_samples,
+                self.num_verification_samples,
+                self.learning_rate,
+                self.epochs,
+                self.tolerance,
+            );
+        }
         let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
+        // check dimensions of shape with input and target files
+        let file_importer = FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+        let data = file_importer.get_data();
+        let input_size = data.data[0].len();
+        let output_size = data.labels[0].len();
+        assert_eq!(shape.layers[0].input_size(), input_size);
+        assert_eq!(shape.layers[shape.layers.len() - 1].output_size(), output_size);
         TrainingParams::new(
             shape,
             self.num_training_samples,
@@ -76,15 +105,13 @@ impl Args {
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
 struct FileDataImporter {
-    shape: NeuralNetworkShape,
     input_file: String,
     target_file: String,
 }
 
 impl FileDataImporter {
-    fn new(shape: NeuralNetworkShape, input_file: String, target_file: String) -> Self {
+    fn new(input_file: String, target_file: String) -> Self {
         Self {
-            shape,
             input_file,
             target_file,
         }
@@ -93,20 +120,10 @@ impl FileDataImporter {
 
 impl DataImporter for FileDataImporter {
     fn get_data(&self) -> SessionData {
-        let input_size = self.shape.layers[0].input_size(); // Input dimension (e.g., 28x28 image flattened)
-        let num_classes = self.shape.layers[self.shape.layers.len() - 1].output_size(); // Number of output classes (e.g., for digit classification)
-
         // Initialize inputs and targets with zeros
         // read data from input csv file
         let data = self.read_data(self.input_file.clone());
         let labels = self.read_data(self.target_file.clone());
-
-        // check that sizes match
-        assert_eq!(data.len(), labels.len());
-        for i in 0..data.len() {
-            assert_eq!(data[i].len(), input_size);
-            assert_eq!(labels[i].len(), num_classes);
-        }
 
         SessionData { data, labels }
     }
@@ -137,7 +154,6 @@ fn main() {
     let evolution_options = args.get_evolution_options();
 
     let data_importer = FileDataImporter::new(
-        training_params.shape().clone(),
         args.input_file,
         args.target_file,
     );
