@@ -30,7 +30,7 @@ impl TrainingParams {
         &self.shape
     }
 
-    pub fn num_training_samples(&self) -> f64 {
+    pub fn training_verification_ratio(&self) -> f64 {
         self.training_verification_ratio
     }
 
