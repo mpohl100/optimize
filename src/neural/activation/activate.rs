@@ -1,3 +1,5 @@
+use crate::neural::nn::shape::ActivationType;
+
 use dyn_clone::DynClone;
 
 /// A trait for activation functions used in neural networks.
@@ -25,6 +27,9 @@ pub trait ActivationTrait: std::fmt::Debug + DynClone {
     ///
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
     fn backward(&self, grad_output: &[f64]) -> Vec<f64>;
+
+    /// Returns the name of the activation function.
+    fn get_activation_type(&self) -> ActivationType;
 }
 
 dyn_clone::clone_trait_object!(ActivationTrait);

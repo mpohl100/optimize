@@ -264,6 +264,86 @@ impl NeuralNetwork {
         self.shape = shape.to_neural_network_shape();
     }
 
+    pub fn merge(&self, other: NeuralNetwork) -> NeuralNetwork {
+        let mut new_nn = NeuralNetwork::new(self.shape.clone());
+        for i in 0..self.layers.len() {
+            new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
+        }
+
+        let merge_layer_input_size = self.layers.last().unwrap().output_size();
+        let merge_layer_output_size = other.layers.first().unwrap().input_size();
+        let merge_layer = Box::new(DenseLayer::new(
+            merge_layer_input_size,
+            merge_layer_output_size,
+        ));
+        let merge_activation = Box::new(ReLU);
+        new_nn.add_activation_and_layer(merge_activation, merge_layer);
+
+        for i in 0..other.layers.len() {
+            new_nn.add_activation_and_layer(other.activations[i].clone(), other.layers[i].clone());
+        }
+        new_nn.deduce_shape();
+        new_nn
+    }
+
+    /// Deduces the shape of the neural network based on the layers and activations.
+    fn deduce_shape(&mut self){
+        let mut layers = Vec::new();
+        for i in 0..self.layers.len() {
+            let layer_shape = LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size: self.layers[i].input_size(),
+                    output_size: self.layers[i].output_size(),
+                },
+                activation: self.activations[i].get_activation_type()
+            };
+            layers.push(layer_shape);
+        }
+        self.shape = NeuralNetworkShape { layers };
+    }
+
+    /// gets a subnetwork from the neural network according to the passed shape
+    pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<NeuralNetwork> {
+        let mut subnetwork = NeuralNetwork::new(shape.clone());
+        let (start, end) = self.deduce_start_end(&shape);
+        if start == -1 || end == -1 {
+            return None;
+        }
+        for i in start as usize..end as usize {
+            subnetwork.layers[i] = self.layers[i].clone();
+            subnetwork.activations[i] = self.activations[i].clone();
+        }
+        Some(subnetwork)
+    }
+
+    /// deduce start and end of the subnetwork shape from the neural network
+    fn deduce_start_end(&self, shape: &NeuralNetworkShape) -> (i32, i32) {
+        for (i, layer) in self.layers.iter().enumerate() {
+            // if the layer is not equal to the first one of shape continue
+            if layer.input_size() != shape.layers[0].input_size()
+                || layer.output_size() != shape.layers[0].output_size()
+            {
+                continue;
+            }
+            // if the layer is equal to the first one of shape, check if the rest of the layers are equal
+            let mut equal = true;
+            for j in 1..shape.layers.len() {
+                if i + j >= self.layers.len()
+                    || self.layers[i + j].input_size() != shape.layers[j].input_size()
+                    || self.layers[i + j].output_size() != shape.layers[j].output_size()
+                {
+                    equal = false;
+                    break;
+                }
+            }
+            if equal {
+                return (i as i32, (i + shape.layers.len()) as i32);
+            }
+        }
+        (-1, -1)
+    }
+
+    /// Adds activation and layer at a specific position in the network.
     fn add_activation_and_layer_at_position(
         &mut self,
         position: usize,

@@ -1,3 +1,5 @@
+use crate::neural::nn::shape::ActivationType;
+
 use super::activate::ActivationTrait;
 
 /// ReLU (Rectified Linear Unit) activation function.
@@ -17,6 +19,10 @@ impl ActivationTrait for ReLU {
             .iter()
             .map(|&output| if output > 0.0 { 1.0 } else { 0.0 })
             .collect()
+    }
+
+    fn get_activation_type(&self) -> ActivationType {
+        ActivationType::ReLU
     }
 }
 
