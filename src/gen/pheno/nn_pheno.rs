@@ -51,8 +51,8 @@ impl Phenotype for NeuralNetworkPhenotype {
             .clone()
             .cut_out(0, self.nn_shape.num_layers() / 2);
         let right_half_shape = other.nn_shape.clone().cut_out(
-            self.nn_shape.num_layers() / 2 + 1,
-            self.nn_shape.num_layers(),
+            other.nn_shape.num_layers() / 2,
+            other.nn_shape.num_layers(),
         );
         let left_nn = self
             .get_nn()

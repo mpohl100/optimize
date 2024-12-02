@@ -66,7 +66,7 @@ fn test_neural_network_generator() {
 
     let data_importer = MockDataImporter::new(nn_shape.clone());
 
-    let evolution_params = EvolutionOptions::new(1, LogLevel::Verbose, 2, 4);
+    let evolution_params = EvolutionOptions::new(2, LogLevel::Verbose, 3, 4);
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,

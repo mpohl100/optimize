@@ -145,7 +145,8 @@ fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
         return Err("Number of epochs must be positive".into());
     }
     if !params.shape().is_valid() {
-        return Err("Invalid neural network shape".into());
+        // put the shape in the error message
+        return Err(format!("Invalid neural network shape: {:?}", params.shape()).into());
     }
     Ok(())
 }
