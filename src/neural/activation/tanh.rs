@@ -1,3 +1,5 @@
+use crate::neural::nn::shape::ActivationType;
+
 use super::activate::ActivationTrait;
 
 /// Tanh activation function.
@@ -15,6 +17,10 @@ impl ActivationTrait for Tanh {
             .zip(self.forward(grad_output).iter())
             .map(|(&grad, &output)| grad * (1.0 - output.powi(2)))
             .collect()
+    }
+
+    fn get_activation_type(&self) -> ActivationType {
+        ActivationType::Tanh
     }
 }
 

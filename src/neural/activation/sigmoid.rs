@@ -1,3 +1,5 @@
+use crate::neural::nn::shape::ActivationType;
+
 use super::activate::ActivationTrait;
 
 /// Sigmoid activation function.
@@ -15,6 +17,10 @@ impl ActivationTrait for Sigmoid {
             .zip(self.forward(grad_output).iter())
             .map(|(&grad, &output)| grad * output * (1.0 - output))
             .collect()
+    }
+
+    fn get_activation_type(&self) -> ActivationType {
+        ActivationType::Sigmoid
     }
 }
 

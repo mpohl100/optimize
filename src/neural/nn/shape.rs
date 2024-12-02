@@ -149,6 +149,12 @@ impl NeuralNetworkShape {
     pub fn change_layer(&mut self, position: usize, layer: LayerShape) {
         self.layers[position] = layer;
     }
+
+    /// Cut out a subnetwork from the neural network shape.
+    pub fn cut_out(&self, start: usize, end: usize) -> NeuralNetworkShape {
+        let layers = self.layers[start..end].to_vec();
+        NeuralNetworkShape { layers }
+    }
 }
 
 #[cfg(test)]
