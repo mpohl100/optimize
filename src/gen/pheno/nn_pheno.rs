@@ -46,10 +46,22 @@ impl NeuralNetworkPhenotype {
 
 impl Phenotype for NeuralNetworkPhenotype {
     fn crossover(&mut self, other: &Self) {
-        let left_half_shape = self.nn_shape.clone().cut_out(0, self.nn_shape.num_layers() / 2);
-        let right_half_shape = other.nn_shape.clone().cut_out(self.nn_shape.num_layers() / 2 + 1, self.nn_shape.num_layers());
-        let left_nn = self.get_nn().get_subnetwork(left_half_shape).expect("Failed to get left subnetwork");
-        let right_nn = other.get_nn().get_subnetwork(right_half_shape).expect("Failed to get right subnetwork");
+        let left_half_shape = self
+            .nn_shape
+            .clone()
+            .cut_out(0, self.nn_shape.num_layers() / 2);
+        let right_half_shape = other.nn_shape.clone().cut_out(
+            self.nn_shape.num_layers() / 2 + 1,
+            self.nn_shape.num_layers(),
+        );
+        let left_nn = self
+            .get_nn()
+            .get_subnetwork(left_half_shape)
+            .expect("Failed to get left subnetwork");
+        let right_nn = other
+            .get_nn()
+            .get_subnetwork(right_half_shape)
+            .expect("Failed to get right subnetwork");
         let new_nn = left_nn.merge(right_nn);
         self.set_nn(new_nn);
         self.nn_shape = self.nn.lock().unwrap().shape().clone();

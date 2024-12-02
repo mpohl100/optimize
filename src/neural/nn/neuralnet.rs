@@ -287,7 +287,7 @@ impl NeuralNetwork {
     }
 
     /// Deduces the shape of the neural network based on the layers and activations.
-    fn deduce_shape(&mut self){
+    fn deduce_shape(&mut self) {
         let mut layers = Vec::new();
         for i in 0..self.layers.len() {
             let layer_shape = LayerShape {
@@ -295,7 +295,7 @@ impl NeuralNetwork {
                     input_size: self.layers[i].input_size(),
                     output_size: self.layers[i].output_size(),
                 },
-                activation: self.activations[i].get_activation_type()
+                activation: self.activations[i].get_activation_type(),
             };
             layers.push(layer_shape);
         }
