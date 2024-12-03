@@ -4,11 +4,12 @@ use crate::neural::training::data_importer::DataImporter;
 use crate::evol::evolution::EvolutionOptions;
 use crate::evol::evolution::ParallelEvolutionLauncher;
 use crate::evol::rng::RandomNumberGenerator;
-use crate::evol::strategy::OrdinaryStrategy;
 
 use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use crate::neural::training::training_params::TrainingParams;
+
+use super::strategy::nn_strategy::NeuralNetworkStrategy;
 
 pub struct NeuralNetworkGenerator {
     model_directory: String,
@@ -60,10 +61,10 @@ impl NeuralNetworkGenerator {
         let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());
-        let strategy = OrdinaryStrategy;
+        let strategy = NeuralNetworkStrategy::new(self.model_directory.clone());
         let launcher: ParallelEvolutionLauncher<
             NeuralNetworkPhenotype,
-            OrdinaryStrategy,
+            NeuralNetworkStrategy,
             NeuralNetworkChallenge,
         > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), 4);
         let result = launcher.evolve(&options, starting_value, &mut rng);
