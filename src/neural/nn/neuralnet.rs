@@ -337,7 +337,11 @@ impl NeuralNetwork {
                 }
             }
             if equal {
-                return (i as i32, (i + shape.layers.len()) as i32);
+                let mut to = i + shape.layers.len();
+                if to >= self.layers.len() {
+                    to = self.layers.len();
+                }
+                return (i as i32, to as i32);
             }
         }
         (-1, -1)
