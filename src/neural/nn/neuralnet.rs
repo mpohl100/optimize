@@ -304,7 +304,7 @@ impl NeuralNetwork {
 
     /// gets a subnetwork from the neural network according to the passed shape
     pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<NeuralNetwork> {
-        let mut subnetwork = NeuralNetwork::new(shape.clone());
+        let mut subnetwork = NeuralNetwork::default();
         let (start, end) = self.deduce_start_end(&shape);
         if start == -1 || end == -1 {
             return None;
@@ -312,6 +312,7 @@ impl NeuralNetwork {
         for i in start as usize..end as usize {
             subnetwork.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
+        subnetwork.deduce_shape();
         Some(subnetwork)
     }
 
