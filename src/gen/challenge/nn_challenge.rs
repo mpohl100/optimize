@@ -14,7 +14,7 @@ impl NeuralNetworkChallenge {
     pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter + Send + Sync>) -> Self {
         Self {
             params,
-            data_importer: data_importer,
+            data_importer,
         }
     }
 }

@@ -161,7 +161,7 @@ impl NeuralNetworkShape {
         if end > self.layers.len() {
             panic!("End index out of bounds");
         }
-        
+
         let layers = self.layers[start..end].to_vec();
         NeuralNetworkShape { layers }
     }

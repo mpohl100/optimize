@@ -310,7 +310,8 @@ impl NeuralNetwork {
             return None;
         }
         for i in start as usize..end as usize {
-            subnetwork.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
+            subnetwork
+                .add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
         subnetwork.deduce_shape();
         Some(subnetwork)
