@@ -9,7 +9,7 @@ use crate::neural::nn::shape::*;
 use std::boxed::Box;
 
 /// A neural network.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NeuralNetwork {
     layers: Vec<Box<dyn Layer + Send>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
@@ -265,7 +265,7 @@ impl NeuralNetwork {
     }
 
     pub fn merge(&self, other: NeuralNetwork) -> NeuralNetwork {
-        let mut new_nn = NeuralNetwork::new(self.shape.clone());
+        let mut new_nn = NeuralNetwork::default();
         for i in 0..self.layers.len() {
             new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
@@ -310,8 +310,7 @@ impl NeuralNetwork {
             return None;
         }
         for i in start as usize..end as usize {
-            subnetwork.layers[i] = self.layers[i].clone();
-            subnetwork.activations[i] = self.activations[i].clone();
+            subnetwork.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
         Some(subnetwork)
     }

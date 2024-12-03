@@ -4,19 +4,17 @@ use crate::neural::training::data_importer::DataImporter;
 use crate::neural::training::training_params::TrainingParams;
 use crate::neural::training::training_session::TrainingSession;
 
-use std::sync::{Arc, Mutex};
-
 #[derive(Clone)]
 pub struct NeuralNetworkChallenge {
     params: TrainingParams,
-    data_importer: Arc<Mutex<Box<dyn DataImporter + Send>>>,
+    data_importer: Box<dyn DataImporter + Send + Sync>,
 }
 
 impl NeuralNetworkChallenge {
-    pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter + Send>) -> Self {
+    pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter + Send + Sync>) -> Self {
         Self {
             params,
-            data_importer: Arc::new(Mutex::new(data_importer)),
+            data_importer: data_importer,
         }
     }
 }
@@ -26,7 +24,7 @@ impl Challenge<NeuralNetworkPhenotype> for NeuralNetworkChallenge {
         let mut training_session = TrainingSession::from_network(
             phenotype.get_nn(),
             self.params.clone(),
-            self.data_importer.lock().unwrap().clone(),
+            self.data_importer.clone(),
         )
         .unwrap();
         let result = training_session.train();
