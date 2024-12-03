@@ -65,7 +65,7 @@ impl LayerShape {
 }
 
 /// Struct representing the shape and configuration of an entire neural network.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct NeuralNetworkShape {
     /// A vector of `LayerShape` structs, representing each layer in the neural network.
     pub layers: Vec<LayerShape>,
@@ -152,6 +152,16 @@ impl NeuralNetworkShape {
 
     /// Cut out a subnetwork from the neural network shape.
     pub fn cut_out(&self, start: usize, end: usize) -> NeuralNetworkShape {
+        // check that start are within bounds
+        if start >= self.layers.len() {
+            panic!("Start index out of bounds");
+        }
+
+        // check that end are within bounds
+        if end > self.layers.len() {
+            panic!("End index out of bounds");
+        }
+        
         let layers = self.layers[start..end].to_vec();
         NeuralNetworkShape { layers }
     }

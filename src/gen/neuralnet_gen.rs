@@ -15,14 +15,14 @@ pub struct NeuralNetworkGenerator {
     params: TrainingParams,
     evolution_params: EvolutionOptions,
     current_winner: NeuralNetwork,
-    data_importer: Box<dyn DataImporter + Send>,
+    data_importer: Box<dyn DataImporter + Send + Sync>,
 }
 
 impl NeuralNetworkGenerator {
     pub fn new(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
-        data_importer: Box<dyn DataImporter + Send>,
+        data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
     ) -> Self {
         let nn = NeuralNetwork::new(params.shape().clone());
@@ -38,7 +38,7 @@ impl NeuralNetworkGenerator {
     pub fn from_disk(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
-        data_importer: Box<dyn DataImporter + Send>,
+        data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: &String,
     ) -> Self {
         let nn = NeuralNetwork::from_disk(model_directory);
@@ -65,7 +65,7 @@ impl NeuralNetworkGenerator {
             NeuralNetworkPhenotype,
             OrdinaryStrategy,
             NeuralNetworkChallenge,
-        > = ParallelEvolutionLauncher::new(strategy, challenge, 4);
+        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), 4);
         let result = launcher.evolve(&options, starting_value, &mut rng);
         self.current_winner = result.unwrap().pheno.get_nn().clone();
     }
