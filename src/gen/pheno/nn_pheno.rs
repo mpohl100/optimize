@@ -64,7 +64,6 @@ impl Phenotype for NeuralNetworkPhenotype {
             .expect("Failed to get right subnetwork");
         let new_nn = left_nn.merge(right_nn);
         self.set_nn(new_nn);
-        self.nn_shape = self.nn.lock().unwrap().shape().clone();
     }
 
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
