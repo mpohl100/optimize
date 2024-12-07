@@ -125,8 +125,8 @@ impl NeuralNetwork {
         learning_rate: f64,
         epochs: usize,
     ) {
-        for _ in 0..epochs {
-            println!("Epoch: {}\r", epochs);
+        for i in 0..epochs {
+            println!("Epoch: {}\r", i);
             let mut loss = 0.0;
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
@@ -149,7 +149,7 @@ impl NeuralNetwork {
                 }
             }
             loss /= inputs.len() as f64;
-            println!("Loss: {}\r", loss);
+            println!("Epoch {}: Loss {}\r", i, loss);
         }
     }
 
