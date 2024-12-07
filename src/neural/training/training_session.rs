@@ -51,14 +51,14 @@ impl TrainingSession {
             return Err("Model directory does not exist".into());
         }
         let nn = NeuralNetwork::from_disk(model_directory);
-        if nn.is_some() {
-            return Ok(TrainingSession {
+        if let Some(nnw) = nn {
+            Ok(TrainingSession {
                 params,
-                neural_network: nn.unwrap(),
+                neural_network: nnw,
                 data_importer,
-            });
+            })
         } else {
-            return Self::new(params, data_importer);
+            Self::new(params, data_importer)
         }
     }
 

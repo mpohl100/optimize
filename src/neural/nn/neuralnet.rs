@@ -46,6 +46,7 @@ impl NeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
+    #[allow(clippy::question_mark)]
     pub fn from_disk(model_directory: &String) -> Option<NeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory);
         if shape.is_none() {
