@@ -61,6 +61,12 @@ impl NeuralNetworkGenerator {
     /// Generate a new neural network using a genetic algorithm
     pub fn generate(&mut self) {
         let mut rng = RandomNumberGenerator::new();
+        
+        assert!(self.current_winner.shape().is_valid());
+        assert!(self.current_winner.shape().num_layers() > 0);
+        // make sure both shapes are the same
+        self.params.set_shape(self.current_winner.shape().clone());
+
         let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
         let options = self.evolution_params.clone();
         let challenge =
