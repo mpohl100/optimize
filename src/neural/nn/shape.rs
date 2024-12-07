@@ -78,11 +78,14 @@ impl NeuralNetworkShape {
     }
 
     /// Creates a new `NeuralNetworkShape` with the given layers from disk.
-    pub fn from_disk(model_directory: &String) -> Self {
+    pub fn from_disk(model_directory: &String) -> Option<Self> {
         let path = format!("{}/shape.yaml", model_directory);
+        if !std::path::Path::new(&path).exists() {
+            return None;
+        }
         let file = File::open(path).unwrap();
         let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
-        shape
+        Some(shape)
     }
 
     // Creates a new `NeuralNetworkShape` with the given layers from file.
