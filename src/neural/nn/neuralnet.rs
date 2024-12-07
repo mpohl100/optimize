@@ -46,16 +46,20 @@ impl NeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
-    pub fn from_disk(model_directory: &String) -> NeuralNetwork {
+    pub fn from_disk(model_directory: &String) -> Option<NeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory);
+        if shape.is_none() {
+            return None;
+        }
+        let sh = shape.unwrap();
         let mut network = NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
-            shape: shape.clone(),
+            shape: sh.clone(),
         };
 
-        for i in 0..shape.layers.len() {
-            let layer = match &shape.layers[i].layer_type() {
+        for i in 0..sh.layers.len() {
+            let layer = match &sh.layers[i].layer_type() {
                 LayerType::Dense {
                     input_size,
                     output_size,
@@ -67,7 +71,7 @@ impl NeuralNetwork {
                     Box::new(layer) as Box<dyn Layer + Send>
                 }
             };
-            let activation = match shape.layers[i].activation {
+            let activation = match sh.layers[i].activation {
                 ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
@@ -76,7 +80,7 @@ impl NeuralNetwork {
             network.add_activation_and_layer(activation, layer);
         }
 
-        network
+        Some(network)
     }
 
     /// Adds an activation and a layer to the neural network.

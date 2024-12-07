@@ -16,7 +16,7 @@ struct Args {
     /// Directory where the model shall be saved
     #[clap(long)]
     model_directory: String,
-    #[clap(long)]
+    #[clap(long, default_value = "")]
     shape_file: String,
 
     // insert the training params here

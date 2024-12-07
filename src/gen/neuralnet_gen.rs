@@ -43,14 +43,18 @@ impl NeuralNetworkGenerator {
         model_directory: &String,
     ) -> Self {
         let nn = NeuralNetwork::from_disk(model_directory);
-        let mut changed_params = params.clone();
-        changed_params.set_shape(nn.shape().clone());
-        Self {
-            current_winner: nn,
-            params: changed_params,
-            evolution_params,
-            model_directory: model_directory.clone(),
-            data_importer,
+        if nn.is_some() {
+            let mut changed_params = params.clone();
+            changed_params.set_shape(nn.as_ref().unwrap().shape().clone());
+            Self {
+                current_winner: nn.unwrap(),
+                params: changed_params,
+                evolution_params,
+                model_directory: model_directory.clone(),
+                data_importer,
+            }
+        } else {
+            Self::new(params, evolution_params, data_importer, model_directory.clone())
         }
     }
 
