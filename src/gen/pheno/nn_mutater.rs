@@ -115,12 +115,12 @@ fn fetch_added_layers(
 
     let begin_size;
     let end_size;
-    if position == 0 {
-        begin_size = shape.get_layer(0).input_size();
-        end_size = shape.get_layer(0).input_size();
-    } else if position == shape.num_layers() - 1 {
+    if position == shape.num_layers() - 1 {
         begin_size = shape.get_layer(position).output_size();
         end_size = shape.get_layer(position).output_size();
+    } else if position == 0 {
+        begin_size = shape.get_layer(0).input_size();
+        end_size = shape.get_layer(0).input_size();
     } else {
         begin_size = shape.get_layer(position).output_size();
         end_size = shape.get_layer(position + 1).input_size();
