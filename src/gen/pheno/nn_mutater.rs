@@ -40,6 +40,9 @@ impl<'a> NeuralNetworkMutater<'a> {
                 mutated_shape.change_layer(position, layer);
             }
             2 => {
+                if shape.num_layers() == 1 {
+                    return mutated_shape;
+                }
                 let position = self
                     .rng
                     .fetch_uniform(0.0, shape.num_layers() as f32, 1)
@@ -71,9 +74,6 @@ impl<'a> NeuralNetworkMutater<'a> {
                     };
                     mutated_shape.change_layer(position - 1, new_layer);
                 } else {
-                    if shape.num_layers() == 1 {
-                        return mutated_shape;
-                    }
                     mutated_shape.remove_layer(position);
                     let layer = mutated_shape.get_layer(position);
                     let new_layer = LayerShape {
