@@ -54,14 +54,19 @@ impl NeuralNetworkGenerator {
                 data_importer,
             }
         } else {
-            Self::new(params, evolution_params, data_importer, model_directory.clone())
+            Self::new(
+                params,
+                evolution_params,
+                data_importer,
+                model_directory.clone(),
+            )
         }
     }
 
     /// Generate a new neural network using a genetic algorithm
     pub fn generate(&mut self) {
         let mut rng = RandomNumberGenerator::new();
-        
+
         assert!(self.current_winner.shape().is_valid());
         assert!(self.current_winner.shape().num_layers() > 0);
         // make sure both shapes are the same
