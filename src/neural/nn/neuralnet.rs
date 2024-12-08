@@ -309,6 +309,9 @@ impl NeuralNetwork {
 
     /// gets a subnetwork from the neural network according to the passed shape
     pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<NeuralNetwork> {
+        if shape.num_layers() == 0 {
+            return None;
+        }
         let mut subnetwork = NeuralNetwork::default();
         let (start, end) = self.deduce_start_end(&shape);
         if start == -1 || end == -1 {
