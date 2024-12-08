@@ -25,8 +25,8 @@ impl<'a> NeuralNetworkMutater<'a> {
                     .pop_front()
                     .unwrap() as usize;
                 let layers = fetch_added_layers(self.rng, &shape, position);
-                mutated_shape.add_layer(position + 1, layers[0].clone());
-                mutated_shape.add_layer(position + 2, layers[1].clone());
+                mutated_shape.add_layer(position, layers[0].clone());
+                mutated_shape.add_layer(position + 1, layers[1].clone());
             }
             1 => {
                 let activation = fetch_activation_type(self.rng);
@@ -115,15 +115,12 @@ fn fetch_added_layers(
 
     let begin_size;
     let end_size;
-    if position == shape.num_layers() - 1 {
-        begin_size = shape.get_layer(position).output_size();
-        end_size = shape.get_layer(position).output_size();
-    } else if position == 0 {
+    if position == 0 {
         begin_size = shape.get_layer(0).input_size();
         end_size = shape.get_layer(0).input_size();
     } else {
-        begin_size = shape.get_layer(position).output_size();
-        end_size = shape.get_layer(position + 1).input_size();
+        begin_size = shape.get_layer(position - 1).output_size();
+        end_size = shape.get_layer(position).input_size();
     }
 
     let first_layer = LayerShape {
