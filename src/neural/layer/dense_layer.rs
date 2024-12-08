@@ -136,8 +136,7 @@ impl Layer for DenseLayer {
             let last_input_cache = &self.input_batch_cache[self.input_batch_cache.len() - 1];
             for j in 0..last_input_cache.len() {
                 // Update weight gradients
-                *self.weight_grads.get_mut_unchecked(i, j) +=
-                    grad_output[i] * last_input_cache[j];
+                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * last_input_cache[j];
             }
             // Update bias gradients
             self.bias_grads[i] += grad_output[i];
