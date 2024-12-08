@@ -7,6 +7,7 @@ pub struct TrainingParams {
     learning_rate: f64,
     epochs: usize,
     tolerance: f64,
+    batch_size: usize,
 }
 
 impl TrainingParams {
@@ -16,6 +17,7 @@ impl TrainingParams {
         learning_rate: f64,
         epochs: usize,
         tolerance: f64,
+        batch_size: usize,
     ) -> Self {
         Self {
             shape,
@@ -23,6 +25,7 @@ impl TrainingParams {
             learning_rate,
             epochs,
             tolerance,
+            batch_size,
         }
     }
 
@@ -44,6 +47,10 @@ impl TrainingParams {
 
     pub fn tolerance(&self) -> f64 {
         self.tolerance
+    }
+
+    pub fn batch_size(&self) -> usize {
+        self.batch_size
     }
 
     pub fn set_shape(&mut self, shape: NeuralNetworkShape) {

@@ -72,7 +72,7 @@ fn main() {
     };
 
     // Define training parameters
-    let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1);
+    let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1, 32);
 
     // Create a training session using the mock data importer
     let data_importer = MockDataImporter::new(nn_shape);

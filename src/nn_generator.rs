@@ -28,6 +28,8 @@ struct Args {
     epochs: usize,
     #[clap(long, default_value = "0.1")]
     tolerance: f64,
+    #[clap(long, default_value = "32")]
+    batch_size: usize,
 
     // insert the evolution options here
     #[clap(long, default_value = "100")]
@@ -69,6 +71,7 @@ impl Args {
                 self.learning_rate,
                 self.epochs,
                 self.tolerance,
+                self.batch_size,
             );
         }
         let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
@@ -89,6 +92,7 @@ impl Args {
             self.learning_rate,
             self.epochs,
             self.tolerance,
+            self.batch_size,
         )
     }
 

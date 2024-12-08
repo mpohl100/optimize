@@ -104,6 +104,16 @@ impl NeuralNetwork {
         output
     }
 
+    /// Performs a forward pass through the network with the given input doing batch caching.
+    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        let mut output = input.to_vec();
+        for (layer, activation) in self.layers.iter_mut().zip(&self.activations) {
+            output = layer.forward_batch(&output);
+            output = activation.forward(&output);
+        }
+        output
+    }
+
     /// Performs a backward pass through the network with the given output gradient.
     pub fn backward(&mut self, grad_output: Vec<f64>) {
         let mut grad = grad_output;
@@ -115,6 +125,20 @@ impl NeuralNetwork {
         {
             grad = activation.backward(&grad);
             grad = layer.backward(&grad);
+        }
+    }
+
+    /// Performs a backward pass through the network with the given output gradient doing batch caching.
+    pub fn backward_batch(&mut self, grad_output: Vec<f64>) {
+        let mut grad = grad_output;
+        for (layer, activation) in self
+            .layers
+            .iter_mut()
+            .rev()
+            .zip(self.activations.iter_mut().rev())
+        {
+            grad = activation.backward(&grad);
+            grad = layer.backward_batch(&grad);
         }
     }
 
@@ -151,6 +175,41 @@ impl NeuralNetwork {
             }
             loss /= inputs.len() as f64;
             println!("Epoch {}: Loss {}\r", i, loss);
+        }
+    }
+
+    /// Trains the neural network doing batch back propagation.
+    pub fn train_batch(
+        &mut self,
+        inputs: &[Vec<f64>],
+        targets: &[Vec<f64>],
+        learning_rate: f64,
+        epochs: usize,
+        batch_size: usize,
+    ) {
+        for i in 0..epochs {
+            println!("Epoch: {}\r", i);
+            let mut loss = 0.0;
+            let input_chunks = inputs.chunks(batch_size);
+            let target_chunks = targets.chunks(batch_size);
+            for batch in input_chunks.zip(target_chunks) {
+                let input_chunk_batch = batch.0;
+                let target_chunk_batch = batch.1;
+                for (input, target) in input_chunk_batch.iter().zip(target_chunk_batch) {
+                    let output = self.forward_batch(input.as_slice());
+                    let mut grad_output = Vec::new();
+                    for j in 0..output.len() {
+                        let error = output[j] - target[j];
+                        grad_output.push(2.0 * error);
+                        loss += error * error;
+                    }
+                    self.backward_batch(grad_output);
+                }
+                for layer in &mut self.layers {
+                    layer.update_weights(learning_rate);
+                }
+            }
+            print!("Epoch Loss: {}\r", loss / inputs.len() as f64);
         }
     }
 
