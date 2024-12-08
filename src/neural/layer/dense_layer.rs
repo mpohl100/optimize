@@ -167,6 +167,8 @@ impl Layer for DenseLayer {
             self.biases[i] -= learning_rate * self.bias_grads[i];
             self.bias_grads[i] = 0.0;
         }
+        // empty the input batch cache
+        self.input_batch_cache.clear();
     }
 
     fn input_size(&self) -> usize {
