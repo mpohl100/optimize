@@ -209,7 +209,7 @@ impl NeuralNetwork {
                     layer.update_weights(learning_rate);
                 }
             }
-            print!("Epoch Loss: {}\r", loss / inputs.len() as f64);
+            print!("Epoch {}: Loss {}\r", i, loss / inputs.len() as f64);
         }
     }
 
