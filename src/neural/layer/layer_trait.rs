@@ -14,6 +14,9 @@ pub trait Layer: std::fmt::Debug + DynClone {
     /// * A vector of `f64` values representing the output of the layer.
     fn forward(&mut self, input: &[f64]) -> Vec<f64>;
 
+    /// Performs the forward pass of the layer for inputs doing batch caching.
+    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64>;
+
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
     ///
     /// # Arguments
@@ -25,6 +28,9 @@ pub trait Layer: std::fmt::Debug + DynClone {
     ///
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64>;
+
+    /// Performs the backward pass of the layer for inputs doing batch caching.
+    fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64>;
 
     /// Updates the weights of the layer based on the specified learning rate.
     ///

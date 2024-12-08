@@ -13,6 +13,7 @@ pub struct DenseLayer {
     weights: Matrix<f64>,      // Weight matrix (output_size x input_size)
     biases: Vec<f64>,          // Bias vector (output_size)
     input_cache: Vec<f64>,     // Cache input for use in backward pass
+    input_batch_cache: Vec<Vec<f64>>, // Cache batch input for use in backward pass
     weight_grads: Matrix<f64>, // Gradient of weights
     bias_grads: Vec<f64>,      // Gradient of biases
 }
@@ -48,6 +49,7 @@ impl DenseLayer {
             weights,
             biases,
             input_cache,
+            input_batch_cache: Vec::new(),
             weight_grads,
             bias_grads,
         }
@@ -78,6 +80,28 @@ impl Layer for DenseLayer {
     }
 
     #[allow(clippy::needless_range_loop)]
+    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        // Store input for potential use in backward pass (not needed in this function)
+        self.input_batch_cache.push(input.to_vec().clone());
+
+        // Initialize the output vector with the size of biases
+        let mut output = vec![0.0; self.biases.len()];
+
+        // Iterate over each element in biases
+        for i in 0..self.biases.len() {
+            // Initialize output[i] with the corresponding bias value
+            output[i] = self.biases[i];
+
+            // Accumulate the dot product of weights and input
+            for j in 0..input.len() {
+                output[i] += self.weights.get_unchecked(i, j) * input[j];
+            }
+        }
+
+        output
+    }
+
+    #[allow(clippy::needless_range_loop)]
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
         // Initialize grad_input with the size of input_cache, filled with zeros
         let mut grad_input = vec![0.0; self.input_cache.len()];
@@ -87,6 +111,31 @@ impl Layer for DenseLayer {
             for j in 0..self.input_cache.len() {
                 // Update weight gradients
                 *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * self.input_cache[j];
+            }
+            // Update bias gradients
+            self.bias_grads[i] += grad_output[i];
+        }
+
+        // Calculate gradient with respect to the input for backpropagation
+        for i in 0..self.weights.rows() {
+            for j in 0..self.input_cache.len() {
+                grad_input[j] += self.weights.get_unchecked(i, j) * grad_output[i];
+            }
+        }
+
+        grad_input
+    }
+
+    #[allow(clippy::needless_range_loop)]
+    fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
+        // Initialize grad_input with the size of input_cache, filled with zeros
+        let mut grad_input = vec![0.0; self.input_cache.len()];
+
+        // Calculate gradients for weights and biases
+        for i in 0..self.weights.rows() {
+            for j in 0..self.input_cache.len() {
+                // Update weight gradients
+                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * self.input_batch_cache[self.input_batch_cache.len() - 1][j];
             }
             // Update bias gradients
             self.bias_grads[i] += grad_output[i];
