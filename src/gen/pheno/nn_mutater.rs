@@ -140,7 +140,7 @@ fn fetch_added_layers(
             input_size: inner_size,
             output_size: end_size,
         },
-        activation: activation,
+        activation,
     };
     vec![first_layer, second_layer]
 }
