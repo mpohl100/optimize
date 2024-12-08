@@ -25,6 +25,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                     .pop_front()
                     .unwrap() as usize;
                 let layers = fetch_added_layers(self.rng, &shape, position);
+                mutated_shape.remove_layer(position);
                 mutated_shape.add_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             }
@@ -111,17 +112,21 @@ fn fetch_added_layers(
     position: usize,
 ) -> Vec<LayerShape> {
     let activation = fetch_activation_type(rng);
-    let inner_size = rng.fetch_uniform(1.0, 1024.0, 1).pop_front().unwrap() as usize;
 
-    let begin_size;
-    let end_size;
-    if position == 0 {
-        begin_size = shape.get_layer(0).input_size();
-        end_size = shape.get_layer(0).input_size();
-    } else {
-        begin_size = shape.get_layer(position - 1).output_size();
-        end_size = shape.get_layer(position).input_size();
-    }
+    let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
+
+    let layer = shape.get_layer(position);
+    let closest_power_of_two = 2.0_f32.powf((layer.input_size() as f32).log2().floor());
+
+    let begin_size = layer.input_size();
+    let end_size = layer.output_size();
+
+    let inner_size = match random_number {
+        0 => closest_power_of_two as usize,
+        1 => (closest_power_of_two / 2.0) as usize,
+        2 => (closest_power_of_two * 2.0) as usize,
+        _ => panic!("Invalid random number generated"),
+    };
 
     let first_layer = LayerShape {
         layer_type: LayerType::Dense {
@@ -136,7 +141,7 @@ fn fetch_added_layers(
             input_size: inner_size,
             output_size: end_size,
         },
-        activation: ActivationType::ReLU,
+        activation: activation,
     };
     vec![first_layer, second_layer]
 }
