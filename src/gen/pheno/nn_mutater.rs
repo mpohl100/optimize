@@ -25,8 +25,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                     .pop_front()
                     .unwrap() as usize;
                 let layers = fetch_added_layers(self.rng, &shape, position);
-                mutated_shape.remove_layer(position);
-                mutated_shape.add_layer(position, layers[0].clone());
+                mutated_shape.change_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             }
             1 => {
