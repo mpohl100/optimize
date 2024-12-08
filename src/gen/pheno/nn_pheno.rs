@@ -38,12 +38,24 @@ impl Phenotype for NeuralNetworkPhenotype {
     fn crossover(&mut self, other: &Self) {
         let left_original_nn = self.get_nn();
         let right_original_nn = other.get_nn();
-        let left_half_shape = left_original_nn.shape()
+        let left_index_begin = 0;
+        let mut left_index_end = left_original_nn.shape().num_layers() / 2;
+        if left_index_end == 0 {
+            left_index_end = 1;
+        }
+        let right_index_begin = right_original_nn.shape().num_layers() / 2;
+        let mut right_index_end = right_original_nn.shape().num_layers();
+        if right_index_end == right_index_begin {
+            right_index_end += 1;
+        }
+        let left_half_shape = left_original_nn
+            .shape()
             .clone()
-            .cut_out(0, left_original_nn.shape().num_layers() / 2);
-        let right_half_shape = right_original_nn.shape()
+            .cut_out(left_index_begin, left_index_end);
+        let right_half_shape = right_original_nn
+            .shape()
             .clone()
-            .cut_out(right_original_nn.shape().num_layers() / 2, right_original_nn.shape().num_layers());
+            .cut_out(right_index_begin, right_index_end);
         let left_nn = self
             .get_nn()
             .get_subnetwork(left_half_shape)
