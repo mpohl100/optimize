@@ -25,7 +25,9 @@ impl BreedStrategy<NeuralNetworkPhenotype> for NeuralNetworkStrategy {
         rng: &mut RandomNumberGenerator,
     ) -> Result<Vec<NeuralNetworkPhenotype>, Error> {
         let ordinary_strategy = OrdinaryStrategy;
-        let _ = parents[0].get_nn().save(self.model_directory.clone());
+        let nn = parents[0].get_nn();
+        println!("Saving model to: {} with shape: {:?}", self.model_directory, nn.shape());
+        let _ = nn.save(self.model_directory.clone());
         ordinary_strategy.breed(parents, evol_options, rng)
     }
 }
