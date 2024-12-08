@@ -10,12 +10,12 @@ use std::io::Write;
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
-    weights: Matrix<f64>,      // Weight matrix (output_size x input_size)
-    biases: Vec<f64>,          // Bias vector (output_size)
-    input_cache: Vec<f64>,     // Cache input for use in backward pass
+    weights: Matrix<f64>,             // Weight matrix (output_size x input_size)
+    biases: Vec<f64>,                 // Bias vector (output_size)
+    input_cache: Vec<f64>,            // Cache input for use in backward pass
     input_batch_cache: Vec<Vec<f64>>, // Cache batch input for use in backward pass
-    weight_grads: Matrix<f64>, // Gradient of weights
-    bias_grads: Vec<f64>,      // Gradient of biases
+    weight_grads: Matrix<f64>,        // Gradient of weights
+    bias_grads: Vec<f64>,             // Gradient of biases
 }
 
 impl DenseLayer {
@@ -135,7 +135,8 @@ impl Layer for DenseLayer {
         for i in 0..self.weights.rows() {
             for j in 0..self.input_cache.len() {
                 // Update weight gradients
-                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * self.input_batch_cache[self.input_batch_cache.len() - 1][j];
+                *self.weight_grads.get_mut_unchecked(i, j) +=
+                    grad_output[i] * self.input_batch_cache[self.input_batch_cache.len() - 1][j];
             }
             // Update bias gradients
             self.bias_grads[i] += grad_output[i];
