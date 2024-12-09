@@ -124,7 +124,7 @@ fn fetch_added_layers(
         0 => closest_power_of_two as usize,
         1 => (closest_power_of_two / 2.0) as usize,
         2 => (closest_power_of_two * 2.0) as usize,
-        _ => panic!("Invalid random number generated"),
+        _ => closest_power_of_two as usize,
     };
 
     let first_layer = LayerShape {
