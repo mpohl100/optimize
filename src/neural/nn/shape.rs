@@ -25,7 +25,7 @@ pub enum ActivationType {
 }
 
 /// Struct representing the shape and configuration of a neural network layer.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LayerShape {
     /// The type of the layer (e.g., Dense) with input and output sizes.
     pub layer_type: LayerType,
@@ -65,7 +65,7 @@ impl LayerShape {
 }
 
 /// Struct representing the shape and configuration of an entire neural network.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct NeuralNetworkShape {
     /// A vector of `LayerShape` structs, representing each layer in the neural network.
     pub layers: Vec<LayerShape>,
