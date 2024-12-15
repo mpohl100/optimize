@@ -138,10 +138,9 @@ fn main() {
     let mut training_session = if std::fs::metadata(model_directory).is_ok() {
         TrainingSession::from_disk(model_directory, training_params, Box::new(data_importer))
             .expect("Failed to load model from disk")
-    }
-    else{
+    } else {
         TrainingSession::new(training_params, Box::new(data_importer))
-        .expect("Failed to create TrainingSession")
+            .expect("Failed to create TrainingSession")
     };
 
     // Train the neural network and check the success rate
