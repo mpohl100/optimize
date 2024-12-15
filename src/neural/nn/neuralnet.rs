@@ -99,6 +99,7 @@ impl NeuralNetwork {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&self.activations) {
             output = layer.forward(&output);
+            // this operation should not change the dimension of output
             output = activation.forward(&output);
         }
         output
@@ -324,6 +325,9 @@ impl NeuralNetwork {
                 }
                 LayerChangeType::None => {}
             }
+            self.deduce_shape();
+            let expected_shape = shape.to_neural_network_shape();
+            assert_eq!(self.shape, expected_shape);
         }
         self.shape = shape.to_neural_network_shape();
     }
@@ -364,6 +368,10 @@ impl NeuralNetwork {
             layers.push(layer_shape);
         }
         self.shape = NeuralNetworkShape { layers };
+        if !self.shape.is_valid(){
+            println!("Invalid shape: {:?}", self.shape);
+            panic!("Invalid shape");
+        }
     }
 
     /// gets a subnetwork from the neural network according to the passed shape

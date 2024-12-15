@@ -67,6 +67,7 @@ impl Layer for DenseLayer {
 
         let num_rows = self.weights.rows();
         let num_cols = self.weights.cols();
+        //println!("num_rows: {}, num_cols: {}, num_biases: {}", num_rows, num_cols, self.biases.len());
         // Check dimensions or panic:
         assert_eq!(num_rows, self.biases.len());
         assert_eq!(num_cols, input.len());

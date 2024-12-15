@@ -90,12 +90,12 @@ impl TrainingSession {
 
         println!("Training neural network with shape: {:?}", nn.shape());
         // Train the neural network
-        nn.train_batch(
+        nn.train(
             &training_inputs,
             &training_targets,
             self.params.learning_rate(),
             self.params.epochs(),
-            self.params.batch_size(),
+            //self.params.batch_size(),
         );
 
         // Verification phase
