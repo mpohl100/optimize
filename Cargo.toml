@@ -24,8 +24,8 @@ name = "bench_bounded"
 harness = false
 
 [[bin]]
-name = "main"
-path = "src/main.rs"
+name = "train"
+path = "src/train.rs"
 
 [[bin]]
 name = "nn_generator"
