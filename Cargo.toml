@@ -30,3 +30,7 @@ path = "src/train.rs"
 [[bin]]
 name = "nn_generator"
 path = "src/nn_generator.rs"
+
+[[bin]]
+name = "evaluate"
+path = "src/evaluate.rs"
