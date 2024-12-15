@@ -64,7 +64,7 @@ impl Layer for DenseLayer {
 
         // Initialize the output vector with the size of biases
         let mut output = vec![0.0; self.biases.len()];
-        
+
         let num_rows = self.weights.rows();
         let num_cols = self.weights.cols();
         // Check dimensions or panic:
@@ -170,7 +170,7 @@ impl Layer for DenseLayer {
         let num_cols = self.weights.cols();
         // Check dimensions or panic:
         assert_eq!(num_rows, self.biases.len());
-        
+
         // Update weights and biases using the accumulated gradients
         for i in 0..num_rows {
             for j in 0..num_cols {
