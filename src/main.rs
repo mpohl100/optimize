@@ -12,31 +12,117 @@ struct Args {
     /// Directory where the model shall be saved
     #[clap(long)]
     model_directory: String,
+    #[clap(long, default_value = "")]
+    shape_file: String,
+
+    // insert the training params here
+    #[clap(long, default_value = "0.7")]
+    training_verification_ratio: f64,
+    #[clap(long, default_value = "0.01")]
+    learning_rate: f64,
+    #[clap(long, default_value = "100")]
+    epochs: usize,
+    #[clap(long, default_value = "0.1")]
+    tolerance: f64,
+    #[clap(long, default_value = "32")]
+    batch_size: usize,
+
+    // insert data importer params here
+    #[clap(long)]
+    input_file: String,
+    #[clap(long)]
+    target_file: String,
+}
+
+impl Args {
+    fn get_training_params(&self) -> TrainingParams {
+        if self.shape_file.is_empty() {
+            // deduce shape from input and target files
+            let file_importer =
+                FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+            let data = file_importer.get_data();
+            let input_size = data.data[0].len();
+            let output_size = data.labels[0].len();
+            // create a shape with one dense layer and the sigmoid activation function
+            let shape = NeuralNetworkShape::new(vec![LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size,
+                    output_size,
+                },
+                activation: ActivationType::Sigmoid,
+            }]);
+            return TrainingParams::new(
+                shape,
+                self.training_verification_ratio,
+                self.learning_rate,
+                self.epochs,
+                self.tolerance,
+                self.batch_size,
+            );
+        }
+        let shape = NeuralNetworkShape::from_file(self.shape_file.clone());
+        // check dimensions of shape with input and target files
+        let file_importer =
+            FileDataImporter::new(self.input_file.clone(), self.target_file.clone());
+        let data = file_importer.get_data();
+        let input_size = data.data[0].len();
+        let output_size = data.labels[0].len();
+        assert_eq!(shape.layers[0].input_size(), input_size);
+        assert_eq!(
+            shape.layers[shape.layers.len() - 1].output_size(),
+            output_size
+        );
+        TrainingParams::new(
+            shape,
+            self.training_verification_ratio,
+            self.learning_rate,
+            self.epochs,
+            self.tolerance,
+            self.batch_size,
+        )
+    }
 }
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
-struct MockDataImporter {
-    shape: NeuralNetworkShape,
+struct FileDataImporter {
+    input_file: String,
+    target_file: String,
 }
 
-impl MockDataImporter {
-    fn new(shape: NeuralNetworkShape) -> Self {
-        Self { shape }
+impl FileDataImporter {
+    fn new(input_file: String, target_file: String) -> Self {
+        Self {
+            input_file,
+            target_file,
+        }
     }
 }
 
-impl DataImporter for MockDataImporter {
+impl DataImporter for FileDataImporter {
     fn get_data(&self) -> SessionData {
-        let num_samples = 1000;
-        let input_size = self.shape.layers[0].input_size(); // Input dimension (e.g., 28x28 image flattened)
-        let num_classes = self.shape.layers[self.shape.layers.len() - 1].output_size(); // Number of output classes (e.g., for digit classification)
-
         // Initialize inputs and targets with zeros
-        let data = vec![vec![0.0; input_size]; num_samples];
-        let labels = vec![vec![0.0; num_classes]; num_samples];
+        // read data from input csv file
+        let data = self.read_data(self.input_file.clone());
+        let labels = self.read_data(self.target_file.clone());
 
         SessionData { data, labels }
+    }
+}
+
+impl FileDataImporter {
+    fn read_data(&self, file: String) -> Vec<Vec<f64>> {
+        let mut rdr = csv::Reader::from_path(file).unwrap();
+        let mut data = Vec::new();
+        for result in rdr.records() {
+            let record = result.unwrap();
+            let mut row = Vec::new();
+            for value in record.iter() {
+                row.push(value.parse::<f64>().unwrap());
+            }
+            data.push(row);
+        }
+        data
     }
 }
 
@@ -44,62 +130,19 @@ fn main() {
     let args = Args::parse();
     let model_directory = &args.model_directory;
 
-    // Define the neural network shape
-    let nn_shape = NeuralNetworkShape {
-        layers: vec![
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 128,
-                },
-                activation: ActivationType::ReLU,
-            },
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 64,
-                },
-                activation: ActivationType::ReLU,
-            },
-            LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 10,
-                },
-                activation: ActivationType::Sigmoid,
-            },
-        ],
-    };
+    let training_params = args.get_training_params();
 
-    // Define training parameters
-    let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1, 32);
+    let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    // Create a training session using the mock data importer
-    let data_importer = MockDataImporter::new(nn_shape);
-
-    let training_session = TrainingSession::from_disk(
-        model_directory,
-        training_params.clone(),
-        Box::new(data_importer.clone()),
-    );
-    match training_session {
-        Ok(mut training_session) => {
-            // Train the neural network and check the success rate
-            let success_rate = training_session.train().expect("Training failed");
-            // print the success rate
-            println!("Success rate: {}", success_rate);
-            training_session
-                .save_model(model_directory.clone())
-                .expect("Failed to save model");
-            return;
-        }
-        Err(e) => {
-            println!("Failed to load model: {}", e);
-        }
+    // if the model_directory exists load the model from disk
+    let mut training_session = if std::fs::metadata(model_directory).is_ok() {
+        TrainingSession::from_disk(model_directory, training_params, Box::new(data_importer))
+            .expect("Failed to load model from disk")
     }
-
-    let mut training_session = TrainingSession::new(training_params, Box::new(data_importer))
-        .expect("Failed to create TrainingSession");
+    else{
+        TrainingSession::new(training_params, Box::new(data_importer))
+        .expect("Failed to create TrainingSession")
+    };
 
     // Train the neural network and check the success rate
     let success_rate = training_session.train().expect("Training failed");
