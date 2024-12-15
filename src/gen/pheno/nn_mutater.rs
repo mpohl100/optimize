@@ -120,12 +120,17 @@ fn fetch_added_layers(
     let begin_size = layer.input_size();
     let end_size = layer.output_size();
 
-    let inner_size = match random_number {
+    let mut inner_size = match random_number {
         0 => closest_power_of_two as usize,
         1 => (closest_power_of_two / 2.0) as usize,
         2 => (closest_power_of_two * 2.0) as usize,
         _ => closest_power_of_two as usize,
     };
+
+    // cap the inner size at an acceptable value
+    if inner_size > 1024 {
+        inner_size = 1024;
+    }
 
     let first_layer = LayerShape {
         layer_type: LayerType::Dense {
