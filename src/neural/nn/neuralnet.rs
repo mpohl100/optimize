@@ -368,7 +368,7 @@ impl NeuralNetwork {
             layers.push(layer_shape);
         }
         self.shape = NeuralNetworkShape { layers };
-        if !self.shape.is_valid(){
+        if !self.shape.is_valid() {
             println!("Invalid shape: {:?}", self.shape);
             panic!("Invalid shape");
         }
