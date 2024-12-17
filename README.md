@@ -77,5 +77,33 @@ A layer_* file has the following format:
 ```
 The first line contains the number of rows and columns.
 In the following lines all the entries of the matrix of the dense layer shall be present.
+
+## Using genetic algorithm to try out network shapes
+Genetic algorithms have the ability to crossover and mutate the phenotypes and to evaluate how well they perform with the score function.
+In our case the phenotpye is a neural network with a specific shape.
+1. crossover is implemented by taking the left half of the shape and glueing it to the left half of the shape of two winning performers of the previous generation
+2. mutate is implemented by randomly choosing one of the following operations: 
+  - expanding a layer at a random position. For example if   a layer has the dimensions 196 to 10, it will be expanded to two layers of the following shapes:
+    - 196 to 256 and 256 to 10
+    - 196 to 128 and 128 to 10
+    - 196 to 64 and 64 to 10
+    note that powers of two are chosen for the inbetween dimension. To the outside the neural network shape will still match in dimensions.
+    The maximum of the inner dimension is capped at 1024 in order to protect your system from running out of memory too quickly.
+    The activation function of the added layer is chosen randomly.
+  - removing a layer at a random position. For example if two layers have the    dimensions 196 to 128 and 128 to 10.
+  If we remove the first layer the dimensions of the second layer will be adjusted to 196 to 10.
+  - changing a layer at a random position.
+   This involves changing its activation function randomly
+  
+The score function of the genetic algorithm is implemented in the following way:
+  - The phenotype (a neural network with a specific shape) is trained with the data of the training dataset
+  - After training is finished the fitness is the precentage of correctly predicted samples in the verification dataset
+  - The neural network shape with the best performances win and get the spread their traits in the breeding function of the next generation.
+  - The neural network that won the generation is presisted in the model directory in order to save progress
+  
+Note that this executable only works with smallish neural networks at the moment as the entire data of a neural network is in memory at all times and therefore slight variations of the network all always in memory depending on how many phenotypes a generation contains.
+As this is an experimental endevaour at the moment this downside is accepted for now.
+
+
           
 
