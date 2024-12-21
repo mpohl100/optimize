@@ -1,4 +1,4 @@
-use super::nn_mutater::NeuralNetworkMutater;
+use super::{nn_mutater::NeuralNetworkMutater, rng_wrapper::RealRng};
 use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::neural::nn::neuralnet::NeuralNetwork;
@@ -69,7 +69,8 @@ impl Phenotype for NeuralNetworkPhenotype {
     }
 
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
-        let mut mutater = NeuralNetworkMutater::new(rng);
+        let mut rng_wrapper = RealRng::new(rng);
+        let mut mutater = NeuralNetworkMutater::new(&mut rng_wrapper);
         let mutated_shape = mutater.mutate_shape(self.get_nn().shape().clone());
         let mut nn = self.get_nn();
         nn.adapt_to_shape(mutated_shape);

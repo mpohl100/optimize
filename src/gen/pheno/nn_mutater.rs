@@ -1,16 +1,17 @@
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
-use crate::evol::rng::RandomNumberGenerator;
 use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::LayerType;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
+use crate::gen::pheno::rng_wrapper::RngWrapper;
+
 pub struct NeuralNetworkMutater<'a> {
-    rng: &'a mut RandomNumberGenerator,
+    rng: &'a mut dyn RngWrapper,
 }
 
 impl<'a> NeuralNetworkMutater<'a> {
-    pub fn new(rng: &'a mut RandomNumberGenerator) -> Self {
+    pub fn new(rng: &'a mut dyn RngWrapper) -> Self {
         Self { rng }
     }
 
@@ -94,7 +95,7 @@ impl<'a> NeuralNetworkMutater<'a> {
     }
 }
 
-fn fetch_activation_type(rng: &mut RandomNumberGenerator) -> ActivationType {
+fn fetch_activation_type(rng: &mut dyn RngWrapper) -> ActivationType {
     let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
     match random_number {
         0 => ActivationType::ReLU,
@@ -106,7 +107,7 @@ fn fetch_activation_type(rng: &mut RandomNumberGenerator) -> ActivationType {
 
 #[allow(clippy::needless_late_init)]
 fn fetch_added_layers(
-    rng: &mut RandomNumberGenerator,
+    rng: &mut dyn RngWrapper,
     shape: &NeuralNetworkShape,
     position: usize,
 ) -> Vec<LayerShape> {
