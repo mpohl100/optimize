@@ -35,11 +35,23 @@ impl FakeRng {
 }
 
 impl RngWrapper for FakeRng {
-    fn fetch_uniform(&mut self, _min: f32, _max: f32, count: usize) -> VecDeque<f32> {
+    fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32> {
         let mut result = VecDeque::new();
         for _ in 0..count {
-            result.push_back(self.values.pop_front().unwrap());
+
+            let val = self.values.pop_front();
+            match val {
+                Some(val) => {
+                    // Check
+                    if val < min || val > max {
+                        panic!("Value out of range");
+                    }
+                    result.push_back(val);
+                },
+                None => panic!("No more values"),
+            };
         }
+
         result
     }
 }

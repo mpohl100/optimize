@@ -1,6 +1,7 @@
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum LayerChangeType {
     Add,
     Remove,
@@ -48,6 +49,10 @@ impl AnnotatedNeuralNetworkShape {
 
     pub fn get_layer(&self, position: usize) -> &LayerShape {
         &self.layers[position].layer
+    }
+
+    pub fn get_annotated_layer(&self, position: usize) -> &AnnotatedLayerShape {
+        &self.layers[position]
     }
 
     pub fn change_layer(&mut self, position: usize, layer: LayerShape) {
