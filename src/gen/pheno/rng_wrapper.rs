@@ -16,7 +16,7 @@ impl<'a> RealRng<'a> {
     }
 }
 
-impl<'a> RngWrapper for RealRng<'a> {
+impl RngWrapper for RealRng<'_> {
     fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32> {
         self.rng.fetch_uniform(min, max, count)
     }
