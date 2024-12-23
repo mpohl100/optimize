@@ -2,7 +2,7 @@ use crate::evol::rng::RandomNumberGenerator;
 
 use std::collections::VecDeque;
 
-pub trait RngWrapper{
+pub trait RngWrapper {
     fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32>;
 }
 
@@ -38,7 +38,6 @@ impl RngWrapper for FakeRng {
     fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32> {
         let mut result = VecDeque::new();
         for _ in 0..count {
-
             let val = self.values.pop_front();
             match val {
                 Some(val) => {
@@ -47,7 +46,7 @@ impl RngWrapper for FakeRng {
                         panic!("Value out of range");
                     }
                     result.push_back(val);
-                },
+                }
                 None => panic!("No more values"),
             };
         }
