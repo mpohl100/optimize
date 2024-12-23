@@ -157,6 +157,11 @@ mod tests {
     use crate::gen::pheno::rng_wrapper::FakeRng;
     use crate::gen::pheno::annotated_nn_shape::LayerChangeType;
 
+    // --------------------------------------------------------------------------------------------------------
+    // Test adding a layer
+    // Test one layer network
+
+
     #[test]
     fn test_one_layer_network_adds_medium_layer_and_relu() {
         // The first random number should pick the type of change to be applied
@@ -442,5 +447,281 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::Tanh);
     }
+
+    // --------------------------------------------------------------------------------------------------------
+    // Test two layer network
+
+
+    #[test]
+    fn test_two_layer_network_adds_medium_layer_and_relu() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        // The third random number should pick the activation type of the new layer
+        // The fourth random number should pick the size of the new layer
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 0.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
+        assert_eq!(mutated_shape.get_layer(1).output_size(), 128);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
+        assert_eq!(mutated_shape.get_layer(2).input_size(), 128);
+        assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+    }
+
+    
+    #[test]
+    fn test_two_layer_network_adds_small_layer_and_relu() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        // The third random number should pick the activation type of the new layer
+        // The fourth random number should pick the size of the new layer
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 1.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
+        assert_eq!(mutated_shape.get_layer(1).output_size(), 64);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
+        assert_eq!(mutated_shape.get_layer(2).input_size(), 64);
+        assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+    }
+
+    #[test]
+    fn test_two_layer_network_adds_big_layer_and_relu() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        // The third random number should pick the activation type of the new layer
+        // The fourth random number should pick the size of the new layer
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 2.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
+        assert_eq!(mutated_shape.get_layer(1).output_size(), 256);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
+        assert_eq!(mutated_shape.get_layer(2).input_size(), 256);
+        assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // Test removing a layer
+    // Test one layer network
+
+    #[test]
+    fn test_one_layer_network_does_not_remove() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        let mut rng = FakeRng::new(vec![2.0, 0.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // Test removing a layer
+    // Test two layer network
+
+    #[test]
+    fn test_two_layer_network_remove_first_leaves_correct_dimensions() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        let mut rng = FakeRng::new(vec![2.0, 0.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+    }
+
+    #[test]
+    fn test_two_layer_network_remove_second_leaves_correct_dimensions() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        let mut rng = FakeRng::new(vec![2.0, 1.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+    }
+
+// --------------------------------------------------------------------------------------------------------
+    // Test removing a layer
+    // Test three layer network
+
+    #[test]
+    fn test_three_layer_network_remove_middle_layer_leaves_correct_dimensions() {
+        // The first random number should pick the type of change to be applied
+        // The second random number should pick the position of the change
+        let mut rng = FakeRng::new(vec![2.0, 1.0]);
+        let shape = NeuralNetworkShape {
+            layers: vec![
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                    },
+                    activation: ActivationType::ReLU,
+                },
+            ],
+        };   
+        let mut mutater = NeuralNetworkMutater::new(&mut rng);
+        let mutated_shape = mutater.mutate_shape(shape);
+        assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
+        assert_eq!(mutated_shape.get_layer(0).input_size(), 128);
+        assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+    }
+
 
 }
