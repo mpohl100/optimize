@@ -3,8 +3,8 @@ use learn::neural::nn::neuralnet::NeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
 
-use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
 use learn::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
+use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
 
 use learn::evol::evolution::EvolutionOptions;
 use learn::evol::evolution::LogLevel;
@@ -44,7 +44,7 @@ fn test_neural_network_breeding() {
     let nn_phenotype = NeuralNetworkPhenotype::new(nn);
     let mut parents = vec![nn_phenotype];
 
-    let evol_opts = EvolutionOptions::new( 100, LogLevel::None, 4, 10);
+    let evol_opts = EvolutionOptions::new(100, LogLevel::None, 4, 10);
 
     let mut rng = RandomNumberGenerator::new();
 
@@ -53,9 +53,13 @@ fn test_neural_network_breeding() {
     let nn_strategy = NeuralNetworkStrategy::new(model_directory.clone());
 
     for _ in 0..20 {
-        let children = nn_strategy.breed(&parents, &evol_opts, &mut rng).expect("Breed failed");
+        let children = nn_strategy
+            .breed(&parents, &evol_opts, &mut rng)
+            .expect("Breed failed");
         assert_eq!(children.len(), 10);
-        assert!(children.iter().all(|child| child.get_nn().shape().is_valid()));
+        assert!(children
+            .iter()
+            .all(|child| child.get_nn().shape().is_valid()));
         parents.clear();
         for child in children.iter().take(4) {
             parents.push(child.clone());

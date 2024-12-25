@@ -273,7 +273,6 @@ impl Layer for DenseLayer {
 
         let biases = other.get_biases();
 
-
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {

@@ -1,4 +1,4 @@
-use crate::gen::pheno::annotated_nn_shape::{AnnotatedNeuralNetworkShape};
+use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh,
 };
