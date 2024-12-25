@@ -267,6 +267,32 @@ impl Layer for DenseLayer {
             }
         }
     }
+
+    fn assign_weights(&mut self, other: &dyn Layer) {
+        let weights = other.get_weights();
+
+        let biases = other.get_biases();
+
+
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    *self.weights.get_mut_unchecked(i, j) = *weights.get_unchecked(i, j);
+                }
+            }
+            if i < biases.len() {
+                self.biases[i] = biases[i];
+            }
+        }
+    }
+
+    fn get_weights(&self) -> Matrix<f64> {
+        self.weights.clone()
+    }
+
+    fn get_biases(&self) -> Vec<f64> {
+        self.biases.clone()
+    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,5 @@
+use crate::neural::mat::matrix::Matrix;
+
 use dyn_clone::DynClone;
 use std::error::Error;
 // A trait representing a layer in a neural network.
@@ -61,6 +63,15 @@ pub trait Layer: std::fmt::Debug + DynClone {
 
     /// Resizes the layer to the input dimensions.
     fn resize(&mut self, input_size: usize, output_size: usize);
+
+    /// Assigns the weight of the input other layer
+    fn assign_weights(&mut self, other: &dyn Layer);
+
+    /// Returns the weights of the layer.
+    fn get_weights(&self) -> Matrix<f64>;
+
+    /// Returns the biases of the layer.
+    fn get_biases(&self) -> Vec<f64>;
 }
 
 dyn_clone::clone_trait_object!(Layer);
