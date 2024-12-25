@@ -1,4 +1,4 @@
-use crate::gen::pheno::annotated_nn_shape::{AnnotatedNeuralNetworkShape, LayerChangeType};
+use crate::gen::pheno::annotated_nn_shape::{AnnotatedNeuralNetworkShape};
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh,
 };
@@ -273,63 +273,19 @@ impl NeuralNetwork {
     }
 
     pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
-        for (i, layer) in shape.layers.iter().enumerate() {
-            match layer.change_type {
-                LayerChangeType::Add => {
-                    let new_layer = match &layer.layer.layer_type() {
-                        LayerType::Dense {
-                            input_size,
-                            output_size,
-                        } => Box::new(DenseLayer::new(*input_size, *output_size))
-                            as Box<dyn Layer + Send>,
-                    };
-                    let activation = match layer.layer.activation {
-                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
-                        ActivationType::Sigmoid => {
-                            Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>
-                        }
-                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
-                    };
-                    self.add_activation_and_layer_at_position(i, activation, new_layer);
-                }
-                LayerChangeType::Remove => {
-                    self.layers.remove(i);
-                    self.activations.remove(i);
-                }
-                LayerChangeType::Change => {
-                    let mut changed = false;
-                    match &layer.layer.layer_type() {
-                        LayerType::Dense {
-                            input_size,
-                            output_size,
-                        } => {
-                            if *input_size != self.layers[i].input_size()
-                                || *output_size != self.layers[i].output_size()
-                            {
-                                self.layers[i].resize(*input_size, *output_size);
-                                changed = true;
-                            }
-                        }
-                    };
-                    if changed {
-                        continue;
-                    }
-                    let activation = match layer.layer.activation {
-                        ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
-                        ActivationType::Sigmoid => {
-                            Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>
-                        }
-                        ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
-                    };
-                    self.activations[i] = activation;
-                }
-                LayerChangeType::None => {}
+        let mut nn = NeuralNetwork::new(shape.to_neural_network_shape());
+        nn.assign_weights(self);
+        *self = nn;
+    }
+
+    pub fn assign_weights(&mut self, other: &NeuralNetwork) {
+        for i in 0..self.layers.len() {
+            if other.layers.len() <= i {
+                break;
             }
-            self.deduce_shape();
-            let expected_shape = shape.to_neural_network_shape();
-            assert_eq!(self.shape, expected_shape);
+
+            self.layers[i].assign_weights(&*other.layers[i]);
         }
-        self.shape = shape.to_neural_network_shape();
     }
 
     pub fn merge(&self, other: NeuralNetwork) -> NeuralNetwork {
@@ -421,17 +377,6 @@ impl NeuralNetwork {
             }
         }
         (-1, -1)
-    }
-
-    /// Adds activation and layer at a specific position in the network.
-    fn add_activation_and_layer_at_position(
-        &mut self,
-        position: usize,
-        activation: Box<dyn ActivationTrait + Send>,
-        layer: Box<dyn Layer + Send>,
-    ) {
-        self.activations.insert(position, activation);
-        self.layers.insert(position, layer);
     }
 }
 
