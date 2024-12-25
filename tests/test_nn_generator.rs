@@ -31,7 +31,7 @@ impl DataImporter for MockDataImporter {
     }
 }
 
-//#[test]
+#[test]
 fn test_neural_network_generator() {
     let model_directory = "tests/test_model_generation".to_string();
 
