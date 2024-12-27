@@ -1,4 +1,4 @@
-use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::ActivationData;
 
 use dyn_clone::DynClone;
 
@@ -29,7 +29,7 @@ pub trait ActivationTrait: std::fmt::Debug + DynClone {
     fn backward(&self, grad_output: &[f64]) -> Vec<f64>;
 
     /// Returns the name of the activation function.
-    fn get_activation_type(&self) -> ActivationType;
+    fn get_activation_data(&self) -> ActivationData;
 }
 
 dyn_clone::clone_trait_object!(ActivationTrait);

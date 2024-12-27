@@ -1,5 +1,6 @@
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::ActivationData;
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::LayerType;
 use crate::neural::nn::shape::NeuralNetworkShape;
@@ -30,7 +31,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             }
             1 => {
-                let activation = fetch_activation_type(self.rng);
+                let activation = fetch_activation_data(self.rng);
                 let position = self
                     .rng
                     .fetch_uniform(0.0, shape.num_layers() as f32, 1)
@@ -59,7 +60,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                             input_size,
                             output_size: layer.output_size(),
                         },
-                        activation: layer.activation,
+                        activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(0, new_layer);
                 } else if position == shape_len {
@@ -71,7 +72,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                             input_size: layer.input_size(),
                             output_size,
                         },
-                        activation: layer.activation,
+                        activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(position - 1, new_layer);
                 } else {
@@ -82,7 +83,7 @@ impl<'a> NeuralNetworkMutater<'a> {
                             input_size: mutated_shape.get_layer(position - 1).output_size(),
                             output_size: layer.output_size(),
                         },
-                        activation: layer.activation,
+                        activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(position, new_layer);
                 }
@@ -95,12 +96,13 @@ impl<'a> NeuralNetworkMutater<'a> {
     }
 }
 
-fn fetch_activation_type(rng: &mut dyn RngWrapper) -> ActivationType {
-    let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
+fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
+    let random_number = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
     match random_number {
-        0 => ActivationType::ReLU,
-        1 => ActivationType::Sigmoid,
-        2 => ActivationType::Tanh,
+        0 => ActivationData::new(ActivationType::ReLU),
+        1 => ActivationData::new(ActivationType::Sigmoid),
+        2 => ActivationData::new(ActivationType::Tanh),
+        3 => ActivationData::new_softmax(2.0),
         _ => panic!("Invalid random number generated"),
     }
 }
@@ -111,7 +113,7 @@ fn fetch_added_layers(
     shape: &NeuralNetworkShape,
     position: usize,
 ) -> Vec<LayerShape> {
-    let activation = fetch_activation_type(rng);
+    let activation = fetch_activation_data(rng);
 
     let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
 
@@ -138,7 +140,7 @@ fn fetch_added_layers(
             input_size: begin_size,
             output_size: inner_size,
         },
-        activation,
+        activation: activation.clone(),
     };
 
     let second_layer = LayerShape {
@@ -174,7 +176,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -186,14 +188,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -209,7 +211,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -223,7 +225,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
@@ -233,7 +235,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
     }
 
@@ -250,7 +252,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -262,14 +264,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -288,7 +290,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -300,14 +302,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -323,7 +325,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -337,7 +339,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
@@ -347,7 +349,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
     }
 
@@ -364,7 +366,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -376,14 +378,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -402,7 +404,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -414,14 +416,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -437,7 +439,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -451,7 +453,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
@@ -461,7 +463,7 @@ mod tests {
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
-            ActivationType::Sigmoid
+            ActivationData::new(ActivationType::Sigmoid)
         );
     }
 
@@ -478,7 +480,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -490,14 +492,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::Tanh);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -517,14 +519,14 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -537,21 +539,21 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -568,14 +570,14 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -588,21 +590,21 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -619,14 +621,14 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -639,21 +641,21 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -671,7 +673,7 @@ mod tests {
                     input_size: 196,
                     output_size: 10,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
@@ -683,7 +685,7 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -702,14 +704,14 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -722,7 +724,7 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -737,14 +739,14 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -757,7 +759,7 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -776,21 +778,21 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 64,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 64,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -804,14 +806,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::None
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -826,21 +828,21 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 64,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 64,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -854,14 +856,14 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 
     #[test]
@@ -876,21 +878,21 @@ mod tests {
                         input_size: 196,
                         output_size: 128,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 128,
                         output_size: 64,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 64,
                         output_size: 10,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         };
@@ -904,13 +906,13 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationType::ReLU);
+        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
     }
 }

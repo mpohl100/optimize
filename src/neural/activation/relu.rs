@@ -1,4 +1,6 @@
 use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::ActivationData;
+
 
 use super::activate::ActivationTrait;
 
@@ -21,8 +23,8 @@ impl ActivationTrait for ReLU {
             .collect()
     }
 
-    fn get_activation_type(&self) -> ActivationType {
-        ActivationType::ReLU
+    fn get_activation_data(&self) -> ActivationData {
+        ActivationData::new(ActivationType::ReLU)
     }
 }
 

@@ -2,6 +2,7 @@ use learn::evol::evolution::EvolutionOptions;
 use learn::evol::evolution::LogLevel;
 use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
 use learn::neural::nn::shape::ActivationType;
+use learn::neural::nn::shape::ActivationData;
 use learn::neural::nn::shape::LayerShape;
 use learn::neural::nn::shape::LayerType;
 use learn::neural::nn::shape::NeuralNetworkShape;
@@ -63,7 +64,7 @@ impl Args {
                     input_size,
                     output_size,
                 },
-                activation: ActivationType::Sigmoid,
+                activation: ActivationData::new(ActivationType::Sigmoid),
             }]);
             return TrainingParams::new(
                 shape,
