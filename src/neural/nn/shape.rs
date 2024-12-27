@@ -22,6 +22,39 @@ pub enum ActivationType {
     Sigmoid,
     /// Tanh (Hyperbolic Tangent) activation function.
     Tanh,
+    /// Softmax activation function.
+    Softmax,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ActivationData{
+    activation_type: ActivationType,
+    temperature: Option<f64>,
+}
+
+impl ActivationData {
+    pub fn new(activation_type: ActivationType) -> Self {
+        Self { activation_type, temperature: None }
+    }
+
+    pub fn new_softmax(temperature: f64) -> Self {
+        Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        match self.activation_type {
+            ActivationType::Softmax => self.temperature.is_some() && self.temperature.unwrap() > 0.0,
+            _ => self.temperature.is_none(),
+        }
+    }
+
+    pub fn activation_type(&self) -> ActivationType {
+        self.activation_type
+    }
+
+    pub fn temperature(&self) -> Option<f64> {
+        self.temperature
+    }
 }
 
 /// Struct representing the shape and configuration of a neural network layer.
@@ -30,7 +63,7 @@ pub struct LayerShape {
     /// The type of the layer (e.g., Dense) with input and output sizes.
     pub layer_type: LayerType,
     /// The activation function used in the layer (e.g., ReLU, Sigmoid).
-    pub activation: ActivationType,
+    pub activation: ActivationData,
 }
 
 impl LayerShape {
@@ -60,7 +93,7 @@ impl LayerShape {
     /// * `true` if both input size and output size are greater than zero.
     /// * `false` otherwise.
     pub fn is_valid(&self) -> bool {
-        self.input_size() > 0 && self.output_size() > 0
+        self.input_size() > 0 && self.output_size() > 0 && self.activation.is_valid()
     }
 }
 
@@ -181,7 +214,7 @@ mod tests {
                 input_size: 10,
                 output_size: 5,
             },
-            activation: ActivationType::ReLU,
+            activation: ActivationData::new(ActivationType::ReLU),
         };
         assert!(valid_layer.is_valid());
 
@@ -190,7 +223,7 @@ mod tests {
                 input_size: 0,
                 output_size: 5,
             },
-            activation: ActivationType::Sigmoid,
+            activation: ActivationData::new(ActivationType::Sigmoid),
         };
         assert!(!invalid_layer.is_valid());
     }
@@ -203,14 +236,14 @@ mod tests {
                     input_size: 10,
                     output_size: 5,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 5,
                     output_size: 3,
                 },
-                activation: ActivationType::Sigmoid,
+                activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ];
         let network = NeuralNetworkShape { layers };
@@ -222,14 +255,14 @@ mod tests {
                     input_size: 10,
                     output_size: 5,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 4, // Mismatch here
                     output_size: 3,
                 },
-                activation: ActivationType::Sigmoid,
+                activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ];
         let invalid_network = NeuralNetworkShape {

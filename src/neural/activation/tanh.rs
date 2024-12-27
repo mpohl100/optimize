@@ -1,4 +1,5 @@
 use crate::neural::nn::shape::ActivationType;
+use crate::neural::nn::shape::ActivationData;
 
 use super::activate::ActivationTrait;
 
@@ -19,8 +20,8 @@ impl ActivationTrait for Tanh {
             .collect()
     }
 
-    fn get_activation_type(&self) -> ActivationType {
-        ActivationType::Tanh
+    fn get_activation_data(&self) -> ActivationData {
+        ActivationData::new(ActivationType::Tanh)
     }
 }
 

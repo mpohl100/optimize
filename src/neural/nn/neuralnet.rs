@@ -1,6 +1,6 @@
 use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
-    activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh,
+    activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh, softmax::Softmax,
 };
 use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::Layer;
@@ -33,10 +33,11 @@ impl NeuralNetwork {
                 layer_shape.input_size(),
                 layer_shape.output_size(),
             ));
-            let activation = match layer_shape.activation {
+            let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => Box::new(Softmax::new(layer_shape.activation.temperature().unwrap())) as Box<dyn ActivationTrait + Send>,
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -72,10 +73,12 @@ impl NeuralNetwork {
                     Box::new(layer) as Box<dyn Layer + Send>
                 }
             };
-            let activation = match sh.layers[i].activation {
+            let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap())) as Box<dyn ActivationTrait + Send>,
+        
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -349,7 +352,7 @@ impl NeuralNetwork {
                     input_size: self.layers[i].input_size(),
                     output_size: self.layers[i].output_size(),
                 },
-                activation: self.activations[i].get_activation_type(),
+                activation: self.activations[i].get_activation_data(),
             };
             layers.push(layer_shape);
         }
@@ -424,14 +427,14 @@ mod tests {
                         input_size: 3,
                         output_size: 3,
                     },
-                    activation: ActivationType::Sigmoid,
+                    activation: ActivationData::new(ActivationType::Sigmoid),
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 3,
                         output_size: 3,
                     },
-                    activation: ActivationType::ReLU,
+                    activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
         });
