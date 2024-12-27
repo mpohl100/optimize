@@ -1,5 +1,5 @@
-use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::ActivationData;
+use crate::neural::nn::shape::ActivationType;
 
 use super::activate::ActivationTrait;
 
