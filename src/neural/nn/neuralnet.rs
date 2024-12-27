@@ -150,13 +150,24 @@ impl NeuralNetwork {
         targets: &[Vec<f64>],
         learning_rate: f64,
         epochs: usize,
+        tolerance: f64,
     ) {
         for i in 0..epochs {
             println!("Epoch: {}\r", i);
             let mut loss = 0.0;
+            let mut success_count = 0;
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
                 let output = self.forward(input.as_slice());
+
+                // Check if the output matches the target
+                if output
+                    .iter()
+                    .zip(target.iter())
+                    .all(|(&out, &t)| (out - t).abs() < tolerance)
+                {
+                    success_count += 1;
+                }
 
                 // Calculate loss gradient (e.g., mean squared error)
                 // let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
@@ -175,7 +186,8 @@ impl NeuralNetwork {
                 }
             }
             loss /= inputs.len() as f64;
-            println!("Epoch {}: Loss {}\r", i, loss);
+            let accuracy = success_count as f64 / inputs.len() as f64 * 100.0;
+            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss, accuracy);
         }
     }
 
@@ -186,6 +198,7 @@ impl NeuralNetwork {
         targets: &[Vec<f64>],
         learning_rate: f64,
         epochs: usize,
+        tolerance: f64,
         batch_size: usize,
     ) {
         for i in 0..epochs {
@@ -193,11 +206,22 @@ impl NeuralNetwork {
             let mut loss = 0.0;
             let input_chunks = inputs.chunks(batch_size);
             let target_chunks = targets.chunks(batch_size);
+            let mut success_count = 0;
             for batch in input_chunks.zip(target_chunks) {
                 let input_chunk_batch = batch.0;
                 let target_chunk_batch = batch.1;
                 for (input, target) in input_chunk_batch.iter().zip(target_chunk_batch) {
                     let output = self.forward_batch(input.as_slice());
+
+                    // Check if the output matches the target
+                    if output
+                        .iter()
+                        .zip(target.iter())
+                        .all(|(&out, &t)| (out - t).abs() < tolerance)
+                    {
+                        success_count += 1;
+                    }
+
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
                         let error = output[j] - target[j];
@@ -210,7 +234,13 @@ impl NeuralNetwork {
                     layer.update_weights(learning_rate);
                 }
             }
-            println!("Epoch {}: Loss {}\r", i, loss / inputs.len() as f64);
+            let accuracy = success_count as f64 / inputs.len() as f64 * 100.0;
+            println!(
+                "Epoch {}: Loss {}, Accuracy {}%\r",
+                i,
+                loss / inputs.len() as f64,
+                accuracy
+            );
         }
     }
 
@@ -409,7 +439,7 @@ mod tests {
         let inputs = vec![vec![1.0, 1.0, 1.0]];
         let targets = vec![vec![0.0, 0.0, 0.0]];
 
-        nn.train(&inputs, &targets, 0.01, 100);
+        nn.train(&inputs, &targets, 0.01, 100, 0.1);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]

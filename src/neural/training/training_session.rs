@@ -95,6 +95,7 @@ impl TrainingSession {
             &training_targets,
             self.params.learning_rate(),
             self.params.epochs(),
+            self.params.tolerance(),
             //self.params.batch_size(),
         );
 
