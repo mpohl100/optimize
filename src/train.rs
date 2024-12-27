@@ -1,5 +1,5 @@
 use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationType, ActivationData, LayerShape, LayerType};
+use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;

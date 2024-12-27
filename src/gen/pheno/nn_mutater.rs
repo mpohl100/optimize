@@ -1,6 +1,6 @@
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
-use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::ActivationData;
+use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::LayerType;
 use crate::neural::nn::shape::NeuralNetworkShape;
@@ -188,14 +188,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -264,14 +270,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -302,14 +314,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -378,14 +396,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -416,14 +440,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -492,14 +522,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::Tanh));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::Tanh)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -539,21 +575,30 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(2).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -590,21 +635,30 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(2).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -641,21 +695,30 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 256);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(2).change_type,
             LayerChangeType::Add
         );
         assert_eq!(mutated_shape.get_layer(2).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(2).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(2).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -685,7 +748,10 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -724,7 +790,10 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -759,7 +828,10 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -806,14 +878,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::None
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -856,14 +934,20 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 
     #[test]
@@ -906,13 +990,19 @@ mod tests {
         );
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
-        assert_eq!(mutated_shape.get_layer(0).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(0).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
         assert_eq!(
             mutated_shape.get_annotated_layer(1).change_type,
             LayerChangeType::Change
         );
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
-        assert_eq!(mutated_shape.get_layer(1).activation, ActivationData::new(ActivationType::ReLU));
+        assert_eq!(
+            mutated_shape.get_layer(1).activation,
+            ActivationData::new(ActivationType::ReLU)
+        );
     }
 }

@@ -27,23 +27,31 @@ pub enum ActivationType {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ActivationData{
+pub struct ActivationData {
     activation_type: ActivationType,
     temperature: Option<f64>,
 }
 
 impl ActivationData {
     pub fn new(activation_type: ActivationType) -> Self {
-        Self { activation_type, temperature: None }
+        Self {
+            activation_type,
+            temperature: None,
+        }
     }
 
     pub fn new_softmax(temperature: f64) -> Self {
-        Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
+        Self {
+            activation_type: ActivationType::Softmax,
+            temperature: Some(temperature),
+        }
     }
 
     pub fn is_valid(&self) -> bool {
         match self.activation_type {
-            ActivationType::Softmax => self.temperature.is_some() && self.temperature.unwrap() > 0.0,
+            ActivationType::Softmax => {
+                self.temperature.is_some() && self.temperature.unwrap() > 0.0
+            }
             _ => self.temperature.is_none(),
         }
     }

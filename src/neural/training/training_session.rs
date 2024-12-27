@@ -161,7 +161,7 @@ fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
 mod tests {
     use super::*;
     use crate::neural::nn::shape::NeuralNetworkShape;
-    use crate::neural::nn::shape::{ActivationType, ActivationData, LayerShape, LayerType};
+    use crate::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
     use crate::neural::training::data_importer::{DataImporter, SessionData};
 
     // Mock DataImporter implementation for testing
@@ -208,7 +208,7 @@ mod tests {
                         output_size: 64,
                     },
                     activation: ActivationData::new(ActivationType::ReLU),
-                },                
+                },
                 LayerShape {
                     layer_type: LayerType::Dense {
                         input_size: 64,

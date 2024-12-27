@@ -1,6 +1,6 @@
 use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
-    activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, tanh::Tanh, softmax::Softmax,
+    activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
 use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::Layer;
@@ -37,7 +37,10 @@ impl NeuralNetwork {
                 ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
-                ActivationType::Softmax => Box::new(Softmax::new(layer_shape.activation.temperature().unwrap())) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => {
+                    Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
+                        as Box<dyn ActivationTrait + Send>
+                }
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -77,8 +80,10 @@ impl NeuralNetwork {
                 ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
-                ActivationType::Softmax => Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap())) as Box<dyn ActivationTrait + Send>,
-        
+                ActivationType::Softmax => {
+                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
+                        as Box<dyn ActivationTrait + Send>
+                }
             };
 
             network.add_activation_and_layer(activation, layer);
