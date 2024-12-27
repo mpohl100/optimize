@@ -1,7 +1,7 @@
 use learn::evol::rng::RandomNumberGenerator;
 use learn::neural::nn::neuralnet::NeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
+use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 
 use learn::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
@@ -20,21 +20,21 @@ fn test_neural_network_breeding() {
                     input_size: 128,
                     output_size: 128,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 128,
                     output_size: 64,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 64,
                     output_size: 10,
                 },
-                activation: ActivationType::Sigmoid,
+                activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
     };

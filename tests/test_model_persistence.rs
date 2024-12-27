@@ -1,5 +1,5 @@
 use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationType, LayerShape, LayerType};
+use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
@@ -39,21 +39,28 @@ fn train_model(model_directory: String) {
                     input_size: 128,
                     output_size: 128,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 128,
                     output_size: 64,
                 },
-                activation: ActivationType::ReLU,
+                activation: ActivationData::new(ActivationType::ReLU),
+            },
+            LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size: 64,
+                    output_size: 64,
+                },
+                activation: ActivationData::new_softmax(2.0),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 64,
                     output_size: 10,
                 },
-                activation: ActivationType::Sigmoid,
+                activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
     };
