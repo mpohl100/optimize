@@ -71,7 +71,16 @@ impl Phenotype for NeuralNetworkPhenotype {
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
         let mut rng_wrapper = RealRng::new(rng);
         let mut mutater = NeuralNetworkMutater::new(&mut rng_wrapper);
-        let mutated_shape = mutater.mutate_shape(self.get_nn().shape().clone());
+        let previous_shape = self.get_nn().shape().clone();
+        let mut mutated_shape = mutater.mutate_shape(previous_shape.clone());
+        let mut i = 0;
+        while mutated_shape.to_neural_network_shape() == previous_shape {
+            mutated_shape = mutater.mutate_shape(previous_shape.clone());
+            i += 1;
+            if i > 10 {
+                break;
+            }
+        }
         let mut nn = self.get_nn();
         nn.adapt_to_shape(mutated_shape);
         self.set_nn(nn);
