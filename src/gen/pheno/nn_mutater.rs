@@ -102,7 +102,10 @@ fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
         0 => ActivationData::new(ActivationType::ReLU),
         1 => ActivationData::new(ActivationType::Sigmoid),
         2 => ActivationData::new(ActivationType::Tanh),
-        3 => ActivationData::new_softmax(2.0),
+        3 => {
+            let random_temperature = rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap() as f64;
+            ActivationData::new_softmax(random_temperature)
+        }
         _ => panic!("Invalid random number generated"),
     }
 }
