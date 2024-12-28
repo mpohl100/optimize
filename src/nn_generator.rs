@@ -165,12 +165,31 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    let mut nn_generator = NeuralNetworkGenerator::new(
-        training_params,
-        evolution_options,
-        Box::new(data_importer),
-        model_directory.clone(),
-    );
+    // generate from disk if the model_directory exists
+    let mut nn_generator = if std::path::Path::new(model_directory).exists() {
+        if args.shape_file.is_empty() {
+            NeuralNetworkGenerator::from_disk(
+                training_params,
+                evolution_options,
+                Box::new(data_importer),
+                model_directory,
+            )
+        } else {
+            NeuralNetworkGenerator::new(
+                training_params,
+                evolution_options,
+                Box::new(data_importer),
+                model_directory.clone(),
+            )
+        }
+    } else {
+        NeuralNetworkGenerator::new(
+            training_params,
+            evolution_options,
+            Box::new(data_importer),
+            model_directory.clone(),
+        )
+    };
     nn_generator.generate();
     nn_generator.save();
 }

@@ -136,8 +136,13 @@ fn main() {
 
     // if the model_directory exists load the model from disk
     let mut training_session = if std::fs::metadata(model_directory).is_ok() {
-        TrainingSession::from_disk(model_directory, training_params, Box::new(data_importer))
-            .expect("Failed to load model from disk")
+        if args.shape_file.is_empty() {
+            TrainingSession::from_disk(model_directory, training_params, Box::new(data_importer))
+                .expect("Failed to load model from disk")
+        } else {
+            TrainingSession::new(training_params, Box::new(data_importer))
+                .expect("Failed to create TrainingSession")
+        }
     } else {
         TrainingSession::new(training_params, Box::new(data_importer))
             .expect("Failed to create TrainingSession")
