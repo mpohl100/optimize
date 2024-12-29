@@ -214,7 +214,7 @@ impl NeuralNetwork {
             let mut loss = 0.0;
             let input_chunks = inputs.chunks(batch_size);
             let target_chunks = targets.chunks(batch_size);
-            let mut success_count = 0;
+            let mut success_count = 0.0;
             for batch in input_chunks.zip(target_chunks) {
                 let input_chunk_batch = batch.0;
                 let target_chunk_batch = batch.1;
@@ -222,13 +222,13 @@ impl NeuralNetwork {
                     let output = self.forward_batch(input.as_slice());
 
                     // Check if the output matches the target
-                    if output
-                        .iter()
-                        .zip(target.iter())
-                        .all(|(&out, &t)| (out - t).abs() < tolerance)
-                    {
-                        success_count += 1;
+                    let mut nb_correct_outputs = 0;
+                    for (o, t) in output.iter().zip(target.iter()) {
+                        if (o - t).abs() < tolerance {
+                            nb_correct_outputs += 1;
+                        }
                     }
+                    success_count += nb_correct_outputs as f64 / target.len() as f64;
 
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
@@ -242,7 +242,7 @@ impl NeuralNetwork {
                     layer.update_weights(learning_rate);
                 }
             }
-            let accuracy = success_count as f64 / inputs.len() as f64 * 100.0;
+            let accuracy = success_count / inputs.len() as f64 * 100.0;
             println!(
                 "Epoch {}: Loss {}, Accuracy {}%\r",
                 i,
