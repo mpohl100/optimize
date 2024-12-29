@@ -96,7 +96,7 @@ impl<'a> NeuralNetworkMutater<'a> {
     }
 }
 
-fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
+pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
     let random_number = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
     match random_number {
         0 => ActivationData::new(ActivationType::ReLU),
