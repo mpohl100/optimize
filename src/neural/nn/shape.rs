@@ -209,6 +209,31 @@ impl NeuralNetworkShape {
         let layers = self.layers[start..end].to_vec();
         NeuralNetworkShape { layers }
     }
+
+    pub fn merge(
+        &self,
+        other: NeuralNetworkShape,
+        middle_activation_data: ActivationData,
+    ) -> NeuralNetworkShape {
+        let mut layers = self.layers.clone();
+
+        let merge_layer_input_size = self.layers.last().unwrap().output_size();
+        let merge_layer_output_size = other.layers.first().unwrap().input_size();
+
+        let merge_layer = LayerShape {
+            layer_type: LayerType::Dense {
+                input_size: merge_layer_input_size,
+                output_size: merge_layer_output_size,
+            },
+            activation: middle_activation_data,
+        };
+        layers.push(merge_layer);
+
+        layers.extend(other.layers.clone());
+        let new_shape = NeuralNetworkShape { layers };
+        assert!(new_shape.is_valid());
+        new_shape
+    }
 }
 
 #[cfg(test)]
