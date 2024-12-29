@@ -249,6 +249,9 @@ impl NeuralNetwork {
                 loss / inputs.len() as f64,
                 accuracy
             );
+            if accuracy < 0.01 && i > 10 {
+                break;
+            }
         }
     }
 
