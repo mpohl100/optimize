@@ -100,7 +100,7 @@ impl TrainingSession {
         );
 
         // Verification phase
-        let mut success_count = 0;
+        let mut success_count = 0.0;
         let num_verification_samples = inputs.len() - num_training_samples;
         for i in 0..num_verification_samples {
             let sample_idx = num_training_samples + i;
@@ -112,17 +112,17 @@ impl TrainingSession {
             let target = &targets[sample_idx];
 
             // Check if the output matches the target
-            if output
-                .iter()
-                .zip(target.iter())
-                .all(|(&out, &t)| (out - t).abs() < self.params.tolerance())
-            {
-                success_count += 1;
+            let mut nb_correct_outputs = 0;
+            for (o, t) in output.iter().zip(target.iter()) {
+                if (o - t).abs() < self.params.tolerance() {
+                    nb_correct_outputs += 1;
+                }
             }
+            success_count += nb_correct_outputs as f64 / target.len() as f64;
         }
 
         // Return the accuracy as the fraction of successful predictions
-        Ok(success_count as f64 / num_verification_samples as f64)
+        Ok(success_count / num_verification_samples as f64)
     }
 
     /// Save the model to disk

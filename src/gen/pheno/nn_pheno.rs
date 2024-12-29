@@ -89,10 +89,7 @@ impl Phenotype for NeuralNetworkPhenotype {
         let previous_shape = if left_half_shape.is_some() && right_half_shape.is_some() {
             let left_shape = left_half_shape.unwrap();
             let right_shape = right_half_shape.unwrap();
-            left_shape.merge(
-                right_shape,
-                fetch_activation_data(&mut rng_wrapper),
-            )
+            left_shape.merge(right_shape, fetch_activation_data(&mut rng_wrapper))
         } else {
             self.get_nn().shape().clone()
         };
