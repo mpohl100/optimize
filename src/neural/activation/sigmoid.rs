@@ -18,6 +18,12 @@ impl Sigmoid {
     }
 }
 
+impl Default for Sigmoid {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActivationTrait for Sigmoid {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.sigmoid_vec(input)

@@ -18,6 +18,12 @@ impl Tanh {
     }
 }
 
+impl Default for Tanh {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActivationTrait for Tanh {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.tanh_vec(input)
