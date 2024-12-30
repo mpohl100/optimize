@@ -33,15 +33,21 @@ impl ActivationTrait for Softmax {
     }
 
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        // Calculate softmax of the input
+        // Calculate softmax output
         let softmax_output = self.softmax(grad_output);
 
-        // Compute gradients using the simplified formula: dL/dz = softmax_output - true_labels
-        grad_output
-            .iter()
-            .zip(softmax_output.iter())
-            .map(|(grad, &softmax)| softmax - grad)
-            .collect()
+        // Compute gradients using the Jacobian of softmax
+        let mut grad_input = vec![0.0; grad_output.len()];
+        for i in 0..softmax_output.len() {
+            for j in 0..softmax_output.len() {
+                if i == j {
+                    grad_input[i] += softmax_output[i] * (1.0 - softmax_output[j]) * grad_output[j];
+                } else {
+                    grad_input[i] += -softmax_output[i] * softmax_output[j] * grad_output[j];
+                }
+            }
+        }
+        grad_input
     }
 
     fn get_activation_data(&self) -> ActivationData {
