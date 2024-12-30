@@ -19,6 +19,8 @@ struct Args {
     input_file: String,
     #[clap(long)]
     target_file: String,
+    #[clap(long)]
+    predict_file: String,
 }
 
 // Mock DataImporter implementation for testing
@@ -82,8 +84,12 @@ fn main() {
     let targets = data.labels;
 
     let mut success_count = 0.0;
+    let mut wtr = csv::Writer::from_path(args.predict_file.clone()).unwrap();
     for (input, target) in inputs.iter().zip(targets) {
         let output = nn.predict(input.to_vec());
+
+        // dump output to predict_file
+        wtr.write_record(output.iter().map(|x| x.to_string())).unwrap();
 
         // Check if the output matches the target
         let mut nb_correct_outputs = 0;
@@ -94,6 +100,7 @@ fn main() {
         }
         success_count += nb_correct_outputs as f64 / target.len() as f64;
     }
+    wtr.flush().unwrap();
 
     // Return the accuracy as the fraction of successful predictions
     let accuracy = success_count / inputs.len() as f64;
