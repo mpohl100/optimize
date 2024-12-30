@@ -139,11 +139,13 @@ impl<'a, T> Iterator for RowIterMut<'a, T> {
             self.current_row += 1;
             // SAFETY: This is safe because we ensure each slice is disjoint
             Some(unsafe {
-                slice::from_raw_parts_mut(self.matrix.data.as_mut_ptr().add(start), self.matrix.cols)
+                slice::from_raw_parts_mut(
+                    self.matrix.data.as_mut_ptr().add(start),
+                    self.matrix.cols,
+                )
             })
         } else {
             None
         }
     }
 }
-
