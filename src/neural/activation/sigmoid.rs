@@ -7,15 +7,26 @@ use super::activate::ActivationTrait;
 #[derive(Debug, Clone)]
 pub struct Sigmoid;
 
-impl ActivationTrait for Sigmoid {
-    fn forward(&self, input: &[f64]) -> Vec<f64> {
-        input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
+impl Sigmoid {
+    /// Creates a new Sigmoid instance.
+    pub fn new() -> Self {
+        Self
     }
 
-    fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
+    fn sigmoid_vec(&self, input: &[f64]) -> Vec<f64> {
+        input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
+    }
+}
+
+impl ActivationTrait for Sigmoid {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.sigmoid_vec(input)
+    }
+
+    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(self.forward(grad_output).iter())
+            .zip(self.sigmoid_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * output * (1.0 - output))
             .collect()
     }
@@ -31,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_sigmoid() {
-        let sigmoid = Sigmoid;
+        let mut sigmoid = Sigmoid;
         let input = vec![0.0];
         let output = sigmoid.forward(&input);
         // print output

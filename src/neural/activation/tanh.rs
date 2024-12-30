@@ -7,15 +7,26 @@ use super::activate::ActivationTrait;
 #[derive(Debug, Clone)]
 pub struct Tanh;
 
-impl ActivationTrait for Tanh {
-    fn forward(&self, input: &[f64]) -> Vec<f64> {
-        input.iter().map(|&x| x.tanh()).collect()
+impl Tanh {
+    /// Creates a new Tanh instance.
+    pub fn new() -> Self {
+        Self
     }
 
-    fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
+    fn tanh_vec(&self, input: &[f64]) -> Vec<f64> {
+        input.iter().map(|&x| x.tanh()).collect()
+    }
+}
+
+impl ActivationTrait for Tanh {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.tanh_vec(input)
+    }
+
+    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(self.forward(grad_output).iter())
+            .zip(self.tanh_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * (1.0 - output.powi(2)))
             .collect()
     }
@@ -31,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_tanh() {
-        let tanh = Tanh;
+        let mut tanh = Tanh;
         let input = vec![0.0];
         let output = tanh.forward(&input);
         // print output

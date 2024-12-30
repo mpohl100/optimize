@@ -8,14 +8,14 @@ use super::activate::ActivationTrait;
 pub struct ReLU;
 
 impl ActivationTrait for ReLU {
-    fn forward(&self, input: &[f64]) -> Vec<f64> {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         input
             .iter()
             .map(|&x| if x > 0.0 { x } else { 0.0 })
             .collect()
     }
 
-    fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
+    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
         grad_output
             .iter()
             .map(|&output| if output > 0.0 { 1.0 } else { 0.0 })
@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn test_relu() {
-        let relu = ReLU;
+        let mut relu = ReLU;
         let input = vec![-1.0, 0.0, 1.0];
         let output = relu.forward(&input);
         // print output
