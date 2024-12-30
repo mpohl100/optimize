@@ -6,13 +6,14 @@ use super::activate::ActivationTrait;
 #[derive(Debug, Clone)]
 pub struct Softmax {
     pub temperature: f64,
+    last_output: Option<Vec<f64>>,
 }
 
 impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
-        Self { temperature }
+        Self { temperature, last_output: None }
     }
 
     /// Applies the softmax function to a vector of inputs.
@@ -28,15 +29,21 @@ impl Softmax {
 }
 
 impl ActivationTrait for Softmax {
-    fn forward(&self, input: &[f64]) -> Vec<f64> {
-        self.softmax(input)
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        let output = self.softmax(input);
+        self.last_output = Some(output.clone()); // Cache the output
+        output
     }
 
-    fn backward(&self, grad_output: &[f64]) -> Vec<f64> {
-        let softmax_output = self.softmax(grad_output);
+    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+        let softmax_output = self
+            .last_output
+            .as_ref()
+            .expect("Forward must be called before backward to cache the output.");
+    
         let len = softmax_output.len();
         let mut grad_input = vec![0.0; len];
-
+    
         for i in 0..len {
             for j in 0..len {
                 if i == j {
@@ -47,8 +54,10 @@ impl ActivationTrait for Softmax {
             }
         }
 
+        self.last_output = None; // Clear the cache
+    
         grad_input
-    }
+    }    
 
     fn get_activation_data(&self) -> ActivationData {
         ActivationData::new_softmax(self.temperature)
@@ -61,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_softmax() {
-        let softmax = Softmax::new(1.0);
+        let mut softmax = Softmax::new(1.0);
         let input = vec![1.0, 2.0, 3.0];
         let output = softmax.forward(&input);
 
@@ -73,8 +82,9 @@ mod tests {
 
     #[test]
     fn test_softmax_backward() {
-        let softmax = Softmax::new(1.0);
+        let mut softmax = Softmax::new(1.0);
         let input = vec![1.0, 2.0, 3.0];
+        softmax.forward(input.as_slice());
         let grad_output = vec![0.1, 0.2, 0.7];
         let grad_input = softmax.backward(&grad_output);
 

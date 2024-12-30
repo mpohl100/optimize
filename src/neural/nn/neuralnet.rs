@@ -105,7 +105,7 @@ impl NeuralNetwork {
     /// Performs a forward pass through the network with the given input.
     pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
-        for (layer, activation) in self.layers.iter_mut().zip(&self.activations) {
+        for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             output = layer.forward(&output);
             // this operation should not change the dimension of output
             output = activation.forward(&output);
@@ -116,7 +116,7 @@ impl NeuralNetwork {
     /// Performs a forward pass through the network with the given input doing batch caching.
     pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
-        for (layer, activation) in self.layers.iter_mut().zip(&self.activations) {
+        for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             output = layer.forward_batch(&output);
             output = activation.forward(&output);
         }

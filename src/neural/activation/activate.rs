@@ -14,7 +14,7 @@ pub trait ActivationTrait: std::fmt::Debug + DynClone {
     /// # Returns
     ///
     /// * A vector of `f64` values after applying the activation function element-wise.
-    fn forward(&self, input: &[f64]) -> Vec<f64>;
+    fn forward(&mut self, input: &[f64]) -> Vec<f64>;
 
     /// Computes the gradient of the activation function for backpropagation.
     ///
@@ -26,7 +26,7 @@ pub trait ActivationTrait: std::fmt::Debug + DynClone {
     /// # Returns
     ///
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
-    fn backward(&self, grad_output: &[f64]) -> Vec<f64>;
+    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64>;
 
     /// Returns the name of the activation function.
     fn get_activation_data(&self) -> ActivationData;
