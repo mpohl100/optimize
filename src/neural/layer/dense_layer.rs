@@ -57,33 +57,19 @@ impl DenseLayer {
 }
 
 impl Layer for DenseLayer {
-    #[allow(clippy::needless_range_loop)]
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-        // Store input for potential use in backward pass (not needed in this function)
-        self.input_cache = input.to_vec().clone();
-
-        // Initialize the output vector with the size of biases
-        let mut output = vec![0.0; self.biases.len()];
-
-        let num_rows = self.weights.rows();
-        let num_cols = self.weights.cols();
-        //println!("num_rows: {}, num_cols: {}, num_biases: {}", num_rows, num_cols, self.biases.len());
-        // Check dimensions or panic:
-        assert_eq!(num_rows, self.biases.len());
-        assert_eq!(num_cols, input.len());
-
-        // Iterate over each element in biases
-        for i in 0..num_rows {
-            // Initialize output[i] with the corresponding bias value
-            output[i] = self.biases[i];
-
-            // Accumulate the dot product of weights and input
-            for j in 0..num_cols {
-                output[i] += self.weights.get_unchecked(i, j) * input[j];
-            }
-        }
-
-        output
+        self.input_cache = input.to_vec(); // Cache the input for backpropagation
+        self.weights
+            .iter()
+            .map(|weights_row| {
+                weights_row
+                    .iter()
+                    .zip(input.iter())
+                    .map(|(&w, &x)| w * x)
+                    .sum::<f64>()
+                    + self.biases[weights_row.len() - 1]
+            })
+            .collect()
     }
 
     #[allow(clippy::needless_range_loop)]
@@ -114,28 +100,23 @@ impl Layer for DenseLayer {
         output
     }
 
-    #[allow(clippy::needless_range_loop)]
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        // Initialize grad_input with the size of input_cache, filled with zeros
-        let mut grad_input = vec![0.0; self.input_cache.len()];
-
-        let num_rows = self.weights.rows();
-        let num_cols = self.weights.cols();
-        // Check dimensions or panic:
-        assert_eq!(num_rows, self.biases.len());
-        assert_eq!(num_cols, self.input_cache.len());
-
-        // Calculate gradients for weights and biases
-        for i in 0..num_rows {
-            for j in 0..num_cols {
-                // Update weight gradients
-                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * self.input_cache[j];
-                grad_input[j] += self.weights.get_unchecked(i, j) * grad_output[i];
+        // Compute the gradient with respect to the input
+        let grad_input = (0..self.input_cache.len())
+            .map(|i| {
+                self.weights
+                    .iter()
+                    .zip(grad_output.iter())
+                    .map(|(weights_row, &grad)| weights_row[i] * grad)
+                    .sum()
+            })
+            .collect();
+        // Compute the gradient with respect to the weights and biases
+        for (grad, weights_row) in grad_output.iter().zip(self.weights.iter_mut()) {
+            for (i, weight) in weights_row.iter_mut().enumerate() {
+                *weight += grad * self.input_cache[i];
             }
-            // Update bias gradients
-            self.bias_grads[i] += grad_output[i];
         }
-
         grad_input
     }
 
@@ -167,25 +148,15 @@ impl Layer for DenseLayer {
 
     #[allow(clippy::needless_range_loop)]
     fn update_weights(&mut self, learning_rate: f64) {
-        let num_rows = self.weights.rows();
-        let num_cols = self.weights.cols();
-        // Check dimensions or panic:
-        assert_eq!(num_rows, self.biases.len());
-
-        // Update weights and biases using the accumulated gradients
-        for i in 0..num_rows {
-            for j in 0..num_cols {
-                // Update weight with gradient descent step
-                *self.weights.get_mut_unchecked(i, j) -=
-                    learning_rate * self.weight_grads.get_unchecked(i, j);
-                // Reset weight gradient after update
-                *self.weight_grads.get_mut_unchecked(i, j) = 0.0;
+        for weights_row in self.weights.iter_mut() {
+            for weight in weights_row.iter_mut() {
+                *weight -= learning_rate * *weight;
             }
-            // Update biases and reset bias gradients
-            self.biases[i] -= learning_rate * self.bias_grads[i];
-            self.bias_grads[i] = 0.0;
         }
-        // empty the input batch cache
+        for bias in self.biases.iter_mut() {
+            *bias -= learning_rate * *bias;
+        }
+        self.input_cache.clear();
         self.input_batch_cache.clear();
     }
 
