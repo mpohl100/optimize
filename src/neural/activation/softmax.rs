@@ -12,9 +12,7 @@ impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
-        Self {
-            temperature,
-        }
+        Self { temperature }
     }
 
     /// Applies the softmax function to a vector of inputs.

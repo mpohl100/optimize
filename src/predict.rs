@@ -89,7 +89,8 @@ fn main() {
         let output = nn.predict(input.to_vec());
 
         // dump output to predict_file
-        wtr.write_record(output.iter().map(|x| x.to_string())).unwrap();
+        wtr.write_record(output.iter().map(|x| x.to_string()))
+            .unwrap();
 
         // Check if the output matches the target
         let mut nb_correct_outputs = 0;
