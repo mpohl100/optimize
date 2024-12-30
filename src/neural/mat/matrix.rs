@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt;
+use std::slice;
 
 #[derive(Debug, Clone)]
 pub struct Matrix<T> {
@@ -80,3 +81,69 @@ where
         self.cols
     }
 }
+
+/// Immutable row iterator
+pub struct RowIter<'a, T> {
+    matrix: &'a Matrix<T>,
+    current_row: usize,
+}
+
+/// Mutable row iterator
+pub struct RowIterMut<'a, T> {
+    matrix: &'a mut Matrix<T>,
+    current_row: usize,
+}
+
+impl<T> Matrix<T> {
+    /// Returns an iterator over the rows of the matrix (immutable)
+    pub fn iter(&self) -> RowIter<T> {
+        RowIter {
+            matrix: self,
+            current_row: 0,
+        }
+    }
+
+    /// Returns an iterator over the rows of the matrix (mutable)
+    pub fn iter_mut(&mut self) -> RowIterMut<T> {
+        RowIterMut {
+            matrix: self,
+            current_row: 0,
+        }
+    }
+}
+
+// Implement `Iterator` for `RowIter`
+impl<'a, T> Iterator for RowIter<'a, T> {
+    type Item = &'a [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_row < self.matrix.rows {
+            let start = self.current_row * self.matrix.cols;
+            let end = start + self.matrix.cols;
+            self.current_row += 1;
+            Some(&self.matrix.data[start..end])
+        } else {
+            None
+        }
+    }
+}
+
+// Implement `Iterator` for `RowIterMut`
+impl<'a, T> Iterator for RowIterMut<'a, T> {
+    type Item = &'a mut [T];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_row < self.matrix.rows {
+            let start = self.current_row * self.matrix.cols;
+            let _end = start + self.matrix.cols;
+            self.current_row += 1;
+            // SAFETY: This is safe because we ensure each slice is disjoint
+            Some(unsafe {
+                slice::from_raw_parts_mut(self.matrix.data.as_mut_ptr().add(start), self.matrix.cols)
+            })
+        } else {
+            None
+        }
+    }
+}
+
