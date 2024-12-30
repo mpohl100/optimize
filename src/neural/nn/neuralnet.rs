@@ -71,7 +71,7 @@ impl NeuralNetwork {
                 } => {
                     let mut layer = DenseLayer::new(*input_size, *output_size);
                     layer
-                        .read(&format!("{}/layers/layer_{}", model_directory, i))
+                        .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
                         .unwrap();
                     Box::new(layer) as Box<dyn Layer + Send>
                 }
@@ -284,7 +284,7 @@ impl NeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(&format!("{}/layers/layer_{}", model_directory, i))?;
+            layer.save(&format!("{}/layers/layer_{}.txt", model_directory, i))?;
         }
         Ok(())
     }
