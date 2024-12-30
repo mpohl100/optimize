@@ -21,37 +21,29 @@ pub struct DenseLayer {
 impl DenseLayer {
     /// Creates a new DenseLayer with given input and output sizes.
     pub fn new(input_size: usize, output_size: usize) -> Self {
+        // Create a dense layer with default weights
+        let mut dense_layer = DenseLayer {
+            weights: Matrix::new(output_size, input_size),
+            biases: vec![0.0; output_size],
+            input_cache: vec![],
+            input_batch_cache: vec![],
+            weight_grads: Matrix::new(output_size, input_size),
+            bias_grads: vec![0.0; output_size],
+        };
+
+        // Initialize weights with random values in [-0.5, 0.5]
+        dense_layer.initialize_weights();
+        dense_layer
+    }
+
+    /// Initialize the weights with random values in the range [-0.5, 0.5]
+    fn initialize_weights(&mut self) {
         let mut rng = rand::thread_rng();
-        // initalize weights as a Vec<Vec<f64>> with random values between -0.1 and 0.1
-        let mut weights = Matrix::new(output_size, input_size);
-        for i in 0..output_size {
-            for j in 0..input_size {
-                // Set a random value between -0.1 and 0.1
-                *weights.get_mut_unchecked(i, j) = rng.gen_range(-0.1..0.1);
+        // initialize weights from -0.5 to 0.5
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                *self.weights.get_mut_unchecked(i, j) = rng.gen_range(-0.5..0.5);
             }
-        }
-        let biases = vec![0.0; output_size];
-        let input_cache = vec![0.0; input_size];
-        let weight_grads = Matrix::new(output_size, input_size);
-        let bias_grads = vec![0.0; output_size];
-
-        // check dimensions or panic:
-        assert_eq!(weights.rows(), output_size);
-        assert_eq!(weights.cols(), input_size);
-        assert_eq!(biases.len(), output_size);
-        assert!(input_cache.len() == input_size);
-
-        assert!(weight_grads.rows() == output_size);
-        assert!(weight_grads.cols() == input_size);
-        assert!(bias_grads.len() == output_size);
-
-        Self {
-            weights,
-            biases,
-            input_cache,
-            input_batch_cache: Vec::new(),
-            weight_grads,
-            bias_grads,
         }
     }
 }
@@ -61,13 +53,14 @@ impl Layer for DenseLayer {
         self.input_cache = input.to_vec(); // Cache the input for backpropagation
         self.weights
             .iter()
-            .map(|weights_row| {
+            .enumerate() // Include the row index in the iteration
+            .map(|(row_idx, weights_row)| {
                 weights_row
                     .iter()
                     .zip(input.iter())
                     .map(|(&w, &x)| w * x)
                     .sum::<f64>()
-                    + self.biases[weights_row.len() - 1]
+                    + self.biases[row_idx] // Use the bias corresponding to the row index
             })
             .collect()
     }
