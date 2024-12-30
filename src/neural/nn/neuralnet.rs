@@ -163,19 +163,19 @@ impl NeuralNetwork {
         for i in 0..epochs {
             println!("Epoch: {}\r", i);
             let mut loss = 0.0;
-            let mut success_count = 0;
+            let mut success_count = 0.0;
             for (input, target) in inputs.iter().zip(targets) {
                 // Forward pass
                 let output = self.forward(input.as_slice());
 
                 // Check if the output matches the target
-                if output
-                    .iter()
-                    .zip(target.iter())
-                    .all(|(&out, &t)| (out - t).abs() < tolerance)
-                {
-                    success_count += 1;
+                let mut nb_correct_outputs = 0;
+                for (o, t) in output.iter().zip(target.iter()) {
+                    if (o - t).abs() < tolerance {
+                        nb_correct_outputs += 1;
+                    }
                 }
+                success_count += nb_correct_outputs as f64 / target.len() as f64;
 
                 // Calculate loss gradient (e.g., mean squared error)
                 // let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
@@ -194,7 +194,7 @@ impl NeuralNetwork {
                 }
             }
             loss /= inputs.len() as f64;
-            let accuracy = success_count as f64 / inputs.len() as f64 * 100.0;
+            let accuracy = success_count / inputs.len() as f64 * 100.0;
             println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss, accuracy);
         }
     }
