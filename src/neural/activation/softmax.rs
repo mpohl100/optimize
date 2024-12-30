@@ -13,7 +13,10 @@ impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
-        Self { temperature, last_output: None }
+        Self {
+            temperature,
+            last_output: None,
+        }
     }
 
     /// Applies the softmax function to a vector of inputs.
@@ -40,10 +43,10 @@ impl ActivationTrait for Softmax {
             .last_output
             .as_ref()
             .expect("Forward must be called before backward to cache the output.");
-    
+
         let len = softmax_output.len();
         let mut grad_input = vec![0.0; len];
-    
+
         for i in 0..len {
             for j in 0..len {
                 if i == j {
@@ -55,9 +58,9 @@ impl ActivationTrait for Softmax {
         }
 
         self.last_output = None; // Clear the cache
-    
+
         grad_input
-    }    
+    }
 
     fn get_activation_data(&self) -> ActivationData {
         ActivationData::new_softmax(self.temperature)
