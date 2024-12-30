@@ -64,7 +64,7 @@ impl Layer for DenseLayer {
             })
             .collect()
     }
-    
+
     /// Backward pass for the dense layer
     ///
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
