@@ -64,6 +64,49 @@ impl Layer for DenseLayer {
             })
             .collect()
     }
+    
+    /// Backward pass for the dense layer
+    ///
+    /// - `d_out`: Gradient of the loss with respect to the output of this layer
+    /// - Returns: Gradient of the loss with respect to the input of this layer
+    fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
+        // Initialize gradients for weights and biases
+        self.bias_grads = d_out.to_vec();
+
+        // Calculate weight gradients
+        for (i, row_grad) in self.weight_grads.iter_mut().enumerate() {
+            for (j, grad) in row_grad.iter_mut().enumerate() {
+                *grad = d_out[i] * self.input_cache[j];
+            }
+        }
+
+        // Calculate input gradients
+        let mut d_input = vec![0.0; self.input_cache.len()];
+        for (i, weights_row) in self.weights.iter().enumerate() {
+            for (j, &weight) in weights_row.iter().enumerate() {
+                d_input[j] += weight * d_out[i];
+            }
+        }
+
+        d_input
+    }
+
+    /// Update weights and biases using their respective gradients
+    ///
+    /// - `learning_rate`: The step size for gradient descent
+    fn update_weights(&mut self, learning_rate: f64) {
+        // Update weights
+        for (i, weights_row) in self.weights.iter_mut().enumerate() {
+            for (j, weight) in weights_row.iter_mut().enumerate() {
+                *weight -= learning_rate * self.weight_grads.get_unchecked(i, j);
+            }
+        }
+
+        // Update biases
+        for (i, bias) in self.biases.iter_mut().enumerate() {
+            *bias -= learning_rate * self.bias_grads[i];
+        }
+    }
 
     #[allow(clippy::needless_range_loop)]
     fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
@@ -93,26 +136,6 @@ impl Layer for DenseLayer {
         output
     }
 
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        // Compute the gradient with respect to the input
-        let grad_input = (0..self.input_cache.len())
-            .map(|i| {
-                self.weights
-                    .iter()
-                    .zip(grad_output.iter())
-                    .map(|(weights_row, &grad)| weights_row[i] * grad)
-                    .sum()
-            })
-            .collect();
-        // Compute the gradient with respect to the weights and biases
-        for (grad, weights_row) in grad_output.iter().zip(self.weights.iter_mut()) {
-            for (i, weight) in weights_row.iter_mut().enumerate() {
-                *weight += grad * self.input_cache[i];
-            }
-        }
-        grad_input
-    }
-
     #[allow(clippy::needless_range_loop)]
     fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
         // Initialize grad_input with the size of input_cache, filled with zeros
@@ -137,20 +160,6 @@ impl Layer for DenseLayer {
         }
 
         grad_input
-    }
-
-    #[allow(clippy::needless_range_loop)]
-    fn update_weights(&mut self, learning_rate: f64) {
-        for weights_row in self.weights.iter_mut() {
-            for weight in weights_row.iter_mut() {
-                *weight -= learning_rate * *weight;
-            }
-        }
-        for bias in self.biases.iter_mut() {
-            *bias -= learning_rate * *bias;
-        }
-        self.input_cache.clear();
-        self.input_batch_cache.clear();
     }
 
     fn input_size(&self) -> usize {
