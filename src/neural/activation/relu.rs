@@ -16,6 +16,12 @@ impl ReLU {
     }
 }
 
+impl Default for ReLU {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActivationTrait for ReLU {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         // Cache the input for use in backpropagation
