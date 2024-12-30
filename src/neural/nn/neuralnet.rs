@@ -34,7 +34,7 @@ impl NeuralNetwork {
                 layer_shape.output_size(),
             ));
             let activation = match layer_shape.activation.activation_type() {
-                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Softmax => {
@@ -77,7 +77,7 @@ impl NeuralNetwork {
                 }
             };
             let activation = match sh.layers[i].activation.activation_type() {
-                ActivationType::ReLU => Box::new(ReLU) as Box<dyn ActivationTrait + Send>,
+                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Softmax => {
@@ -341,7 +341,7 @@ impl NeuralNetwork {
             merge_layer_input_size,
             merge_layer_output_size,
         ));
-        let merge_activation = Box::new(ReLU);
+        let merge_activation = Box::new(ReLU::new());
         new_nn.add_activation_and_layer(merge_activation, merge_layer);
 
         for i in 0..other.layers.len() {
