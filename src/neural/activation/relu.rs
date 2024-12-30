@@ -39,7 +39,7 @@ impl ActivationTrait for ReLU {
         grad_output
             .iter()
             .zip(input.iter())
-            .map(|(&grad, &inp)| if inp > 0.0 { grad } else { 0.0 })
+            .map(|(&_grad, &inp)| if inp > 0.0 { 1.0 } else { 0.0 })
             .collect()
     }
 
@@ -65,6 +65,6 @@ mod tests {
         let grad_input = relu.backward(&grad_output);
         // print grad_input
         println!("{:?}", grad_input);
-        assert_eq!(grad_input, vec![0.0, 0.0, 0.5]);
+        assert_eq!(grad_input, vec![0.0, 0.0, 1.0]);
     }
 }
