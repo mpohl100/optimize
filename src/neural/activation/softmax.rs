@@ -1,18 +1,21 @@
 use crate::neural::nn::shape::ActivationData;
-
 use super::activate::ActivationTrait;
 
 /// Softmax activation function.
 #[derive(Debug, Clone)]
 pub struct Softmax {
     pub temperature: f64,
+    cached_output: Option<Vec<f64>>, // Cache the output of the forward pass
 }
 
 impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
-        Self { temperature }
+        Self {
+            temperature,
+            cached_output: None,
+        }
     }
 
     /// Applies the softmax function to a vector of inputs.
@@ -29,23 +32,28 @@ impl Softmax {
 
 impl ActivationTrait for Softmax {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-        self.softmax(input)
+        let output = self.softmax(input);
+        self.cached_output = Some(output.clone()); // Cache the output for the backward pass
+        output
     }
 
     fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        // Calculate softmax output
-        let softmax_output = self.softmax(grad_output);
+        let softmax_output = match &self.cached_output {
+            Some(output) => output.clone(),
+            None => panic!("Softmax forward must be called before backward."),
+        };
 
-        // Compute gradients using the Jacobian of softmax
         let mut grad_input = vec![0.0; grad_output.len()];
         for i in 0..softmax_output.len() {
             for j in 0..softmax_output.len() {
                 if i == j {
-                    grad_input[i] += softmax_output[i] * (1.0 - softmax_output[j]) * grad_output[j];
+                    grad_input[i] += softmax_output[i] * (1.0 - softmax_output[i]) * grad_output[j];
                 } else {
                     grad_input[i] += -softmax_output[i] * softmax_output[j] * grad_output[j];
                 }
             }
+            // Adjust gradients for temperature
+            grad_input[i] /= self.temperature;
         }
         grad_input
     }
@@ -69,6 +77,26 @@ mod tests {
 
         let sum: f64 = output.iter().sum();
         assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
+        assert!(
+            output.iter().all(|&v| v > 0.0),
+            "Softmax probabilities must be positive."
+        );
+    }
+
+    #[test]
+    fn test_softmax_with_temperature() {
+        let mut softmax = Softmax::new(0.5);
+        let input = vec![1.0, 2.0, 3.0];
+        let output = softmax.forward(&input);
+
+        println!("Softmax output with temperature 0.5: {:?}", output);
+
+        let sum: f64 = output.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
+        assert!(
+            output.iter().all(|&v| v > 0.0),
+            "Softmax probabilities must be positive."
+        );
     }
 
     #[test]
