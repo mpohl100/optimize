@@ -7,6 +7,7 @@ use crate::neural::layer::Layer;
 use crate::neural::nn::shape::*;
 
 use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressDrawTarget;
 
 use std::boxed::Box;
 
@@ -165,6 +166,7 @@ impl NeuralNetwork {
         for i in 0..epochs {
             // initialize progress bar
             let pb = ProgressBar::new(inputs.len() as u64);
+            pb.set_draw_target(ProgressDrawTarget::stdout());
             pb.set_style(
                 ProgressStyle::default_bar()
                     .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} | {msg}")
