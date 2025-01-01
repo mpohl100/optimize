@@ -215,9 +215,6 @@ impl NeuralNetwork {
                     "Accuracy: {:.2} %, Loss: {:.4}",
                     accuracy, loss_display
                 ));
-                if j % 100 == 0 {
-                    pb.println("");
-                }
             }
             // Finish the progress bar
             loss /= inputs.len() as f64;
@@ -227,6 +224,7 @@ impl NeuralNetwork {
                 i, accuracy, loss
             );
             pb.finish_with_message(message);
+            pb.println("");
         }
     }
 
