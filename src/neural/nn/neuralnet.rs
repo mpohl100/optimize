@@ -6,8 +6,8 @@ use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::Layer;
 use crate::neural::nn::shape::*;
 
-use indicatif::{ProgressBar, ProgressStyle};
 use indicatif::ProgressDrawTarget;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use std::boxed::Box;
 
