@@ -6,6 +6,8 @@ use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::Layer;
 use crate::neural::nn::shape::*;
 
+use indicatif::{ProgressBar, ProgressStyle};
+
 use std::boxed::Box;
 
 /// A neural network.
@@ -161,10 +163,18 @@ impl NeuralNetwork {
         tolerance: f64,
     ) {
         for i in 0..epochs {
-            println!("Epoch: {}\r", i);
+            // initialize progress bar
+            let pb = ProgressBar::new(inputs.len() as u64);
+            pb.set_style(
+                ProgressStyle::default_bar()
+                    .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} | {msg}")
+                    .expect("Invalid template")
+                    .progress_chars("#>-"),
+            );
+
             let mut loss = 0.0;
             let mut success_count = 0.0;
-            for (input, target) in inputs.iter().zip(targets) {
+            for (j, (input, target)) in inputs.iter().zip(targets).enumerate() {
                 // Forward pass
                 let output = self.forward(input.as_slice());
 
@@ -192,10 +202,26 @@ impl NeuralNetwork {
                 for layer in &mut self.layers {
                     layer.update_weights(learning_rate);
                 }
+
+                // Caluculate progress bar
+                let accuracy = success_count / inputs.len() as f64 * 100.0;
+                let loss_display = loss / inputs.len() as f64;
+
+                // Update the progress bar
+                pb.set_position((j + 1) as u64);
+                pb.set_message(format!(
+                    "Accuracy: {:.2} %, Loss: {:.4}",
+                    accuracy, loss_display
+                ));
             }
+            // Finish the progress bar
             loss /= inputs.len() as f64;
             let accuracy = success_count / inputs.len() as f64 * 100.0;
-            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss, accuracy);
+            let message = format!(
+                "Epoch {} finished Acc: {:.2}, Loss: {:.4}",
+                i, accuracy, loss
+            );
+            pb.finish_with_message(message);
         }
     }
 
