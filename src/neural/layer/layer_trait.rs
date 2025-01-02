@@ -74,14 +74,7 @@ pub trait Layer: std::fmt::Debug + DynClone {
     fn get_biases(&self) -> Vec<f64>;
 
     /// Adjusts the weights according to the Adam optimizer.
-    fn adjust_adam(
-        &mut self,
-        t: usize,
-        learning_rate: f64,
-        beta1: f64,
-        beta2: f64,
-        epsilon: f64,
-    );
+    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64);
 }
 
 dyn_clone::clone_trait_object!(Layer);

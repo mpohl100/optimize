@@ -274,22 +274,17 @@ impl Layer for DenseLayer {
         self.biases.clone()
     }
 
-    fn adjust_adam(
-        &mut self,
-        t: usize,
-        learning_rate: f64,
-        beta1: f64,
-        beta2: f64,
-        epsilon: f64,
-    ) {
+    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
         // Update weights
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 let grad = self.weight_grads.get_unchecked(i, j);
 
                 // Update first and second moments
-                *self.m_weights.get_mut_unchecked(i, j) = beta1 * self.m_weights.get_unchecked(i, j) + (1.0 - beta1) * grad;
-                *self.v_weights.get_mut_unchecked(i, j) = beta2 * self.v_weights.get_unchecked(i, j) + (1.0 - beta2) * grad.powi(2);
+                *self.m_weights.get_mut_unchecked(i, j) =
+                    beta1 * self.m_weights.get_unchecked(i, j) + (1.0 - beta1) * grad;
+                *self.v_weights.get_mut_unchecked(i, j) =
+                    beta2 * self.v_weights.get_unchecked(i, j) + (1.0 - beta2) * grad.powi(2);
 
                 // Bias correction
                 let m_hat = self.m_weights.get_unchecked(i, j) / (1.0 - beta1.powi(t as i32));

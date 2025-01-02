@@ -34,7 +34,6 @@ struct Args {
     #[clap(long, default_value = "true")]
     use_adam: bool,
 
-
     // insert the evolution options here
     #[clap(long, default_value = "100")]
     num_generations: usize,
