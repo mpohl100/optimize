@@ -203,7 +203,7 @@ impl NeuralNetwork {
 
                 // Update weights
                 if use_adam {
-                    self.adjust_adam(i, learning_rate, 0.9, 0.999, 1e-8);
+                    self.adjust_adam(i + 1, learning_rate, 0.9, 0.999, 1e-8);
                 } else {
                     for layer in &mut self.layers {
                         layer.update_weights(learning_rate);
