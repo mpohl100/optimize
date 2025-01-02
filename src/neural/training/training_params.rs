@@ -8,6 +8,7 @@ pub struct TrainingParams {
     epochs: usize,
     tolerance: f64,
     batch_size: usize,
+    use_adam: bool,
 }
 
 impl TrainingParams {
@@ -18,6 +19,7 @@ impl TrainingParams {
         epochs: usize,
         tolerance: f64,
         batch_size: usize,
+        use_adam: bool,
     ) -> Self {
         Self {
             shape,
@@ -26,6 +28,7 @@ impl TrainingParams {
             epochs,
             tolerance,
             batch_size,
+            use_adam,
         }
     }
 
@@ -51,6 +54,10 @@ impl TrainingParams {
 
     pub fn batch_size(&self) -> usize {
         self.batch_size
+    }
+
+    pub fn use_adam(&self) -> bool {
+        self.use_adam
     }
 
     pub fn set_shape(&mut self, shape: NeuralNetworkShape) {

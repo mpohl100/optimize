@@ -16,6 +16,10 @@ pub struct DenseLayer {
     input_batch_cache: Vec<Vec<f64>>, // Cache batch input for use in backward pass
     weight_grads: Matrix<f64>,        // Gradient of weights
     bias_grads: Vec<f64>,             // Gradient of biases
+    m_weights: Matrix<f64>,           // First moment for weights (Adam)
+    v_weights: Matrix<f64>,           // Second moment for weights (Adam)
+    m_biases: Vec<f64>,               // First moment for biases (Adam)
+    v_biases: Vec<f64>,               // Second moment for biases (Adam)
 }
 
 impl DenseLayer {
@@ -29,6 +33,10 @@ impl DenseLayer {
             input_batch_cache: vec![],
             weight_grads: Matrix::new(output_size, input_size),
             bias_grads: vec![0.0; output_size],
+            m_weights: Matrix::new(output_size, input_size),
+            v_weights: Matrix::new(output_size, input_size),
+            m_biases: vec![0.0; output_size],
+            v_biases: vec![0.0; output_size],
         };
 
         // Initialize weights with random values in [-0.5, 0.5]
@@ -264,6 +272,55 @@ impl Layer for DenseLayer {
 
     fn get_biases(&self) -> Vec<f64> {
         self.biases.clone()
+    }
+
+    fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+    ) {
+        // Update weights
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                let grad = self.weight_grads.get_unchecked(i, j);
+
+                // Update first and second moments
+                *self.m_weights.get_mut_unchecked(i, j) = beta1 * self.m_weights.get_unchecked(i, j) + (1.0 - beta1) * grad;
+                *self.v_weights.get_mut_unchecked(i, j) = beta2 * self.v_weights.get_unchecked(i, j) + (1.0 - beta2) * grad.powi(2);
+
+                // Bias correction
+                let m_hat = self.m_weights.get_unchecked(i, j) / (1.0 - beta1.powi(t as i32));
+                let v_hat = self.v_weights.get_unchecked(i, j) / (1.0 - beta2.powi(t as i32));
+
+                // Adjusted learning rate
+                let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
+
+                // Update weights
+                *self.weights.get_mut_unchecked(i, j) -= adjusted_learning_rate * m_hat;
+            }
+        }
+
+        // Update biases
+        for i in 0..self.biases.len() {
+            let grad = self.bias_grads[i];
+
+            // Update first and second moments
+            self.m_biases[i] = beta1 * self.m_biases[i] + (1.0 - beta1) * grad;
+            self.v_biases[i] = beta2 * self.v_biases[i] + (1.0 - beta2) * grad.powi(2);
+
+            // Bias correction
+            let m_hat = self.m_biases[i] / (1.0 - beta1.powi(t as i32));
+            let v_hat = self.v_biases[i] / (1.0 - beta2.powi(t as i32));
+
+            // Adjusted learning rate
+            let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
+
+            // Update biases
+            self.biases[i] -= adjusted_learning_rate * m_hat;
+        }
     }
 }
 
