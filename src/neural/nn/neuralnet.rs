@@ -7,7 +7,13 @@ use crate::neural::layer::Layer;
 use crate::neural::nn::shape::*;
 
 use indicatif::ProgressDrawTarget;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+
+use once_cell::sync::Lazy;
+use std::sync::Arc;
+
+// Create a static MultiProgress instance
+static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiProgress::new()));
 
 use std::boxed::Box;
 
@@ -164,9 +170,11 @@ impl NeuralNetwork {
         tolerance: f64,
         use_adam: bool,
     ) {
+        // Clone the MultiProgress instance for use in threads
+        let multi_progress = Arc::clone(&MULTI_PROGRESS);
         for i in 0..epochs {
             // initialize progress bar
-            let pb = ProgressBar::new(inputs.len() as u64);
+            let pb = multi_progress.add(ProgressBar::new(inputs.len() as u64));
             pb.set_draw_target(ProgressDrawTarget::stdout());
             pb.set_style(
                 ProgressStyle::default_bar()
@@ -229,6 +237,7 @@ impl NeuralNetwork {
                 i, accuracy, loss
             );
             pb.finish_with_message(message);
+            multi_progress.remove(&pb);
         }
     }
 
