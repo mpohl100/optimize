@@ -162,6 +162,7 @@ impl NeuralNetwork {
         learning_rate: f64,
         epochs: usize,
         tolerance: f64,
+        use_adam: bool,
     ) {
         for i in 0..epochs {
             // initialize progress bar
@@ -201,8 +202,12 @@ impl NeuralNetwork {
                 self.backward(grad_output);
 
                 // Update weights
-                for layer in &mut self.layers {
-                    layer.update_weights(learning_rate);
+                if use_adam {
+                    self.adjust_adam(i, learning_rate, 0.9, 0.999, 1e-8);
+                } else {
+                    for layer in &mut self.layers {
+                        layer.update_weights(learning_rate);
+                    }
                 }
 
                 // Caluculate progress bar
@@ -447,6 +452,12 @@ impl NeuralNetwork {
         }
         (-1, -1)
     }
+
+    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
+        for layer in &mut self.layers {
+            layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -478,7 +489,7 @@ mod tests {
         let inputs = vec![vec![1.0, 1.0, 1.0]];
         let targets = vec![vec![0.0, 0.0, 0.0]];
 
-        nn.train(&inputs, &targets, 0.01, 100, 0.1);
+        nn.train(&inputs, &targets, 0.01, 100, 0.1, true);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]

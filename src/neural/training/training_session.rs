@@ -96,6 +96,7 @@ impl TrainingSession {
             self.params.learning_rate(),
             self.params.epochs(),
             self.params.tolerance(),
+            self.params.use_adam(),
             // self.params.batch_size(),
         );
 
@@ -227,7 +228,7 @@ mod tests {
         };
 
         // Define training parameters
-        let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1, 32);
+        let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1, 32, false);
 
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
