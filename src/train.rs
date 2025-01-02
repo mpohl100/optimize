@@ -26,7 +26,7 @@ struct Args {
     tolerance: f64,
     #[clap(long, default_value = "32")]
     batch_size: usize,
-    #[clap(long, default_value = "true")]
+    #[clap(long, default_value = "false")]
     use_adam: bool,
 
     // insert data importer params here
