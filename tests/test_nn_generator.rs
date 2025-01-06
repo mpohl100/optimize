@@ -73,6 +73,7 @@ fn test_neural_network_generator() {
         evolution_params,
         Box::new(data_importer),
         model_directory.clone(),
+        4,
     );
     nn_generator.generate();
     nn_generator.save();
