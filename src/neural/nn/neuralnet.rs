@@ -161,6 +161,8 @@ impl NeuralNetwork {
     }
 
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
+    /// Includes validation using a split of the data.
+    #[allow(clippy::too_many_arguments)]
     pub fn train(
         &mut self,
         inputs: &[Vec<f64>],
@@ -169,73 +171,117 @@ impl NeuralNetwork {
         epochs: usize,
         tolerance: f64,
         use_adam: bool,
+        validation_split: f64,
     ) {
-        // Clone the MultiProgress instance for use in threads
+        assert!(
+            (0.0..=1.0).contains(&validation_split),
+            "validation_split must be between 0 and 1"
+        );
+
+        let split_index = (inputs.len() as f64 * validation_split).round() as usize;
+        let (train_inputs, validation_inputs) = inputs.split_at(split_index);
+        let (train_targets, validation_targets) = targets.split_at(split_index);
+
         let multi_progress = Arc::clone(&MULTI_PROGRESS);
-        for i in 0..epochs {
-            // initialize progress bar
-            let pb = multi_progress.add(ProgressBar::new(inputs.len() as u64));
+
+        for epoch in 0..epochs {
+            // Initialize progress bar
+            let pb = multi_progress.add(ProgressBar::new(train_inputs.len() as u64));
             pb.set_draw_target(ProgressDrawTarget::stdout());
             pb.set_style(
-                ProgressStyle::default_bar()
-                    .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} | {msg}")
-                    .expect("Invalid template")
-                    .progress_chars("#>-"),
-            );
+            ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} | {msg}")
+                .expect("Invalid template")
+                .progress_chars("#>-"),);
 
             let mut loss = 0.0;
             let mut success_count = 0.0;
-            for (j, (input, target)) in inputs.iter().zip(targets).enumerate() {
-                // Forward pass
-                let output = self.forward(input.as_slice());
 
-                // Check if the output matches the target
-                let mut nb_correct_outputs = 0;
-                for (o, t) in output.iter().zip(target.iter()) {
-                    if (o - t).abs() < tolerance {
-                        nb_correct_outputs += 1;
+            train_inputs
+                .iter()
+                .zip(train_targets)
+                .enumerate()
+                .for_each(|(j, (input, target))| {
+                    // Forward pass
+                    let output = self.forward(input.as_slice());
+
+                    // Calculate accuracy
+                    let correct_outputs = output
+                        .iter()
+                        .zip(target.iter())
+                        .filter(|(&o, &t)| (o - t).abs() < tolerance)
+                        .count();
+                    success_count += correct_outputs as f64 / target.len() as f64;
+
+                    // Calculate loss gradient
+                    let grad_output: Vec<f64> = output
+                        .iter()
+                        .zip(target)
+                        .map(|(o, t)| {
+                            let error = o - t;
+                            loss += error * error;
+                            2.0 * error
+                        })
+                        .collect();
+
+                    // Backward pass
+                    self.backward(grad_output);
+
+                    // Update weights
+                    if use_adam {
+                        self.adjust_adam(j + 1, learning_rate, 0.9, 0.999, 1e-8);
+                    } else {
+                        self.layers
+                            .iter_mut()
+                            .for_each(|layer| layer.update_weights(learning_rate));
                     }
-                }
-                success_count += nb_correct_outputs as f64 / target.len() as f64;
 
-                // Calculate loss gradient (e.g., mean squared error)
-                // let grad_output: Vec<f64> = output.iter().zip(target).map(|(o, t)| o - t).collect();
-                let mut grad_output = Vec::new();
-                for i in 0..output.len() {
-                    let error = output[i] - target[i];
-                    grad_output.push(2.0 * error);
-                    loss += error * error;
-                }
-                // Backward pass
-                self.backward(grad_output);
+                    // Update the progress bar
+                    let accuracy = success_count / train_inputs.len() as f64 * 100.0;
+                    let loss_display = loss / train_inputs.len() as f64;
+                    pb.set_position((j + 1) as u64);
+                    pb.set_message(format!(
+                        "Accuracy: {:.2} %, Loss: {:.4}",
+                        accuracy, loss_display
+                    ));
+                });
 
-                // Update weights
-                if use_adam {
-                    self.adjust_adam(i + 1, learning_rate, 0.9, 0.999, 1e-8);
-                } else {
-                    for layer in &mut self.layers {
-                        layer.update_weights(learning_rate);
-                    }
-                }
+            // Validation phase
+            let mut validation_loss = 0.0;
+            let mut validation_success_count = 0.0;
 
-                // Caluculate progress bar
-                let accuracy = success_count / inputs.len() as f64 * 100.0;
-                let loss_display = loss / inputs.len() as f64;
+            validation_inputs
+                .iter()
+                .zip(validation_targets)
+                .for_each(|(input, target)| {
+                    let output = self.forward(input.as_slice());
+                    let correct_outputs = output
+                        .iter()
+                        .zip(target.iter())
+                        .filter(|(&o, &t)| (o - t).abs() < tolerance)
+                        .count();
+                    validation_success_count += correct_outputs as f64 / target.len() as f64;
 
-                // Update the progress bar
-                pb.set_position((j + 1) as u64);
-                pb.set_message(format!(
-                    "Accuracy: {:.2} %, Loss: {:.4}",
-                    accuracy, loss_display
-                ));
-            }
+                    validation_loss += output
+                        .iter()
+                        .zip(target)
+                        .map(|(o, t)| {
+                            let error = o - t;
+                            error * error
+                        })
+                        .sum::<f64>();
+                });
+
+            validation_loss /= validation_inputs.len() as f64;
+            let validation_accuracy =
+                validation_success_count / validation_inputs.len() as f64 * 100.0;
+
             // Finish the progress bar
-            loss /= inputs.len() as f64;
-            let accuracy = success_count / inputs.len() as f64 * 100.0;
+            loss /= train_inputs.len() as f64;
+            let accuracy = success_count / train_inputs.len() as f64 * 100.0;
             let message = format!(
-                "Epoch {} finished Acc: {:.2}, Loss: {:.4}",
-                i, accuracy, loss
-            );
+            "Epoch {} finished | Train Acc: {:.2} %, Train Loss: {:.4} | Val Acc: {:.2} %, Val Loss: {:.4}",
+            epoch, accuracy, loss, validation_accuracy, validation_loss);
             pb.finish_with_message(message);
             multi_progress.remove(&pb);
         }
@@ -498,7 +544,7 @@ mod tests {
         let inputs = vec![vec![1.0, 1.0, 1.0]];
         let targets = vec![vec![0.0, 0.0, 0.0]];
 
-        nn.train(&inputs, &targets, 0.01, 100, 0.1, true);
+        nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]
