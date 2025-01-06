@@ -69,13 +69,7 @@ impl TrainingSession {
         let inputs = data.data;
         let targets = data.labels;
 
-        let num_training_samples =
-            (self.params.training_verification_ratio() * inputs.len() as f64) as usize;
-
-        let training_inputs = inputs[..num_training_samples].to_vec();
-        let training_targets = targets[..num_training_samples].to_vec();
-
-        let input_size = training_inputs[0].len();
+        let input_size = inputs[0].len();
         println!("Inputs: {} x {}", inputs.len(), inputs[0].len());
         println!("Targets: {} x {}", targets.len(), targets[0].len());
 
@@ -84,25 +78,27 @@ impl TrainingSession {
         if nn.input_size() != input_size {
             return Err("Input size mismatch with neural network".into());
         }
-        if nn.output_size() != training_targets[0].len() {
+        if nn.output_size() != targets[0].len() {
             return Err("Output size mismatch with neural network".into());
         }
 
         println!("Training neural network with shape: {:?}", nn.shape());
         // Train the neural network
         nn.train(
-            &training_inputs,
-            &training_targets,
+            &inputs,
+            &targets,
             self.params.learning_rate(),
             self.params.epochs(),
             self.params.tolerance(),
             self.params.use_adam(),
-            self.params.training_verification_ratio(),
+            self.params.validation_split(),
             // self.params.batch_size(),
         );
 
-        // Verification phase
+        // Validation phase
         let mut success_count = 0.0;
+        let num_training_samples =
+            (inputs.len() as f64 * self.params.validation_split()).round() as usize;
         let num_verification_samples = inputs.len() - num_training_samples;
         for i in 0..num_verification_samples {
             let sample_idx = num_training_samples + i;
@@ -139,8 +135,7 @@ impl TrainingSession {
 }
 
 fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
-    if !(params.training_verification_ratio() >= 0.0 && params.training_verification_ratio() <= 1.0)
-    {
+    if !(params.validation_split() >= 0.0 && params.validation_split() <= 1.0) {
         return Err("Number of training to verification ratio must be between 0.0 and 1.0".into());
     }
     if params.learning_rate() <= 0.0 {
