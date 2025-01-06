@@ -97,6 +97,7 @@ impl TrainingSession {
             self.params.epochs(),
             self.params.tolerance(),
             self.params.use_adam(),
+            self.params.training_verification_ratio(),
             // self.params.batch_size(),
         );
 
