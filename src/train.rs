@@ -17,7 +17,7 @@ struct Args {
 
     // insert the training params here
     #[clap(long, default_value = "0.7")]
-    training_verification_ratio: f64,
+    validation_split: f64,
     #[clap(long, default_value = "0.01")]
     learning_rate: f64,
     #[clap(long, default_value = "100")]
@@ -55,7 +55,7 @@ impl Args {
             }]);
             return TrainingParams::new(
                 shape,
-                self.training_verification_ratio,
+                self.validation_split,
                 self.learning_rate,
                 self.epochs,
                 self.tolerance,
@@ -77,7 +77,7 @@ impl Args {
         );
         TrainingParams::new(
             shape,
-            self.training_verification_ratio,
+            self.validation_split,
             self.learning_rate,
             self.epochs,
             self.tolerance,
