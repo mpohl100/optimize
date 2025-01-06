@@ -13,6 +13,7 @@ use super::strategy::nn_strategy::NeuralNetworkStrategy;
 
 pub struct NeuralNetworkGenerator {
     model_directory: String,
+    nb_threads: usize,
     params: TrainingParams,
     evolution_params: EvolutionOptions,
     current_winner: NeuralNetwork,
@@ -25,6 +26,7 @@ impl NeuralNetworkGenerator {
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
+        nb_threads: usize,
     ) -> Self {
         let nn = NeuralNetwork::new(params.shape().clone());
         Self {
@@ -32,6 +34,7 @@ impl NeuralNetworkGenerator {
             params,
             evolution_params,
             model_directory,
+            nb_threads,
             data_importer,
         }
     }
@@ -41,6 +44,7 @@ impl NeuralNetworkGenerator {
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: &String,
+        nb_threads: usize,
     ) -> Self {
         let nn = NeuralNetwork::from_disk(model_directory);
         if nn.is_some() {
@@ -51,6 +55,7 @@ impl NeuralNetworkGenerator {
                 params: changed_params,
                 evolution_params,
                 model_directory: model_directory.clone(),
+                nb_threads,
                 data_importer,
             }
         } else {
@@ -59,6 +64,7 @@ impl NeuralNetworkGenerator {
                 evolution_params,
                 data_importer,
                 model_directory.clone(),
+                nb_threads,
             )
         }
     }
@@ -81,7 +87,7 @@ impl NeuralNetworkGenerator {
             NeuralNetworkPhenotype,
             NeuralNetworkStrategy,
             NeuralNetworkChallenge,
-        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), 4);
+        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), self.nb_threads);
         let result = launcher.evolve(&options, starting_value, &mut rng);
         self.current_winner = result.unwrap().pheno.get_nn().clone();
     }

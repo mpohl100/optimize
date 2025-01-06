@@ -19,6 +19,8 @@ struct Args {
     model_directory: String,
     #[clap(long, default_value = "")]
     shape_file: String,
+    #[clap(long, default_value = "4")]
+    nb_threads: usize,
 
     // insert the training params here
     #[clap(long, default_value = "0.7")]
@@ -162,6 +164,7 @@ impl FileDataImporter {
 fn main() {
     let args = Args::parse();
     let model_directory = &args.model_directory;
+    let nb_threads = args.nb_threads;
 
     let training_params = args.get_training_params();
 
@@ -177,6 +180,7 @@ fn main() {
                 evolution_options,
                 Box::new(data_importer),
                 model_directory,
+                nb_threads,
             )
         } else {
             NeuralNetworkGenerator::new(
@@ -184,6 +188,7 @@ fn main() {
                 evolution_options,
                 Box::new(data_importer),
                 model_directory.clone(),
+                nb_threads,
             )
         }
     } else {
@@ -192,6 +197,7 @@ fn main() {
             evolution_options,
             Box::new(data_importer),
             model_directory.clone(),
+            nb_threads,
         )
     };
     nn_generator.generate();
