@@ -7,6 +7,11 @@ on:
   # manually trigger the workflow
   workflow_dispatch:
 
+permissions:
+  contents: read  # Fetch repository contents
+  pages: write    # Deploy to GitHub Pages
+  id-token: write # Required for OIDC
+
 jobs:
   build-and-deploy-docs:
     runs-on: ubuntu-latest
