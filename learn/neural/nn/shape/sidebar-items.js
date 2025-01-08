@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ActivationType","LayerType"],"struct":["ActivationData","LayerShape","NeuralNetworkShape"]};

@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["evaluate",[["impl <a class=\"trait\" href=\"learn/neural/training/data_importer/trait.DataImporter.html\" title=\"trait learn::neural::training::data_importer::DataImporter\">DataImporter</a> for <a class=\"struct\" href=\"evaluate/struct.FileDataImporter.html\" title=\"struct evaluate::FileDataImporter\">FileDataImporter</a>"]]],["nn_generator",[["impl <a class=\"trait\" href=\"learn/neural/training/data_importer/trait.DataImporter.html\" title=\"trait learn::neural::training::data_importer::DataImporter\">DataImporter</a> for <a class=\"struct\" href=\"nn_generator/struct.FileDataImporter.html\" title=\"struct nn_generator::FileDataImporter\">FileDataImporter</a>"]]],["predict",[["impl <a class=\"trait\" href=\"learn/neural/training/data_importer/trait.DataImporter.html\" title=\"trait learn::neural::training::data_importer::DataImporter\">DataImporter</a> for <a class=\"struct\" href=\"predict/struct.FileDataImporter.html\" title=\"struct predict::FileDataImporter\">FileDataImporter</a>"]]],["train",[["impl <a class=\"trait\" href=\"learn/neural/training/data_importer/trait.DataImporter.html\" title=\"trait learn::neural::training::data_importer::DataImporter\">DataImporter</a> for <a class=\"struct\" href=\"train/struct.FileDataImporter.html\" title=\"struct train::FileDataImporter\">FileDataImporter</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[333,346,331,325]}

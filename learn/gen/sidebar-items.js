@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["challenge","neuralnet_gen","pheno","strategy"]};

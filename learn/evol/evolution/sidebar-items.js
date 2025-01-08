@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["challenge","launcher","options","parallel_launcher"]};

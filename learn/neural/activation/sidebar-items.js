@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["activate","relu","sigmoid","softmax","tanh"]};

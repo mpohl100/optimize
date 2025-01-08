@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["data_importer","training_params","training_session"]};

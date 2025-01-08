@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["dense_layer","layer_trait"]};

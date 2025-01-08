@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["learn",[["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.217/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"enum\" href=\"learn/neural/nn/shape/enum.ActivationType.html\" title=\"enum learn::neural::nn::shape::ActivationType\">ActivationType</a>"],["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.217/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"enum\" href=\"learn/neural/nn/shape/enum.LayerType.html\" title=\"enum learn::neural::nn::shape::LayerType\">LayerType</a>"],["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.217/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"struct\" href=\"learn/neural/nn/shape/struct.ActivationData.html\" title=\"struct learn::neural::nn::shape::ActivationData\">ActivationData</a>"],["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.217/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"struct\" href=\"learn/neural/nn/shape/struct.LayerShape.html\" title=\"struct learn::neural::nn::shape::LayerShape\">LayerShape</a>"],["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.217/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"struct\" href=\"learn/neural/nn/shape/struct.NeuralNetworkShape.html\" title=\"struct learn::neural::nn::shape::NeuralNetworkShape\">NeuralNetworkShape</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1659]}

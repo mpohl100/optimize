@@ -1,0 +1,1 @@
+searchState.loadedDescShard("nn_generator", 0, "Command line arguments\nReturns the argument unchanged.\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.\nCalls <code>U::from(self)</code>.\nDirectory where the model shall be saved")
