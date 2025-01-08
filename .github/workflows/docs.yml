@@ -1,0 +1,34 @@
+name: Generate and Deploy Cargo Docs
+
+on:
+  push:
+    branches:
+      - main  # Run only on pushes to the main branch
+  # manually trigger the workflow
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Set up Rust
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable  # Use the stable toolchain
+
+      # Generate Cargo Documentation
+      - name: Generate Cargo Docs
+        run: cargo doc --no-deps
+
+      # Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
