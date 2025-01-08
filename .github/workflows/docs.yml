@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read  # Fetch repository contents
+  contents: write  # Fetch repository contents
   pages: write    # Deploy to GitHub Pages
   id-token: write # Required for OIDC
 
