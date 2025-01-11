@@ -16,12 +16,10 @@ pub struct DenseLayer {
 
 impl DenseLayer {
     pub fn new(input_size: usize, output_size: usize) -> Self {
-        let dense_layer = DenseLayer {
+        DenseLayer {
             weights: Matrix::new(output_size, input_size),
             biases: vec![0.0; output_size],
-        };
-
-        dense_layer
+        }
     }
 }
 
@@ -351,7 +349,7 @@ impl TrainableLayer for TrainableDenseLayer {
     }
 }
 
-fn save(path: &str, weights: &Matrix<f64>, biases: &Vec<f64>) -> Result<(), Box<dyn Error>> {
+fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
     // Save weights and biases to a file at the specified path
     let mut file = File::create(path)?;
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
@@ -361,8 +359,8 @@ fn save(path: &str, weights: &Matrix<f64>, biases: &Vec<f64>) -> Result<(), Box<
         }
         writeln!(file)?;
     }
-    for i in 0..biases.len() {
-        write!(file, "{} ", biases[i])?;
+    for bias in biases.iter() {
+        write!(file, "{} ", bias)?;
     }
     writeln!(file)?;
     Ok(())
@@ -393,9 +391,9 @@ fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     if let Some(Ok(line)) = lines.next() {
         let mut parts = line.split_whitespace();
         biases = vec![0.0; weights.rows()];
-        for i in 0..biases.len() {
+        for bias in &mut biases {
             if let Some(part) = parts.next() {
-                biases[i] = part.parse::<f64>()?;
+                *bias = part.parse::<f64>()?;
             }
         }
     }
