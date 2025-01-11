@@ -19,6 +19,36 @@ pub trait Layer: std::fmt::Debug + DynClone {
     /// Performs the forward pass of the layer for inputs doing batch caching.
     fn forward_batch(&mut self, input: &[f64]) -> Vec<f64>;
 
+    /// Returns the input size of the layer.
+    ///
+    /// # Returns
+    ///
+    /// * A `usize` value representing the number of input neurons.
+    fn input_size(&self) -> usize;
+
+    /// Returns the output size of the layer.
+    ///
+    /// # Returns
+    ///
+    /// * A `usize` value representing the number of output neurons.
+    fn output_size(&self) -> usize;
+
+    /// Saves the layer to a file at the specified path.
+    fn save(&self, path: &str) -> Result<(), Box<dyn Error>>;
+
+    /// Reads the layer from a file at the specified path.
+    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
+
+    /// Returns the weights of the layer.
+    fn get_weights(&self) -> Matrix<f64>;
+
+    /// Returns the biases of the layer.
+    fn get_biases(&self) -> Vec<f64>;
+}
+
+dyn_clone::clone_trait_object!(Layer);
+
+pub trait TrainableLayer: Layer {
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
     ///
     /// # Arguments
@@ -41,40 +71,15 @@ pub trait Layer: std::fmt::Debug + DynClone {
     /// * `learning_rate` - A `f64` value representing the learning rate for weight updates.
     fn update_weights(&mut self, learning_rate: f64);
 
-    /// Returns the input size of the layer.
-    ///
-    /// # Returns
-    ///
-    /// * A `usize` value representing the number of input neurons.
-    fn input_size(&self) -> usize;
-
-    /// Returns the output size of the layer.
-    ///
-    /// # Returns
-    ///
-    /// * A `usize` value representing the number of output neurons.
-    fn output_size(&self) -> usize;
-
-    /// Saves the layer to a file at the specified path.
-    fn save(&self, path: &str) -> Result<(), Box<dyn Error>>;
-
-    /// Reads the layer from a file at the specified path.
-    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
-
     /// Resizes the layer to the input dimensions.
     fn resize(&mut self, input_size: usize, output_size: usize);
 
     /// Assigns the weight of the input other layer
-    fn assign_weights(&mut self, other: &dyn Layer);
-
-    /// Returns the weights of the layer.
-    fn get_weights(&self) -> Matrix<f64>;
-
-    /// Returns the biases of the layer.
-    fn get_biases(&self) -> Vec<f64>;
+    fn assign_weights(&mut self, other: &dyn TrainableLayer);
 
     /// Adjusts the weights according to the Adam optimizer.
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64);
 }
 
-dyn_clone::clone_trait_object!(Layer);
+dyn_clone::clone_trait_object!(TrainableLayer);
+
