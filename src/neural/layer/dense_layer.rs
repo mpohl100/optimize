@@ -73,7 +73,7 @@ impl Layer for DenseLayer {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-struct Weight{
+struct Weight {
     value: f64,
     grad: f64,
     m: f64,
@@ -81,7 +81,7 @@ struct Weight{
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-struct Bias{
+struct Bias {
     value: f64,
     grad: f64,
     m: f64,
@@ -91,8 +91,8 @@ struct Bias{
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
 pub struct TrainableDenseLayer {
-    weights: Matrix<Weight>,             // Weight matrix (output_size x input_size)
-    biases: Vec<Bias>,                 // Bias vector (output_size)
+    weights: Matrix<Weight>,          // Weight matrix (output_size x input_size)
+    biases: Vec<Bias>,                // Bias vector (output_size)
     input_cache: Vec<f64>,            // Cache input for use in backward pass
     input_batch_cache: Vec<Vec<f64>>, // Cache batch input for use in backward pass
 }
@@ -186,7 +186,9 @@ impl Layer for TrainableDenseLayer {
             for j in 0..self.weights.cols() {
                 *weights.get_mut_unchecked(i, j) = self.weights.get_unchecked(i, j).value;
             }
-            biases[i] = self.biases[i].value;
+        }
+        for (i, bias) in self.biases.iter().enumerate() {
+            biases[i] = bias.value;
         }
         save(path, &weights, &biases)
     }
