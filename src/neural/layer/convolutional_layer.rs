@@ -269,8 +269,60 @@ impl TrainableLayer for ConvolutionalLayer {
     fn assign_weights(&mut self, _other: &dyn TrainableLayer) {
         unimplemented!()
     }
+    
+    fn adjust_adam(
+        &mut self,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        time_step: usize,
+        moment1: &mut Matrix<f64>,
+        moment2: &mut Matrix<f64>,
+        bias_moment1: &mut Vec<f64>,
+        bias_moment2: &mut Vec<f64>,
+    ) {
+        // Update kernel weights using Adam optimizer
+        for row in 0..self.kernel.rows() {
+            for col in 0..self.kernel.cols() {
+                let grad = self.kernel.get_unchecked(row, col).grad;
 
-    fn adjust_adam(&mut self, _t: usize, _learning_rate: f64, _beta1: f64, _beta2: f64, _epsilon: f64) {
-        unimplemented!()
+                // Update moment estimates
+                let m = beta1 * moment1.get_unchecked(row, col) + (1.0 - beta1) * grad;
+                let v = beta2 * moment2.get_unchecked(row, col) + (1.0 - beta2) * grad * grad;
+
+                // Bias correction
+                let m_hat = m / (1.0 - beta1.powi(time_step as i32));
+                let v_hat = v / (1.0 - beta2.powi(time_step as i32));
+
+                // Update kernel value
+                let new_value = self.kernel.get_unchecked(row, col).value - learning_rate * m_hat / (v_hat.sqrt() + epsilon);
+                self.kernel.get_mut_unchecked(row, col).value = new_value;
+
+                // Update moments
+                moment1.get_mut_unchecked(row, col).value = m;
+                moment2.get_mut_unchecked(row, col).value = v;
+            }
+        }
+
+        // Update biases using Adam optimizer
+        for i in 0..self.biases.len() {
+            let grad = self.biases[i]; // Assuming biases store gradients directly
+
+            // Update moment estimates
+            let m = beta1 * bias_moment1[i] + (1.0 - beta1) * grad;
+            let v = beta2 * bias_moment2[i] + (1.0 - beta2) * grad * grad;
+
+            // Bias correction
+            let m_hat = m / (1.0 - beta1.powi(time_step as i32));
+            let v_hat = v / (1.0 - beta2.powi(time_step as i32));
+
+            // Update bias value
+            self.biases[i] -= learning_rate * m_hat / (v_hat.sqrt() + epsilon);
+
+            // Update moments
+            bias_moment1[i] = m;
+            bias_moment2[i] = v;
+        }
     }
 }
