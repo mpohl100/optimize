@@ -1,12 +1,12 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
-use crate::neural::nn::neuralnet::NeuralNetwork;
+use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 
 use std::error::Error;
 
 pub struct TrainingSession {
     params: TrainingParams,
-    neural_network: NeuralNetwork,
+    neural_network: TrainableNeuralNetwork,
     data_importer: Box<dyn DataImporter>,
 }
 
@@ -20,13 +20,13 @@ impl TrainingSession {
         let shape = params.shape().clone();
         Ok(Self {
             params,
-            neural_network: NeuralNetwork::new(shape),
+            neural_network: TrainableNeuralNetwork::new(shape),
             data_importer,
         })
     }
 
     pub fn from_network(
-        nn: NeuralNetwork,
+        nn: TrainableNeuralNetwork,
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
     ) -> Result<TrainingSession, Box<dyn Error>> {
@@ -50,7 +50,7 @@ impl TrainingSession {
         if std::fs::metadata(model_directory).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = NeuralNetwork::from_disk(model_directory);
+        let nn = TrainableNeuralNetwork::from_disk(model_directory);
         if let Some(nnw) = nn {
             Ok(TrainingSession {
                 params,
@@ -129,7 +129,7 @@ impl TrainingSession {
     }
 
     /// get the resulting neural network
-    pub fn get_nn(&self) -> &NeuralNetwork {
+    pub fn get_nn(&self) -> &TrainableNeuralNetwork {
         &self.neural_network
     }
 }

@@ -10,7 +10,7 @@ use std::io::Write;
 
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
-pub struct DenseLayer {
+pub struct TrainableDenseLayer {
     weights: Matrix<f64>,             // Weight matrix (output_size x input_size)
     biases: Vec<f64>,                 // Bias vector (output_size)
     input_cache: Vec<f64>,            // Cache input for use in backward pass
@@ -23,11 +23,11 @@ pub struct DenseLayer {
     v_biases: Vec<f64>,               // Second moment for biases (Adam)
 }
 
-impl DenseLayer {
-    /// Creates a new DenseLayer with given input and output sizes.
+impl TrainableDenseLayer {
+    /// Creates a new TrainableDenseLayer with given input and output sizes.
     pub fn new(input_size: usize, output_size: usize) -> Self {
         // Create a dense layer with default weights
-        let mut dense_layer = DenseLayer {
+        let mut dense_layer = TrainableDenseLayer {
             weights: Matrix::new(output_size, input_size),
             biases: vec![0.0; output_size],
             input_cache: vec![],
@@ -57,7 +57,7 @@ impl DenseLayer {
     }
 }
 
-impl Layer for DenseLayer {
+impl Layer for TrainableDenseLayer {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.input_cache = input.to_vec(); // Cache the input for backpropagation
         self.weights
@@ -168,7 +168,7 @@ impl Layer for DenseLayer {
     }
 }
 
-impl TrainableLayer for DenseLayer {
+impl TrainableLayer for TrainableDenseLayer {
     /// Backward pass for the dense layer
     ///
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_dense_layer() {
-        let mut layer = DenseLayer::new(3, 2);
+        let mut layer = TrainableDenseLayer::new(3, 2);
 
         let input = vec![1.0, 2.0, 3.0];
         let output = layer.forward(&input);

@@ -3,14 +3,14 @@ use super::{
 };
 use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
-use crate::neural::nn::neuralnet::NeuralNetwork;
+use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct NeuralNetworkPhenotype {
-    nn: Arc<Mutex<NeuralNetwork>>,
+    nn: Arc<Mutex<TrainableNeuralNetwork>>,
     left_half_shape: Option<NeuralNetworkShape>,
     right_half_shape: Option<NeuralNetworkShape>,
 }
@@ -26,7 +26,7 @@ impl Clone for NeuralNetworkPhenotype {
 }
 
 impl NeuralNetworkPhenotype {
-    pub fn new(nn: NeuralNetwork) -> Self {
+    pub fn new(nn: TrainableNeuralNetwork) -> Self {
         Self {
             nn: Arc::new(Mutex::new(nn)),
             left_half_shape: None,
@@ -34,11 +34,11 @@ impl NeuralNetworkPhenotype {
         }
     }
 
-    pub fn get_nn(&self) -> NeuralNetwork {
+    pub fn get_nn(&self) -> TrainableNeuralNetwork {
         self.nn.lock().unwrap().clone()
     }
 
-    pub fn set_nn(&mut self, nn: NeuralNetwork) {
+    pub fn set_nn(&mut self, nn: TrainableNeuralNetwork) {
         *self.nn.lock().unwrap() = nn;
     }
 
@@ -105,7 +105,7 @@ impl Phenotype for NeuralNetworkPhenotype {
                 break;
             }
         }
-        let nn = NeuralNetwork::new(mutated_shape.to_neural_network_shape());
+        let nn = TrainableNeuralNetwork::new(mutated_shape.to_neural_network_shape());
         self.set_nn(nn);
         self.reset_half_shapes();
     }

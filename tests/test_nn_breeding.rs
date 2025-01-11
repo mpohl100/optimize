@@ -1,5 +1,5 @@
 use learn::evol::rng::RandomNumberGenerator;
-use learn::neural::nn::neuralnet::NeuralNetwork;
+use learn::neural::nn::neuralnet::TrainableNeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 
@@ -40,7 +40,7 @@ fn test_neural_network_breeding() {
     };
 
     // Create a neural network phenotype
-    let nn = NeuralNetwork::new(nn_shape);
+    let nn = TrainableNeuralNetwork::new(nn_shape);
     let nn_phenotype = NeuralNetworkPhenotype::new(nn);
     let mut parents = vec![nn_phenotype];
 
