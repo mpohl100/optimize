@@ -72,19 +72,29 @@ impl Layer for DenseLayer {
     }
 }
 
+#[derive(Default, Debug, Clone, Copy)]
+struct Weight{
+    value: f64,
+    grad: f64,
+    m: f64,
+    v: f64,
+}
+
+#[derive(Default, Debug, Clone, Copy)]
+struct Bias{
+    value: f64,
+    grad: f64,
+    m: f64,
+    v: f64,
+}
+
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
 pub struct TrainableDenseLayer {
-    weights: Matrix<f64>,             // Weight matrix (output_size x input_size)
-    biases: Vec<f64>,                 // Bias vector (output_size)
+    weights: Matrix<Weight>,             // Weight matrix (output_size x input_size)
+    biases: Vec<Bias>,                 // Bias vector (output_size)
     input_cache: Vec<f64>,            // Cache input for use in backward pass
     input_batch_cache: Vec<Vec<f64>>, // Cache batch input for use in backward pass
-    weight_grads: Matrix<f64>,        // Gradient of weights
-    bias_grads: Vec<f64>,             // Gradient of biases
-    m_weights: Matrix<f64>,           // First moment for weights (Adam)
-    v_weights: Matrix<f64>,           // Second moment for weights (Adam)
-    m_biases: Vec<f64>,               // First moment for biases (Adam)
-    v_biases: Vec<f64>,               // Second moment for biases (Adam)
 }
 
 impl TrainableDenseLayer {
@@ -93,15 +103,9 @@ impl TrainableDenseLayer {
         // Create a dense layer with default weights
         let mut dense_layer = TrainableDenseLayer {
             weights: Matrix::new(output_size, input_size),
-            biases: vec![0.0; output_size],
+            biases: vec![Bias::default(); output_size],
             input_cache: vec![],
             input_batch_cache: vec![],
-            weight_grads: Matrix::new(output_size, input_size),
-            bias_grads: vec![0.0; output_size],
-            m_weights: Matrix::new(output_size, input_size),
-            v_weights: Matrix::new(output_size, input_size),
-            m_biases: vec![0.0; output_size],
-            v_biases: vec![0.0; output_size],
         };
 
         // Initialize weights with random values in [-0.5, 0.5]
@@ -115,7 +119,7 @@ impl TrainableDenseLayer {
         // initialize weights from -0.5 to 0.5
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
-                *self.weights.get_mut_unchecked(i, j) = rng.gen_range(-0.5..0.5);
+                self.weights.get_mut_unchecked(i, j).value = rng.gen_range(-0.5..0.5);
             }
         }
     }
@@ -131,9 +135,9 @@ impl Layer for TrainableDenseLayer {
                 weights_row
                     .iter()
                     .zip(input.iter())
-                    .map(|(&w, &x)| w * x)
+                    .map(|(&w, &x)| w.value * x)
                     .sum::<f64>()
-                    + self.biases[row_idx] // Use the bias corresponding to the row index
+                    + self.biases[row_idx].value // Use the bias corresponding to the row index
             })
             .collect()
     }
@@ -155,11 +159,11 @@ impl Layer for TrainableDenseLayer {
         // Iterate over each element in biases
         for i in 0..num_rows {
             // Initialize output[i] with the corresponding bias value
-            output[i] = self.biases[i];
+            output[i] = self.biases[i].value;
 
             // Accumulate the dot product of weights and input
             for j in 0..num_cols {
-                output[i] += self.weights.get_unchecked(i, j) * input[j];
+                output[i] += self.weights.get_unchecked(i, j).value * input[j];
             }
         }
 
@@ -175,23 +179,47 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        save(path, &self.weights, &self.biases)
+        // assign weights and biases to a matrix and vector
+        let mut weights = Matrix::new(self.weights.rows(), self.weights.cols());
+        let mut biases = vec![0.0; self.biases.len()];
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                *weights.get_mut_unchecked(i, j) = self.weights.get_unchecked(i, j).value;
+            }
+            biases[i] = self.biases[i].value;
+        }
+        save(path, &weights, &biases)
     }
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
-        self.weights = weights;
-        self.biases = biases;
+        // assign all weights and biases
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    self.weights.get_mut_unchecked(i, j).value = *weights.get_unchecked(i, j);
+                }
+            }
+            if i < biases.len() {
+                self.biases[i].value = biases[i];
+            }
+        }
         Ok(())
     }
 
     fn get_weights(&self) -> Matrix<f64> {
-        self.weights.clone()
+        let mut weights = Matrix::new(self.weights.rows(), self.weights.cols());
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                *weights.get_mut_unchecked(i, j) = self.weights.get_unchecked(i, j).value;
+            }
+        }
+        weights
     }
 
     fn get_biases(&self) -> Vec<f64> {
-        self.biases.clone()
+        self.biases.iter().map(|bias| bias.value).collect()
     }
 }
 
@@ -201,13 +229,10 @@ impl TrainableLayer for TrainableDenseLayer {
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
     /// - Returns: Gradient of the loss with respect to the input of this layer
     fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
-        // Initialize gradients for weights and biases
-        self.bias_grads = d_out.to_vec();
-
         // Calculate weight gradients
-        for (i, row_grad) in self.weight_grads.iter_mut().enumerate() {
+        for (i, row_grad) in self.weights.iter_mut().enumerate() {
             for (j, grad) in row_grad.iter_mut().enumerate() {
-                *grad = d_out[i] * self.input_cache[j];
+                grad.grad = d_out[i] * self.input_cache[j];
             }
         }
 
@@ -215,7 +240,7 @@ impl TrainableLayer for TrainableDenseLayer {
         let mut d_input = vec![0.0; self.input_cache.len()];
         for (i, weights_row) in self.weights.iter().enumerate() {
             for (j, &weight) in weights_row.iter().enumerate() {
-                d_input[j] += weight * d_out[i];
+                d_input[j] += weight.value * d_out[i];
             }
         }
 
@@ -226,16 +251,16 @@ impl TrainableLayer for TrainableDenseLayer {
     ///
     /// - `learning_rate`: The step size for gradient descent
     fn update_weights(&mut self, learning_rate: f64) {
-        // Update weights
-        for (i, weights_row) in self.weights.iter_mut().enumerate() {
-            for (j, weight) in weights_row.iter_mut().enumerate() {
-                *weight -= learning_rate * self.weight_grads.get_unchecked(i, j);
+        // Update weight
+        for weights_row in self.weights.iter_mut() {
+            for weight in weights_row.iter_mut() {
+                weight.value -= learning_rate * weight.grad;
             }
         }
 
         // Update biases
-        for (i, bias) in self.biases.iter_mut().enumerate() {
-            *bias -= learning_rate * self.bias_grads[i];
+        for bias in self.biases.iter_mut() {
+            bias.value -= learning_rate * bias.grad;
         }
     }
 
@@ -255,11 +280,11 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..num_rows {
             for j in 0..num_cols {
                 // Update weight gradients
-                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * last_input_cache[j];
-                grad_input[j] += self.weights.get_unchecked(i, j) * grad_output[i];
+                self.weights.get_mut_unchecked(i, j).grad += grad_output[i] * last_input_cache[j];
+                grad_input[j] += self.weights.get_unchecked(i, j).value * grad_output[i];
             }
             // Update bias gradients
-            self.bias_grads[i] += grad_output[i];
+            self.biases[i].grad += grad_output[i];
         }
 
         grad_input
@@ -270,10 +295,8 @@ impl TrainableLayer for TrainableDenseLayer {
         let old_biases = self.biases.clone();
         // Resize the layer to the input dimensions
         self.weights = Matrix::new(output_size, input_size);
-        self.biases = vec![0.0; output_size];
+        self.biases = vec![Bias::default(); output_size];
         self.input_cache = vec![0.0; input_size];
-        self.weight_grads = Matrix::new(output_size, input_size);
-        self.bias_grads = vec![0.0; output_size];
 
         for i in 0..output_size {
             for j in 0..input_size {
@@ -295,11 +318,11 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    *self.weights.get_mut_unchecked(i, j) = *weights.get_unchecked(i, j);
+                    self.weights.get_mut_unchecked(i, j).value = *weights.get_unchecked(i, j);
                 }
             }
             if i < biases.len() {
-                self.biases[i] = biases[i];
+                self.biases[i].value = biases[i];
             }
         }
     }
@@ -308,43 +331,43 @@ impl TrainableLayer for TrainableDenseLayer {
         // Update weights
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
-                let grad = self.weight_grads.get_unchecked(i, j);
+                let grad = self.weights.get_unchecked(i, j).grad;
 
                 // Update first and second moments
-                *self.m_weights.get_mut_unchecked(i, j) =
-                    beta1 * self.m_weights.get_unchecked(i, j) + (1.0 - beta1) * grad;
-                *self.v_weights.get_mut_unchecked(i, j) =
-                    beta2 * self.v_weights.get_unchecked(i, j) + (1.0 - beta2) * grad.powi(2);
+                self.weights.get_mut_unchecked(i, j).m =
+                    beta1 * self.weights.get_unchecked(i, j).m + (1.0 - beta1) * grad;
+                self.weights.get_mut_unchecked(i, j).v =
+                    beta2 * self.weights.get_unchecked(i, j).v + (1.0 - beta2) * grad.powi(2);
 
                 // Bias correction
-                let m_hat = self.m_weights.get_unchecked(i, j) / (1.0 - beta1.powi(t as i32));
-                let v_hat = self.v_weights.get_unchecked(i, j) / (1.0 - beta2.powi(t as i32));
+                let m_hat = self.weights.get_unchecked(i, j).m / (1.0 - beta1.powi(t as i32));
+                let v_hat = self.weights.get_unchecked(i, j).v / (1.0 - beta2.powi(t as i32));
 
                 // Adjusted learning rate
                 let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
 
                 // Update weights
-                *self.weights.get_mut_unchecked(i, j) -= adjusted_learning_rate * m_hat;
+                self.weights.get_mut_unchecked(i, j).value -= adjusted_learning_rate * m_hat;
             }
         }
 
         // Update biases
         for i in 0..self.biases.len() {
-            let grad = self.bias_grads[i];
+            let grad = self.biases[i].grad;
 
             // Update first and second moments
-            self.m_biases[i] = beta1 * self.m_biases[i] + (1.0 - beta1) * grad;
-            self.v_biases[i] = beta2 * self.v_biases[i] + (1.0 - beta2) * grad.powi(2);
+            self.biases[i].m = beta1 * self.biases[i].m + (1.0 - beta1) * grad;
+            self.biases[i].v = beta2 * self.biases[i].v + (1.0 - beta2) * grad.powi(2);
 
             // Bias correction
-            let m_hat = self.m_biases[i] / (1.0 - beta1.powi(t as i32));
-            let v_hat = self.v_biases[i] / (1.0 - beta2.powi(t as i32));
+            let m_hat = self.biases[i].m / (1.0 - beta1.powi(t as i32));
+            let v_hat = self.biases[i].v / (1.0 - beta2.powi(t as i32));
 
             // Adjusted learning rate
             let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
 
             // Update biases
-            self.biases[i] -= adjusted_learning_rate * m_hat;
+            self.biases[i].value -= adjusted_learning_rate * m_hat;
         }
     }
 }
