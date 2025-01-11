@@ -82,4 +82,3 @@ pub trait TrainableLayer: Layer {
 }
 
 dyn_clone::clone_trait_object!(TrainableLayer);
-
