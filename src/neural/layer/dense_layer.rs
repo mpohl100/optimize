@@ -1,4 +1,5 @@
 use super::layer_trait::Layer;
+use super::layer_trait::TrainableLayer;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
 use std::error::Error;
@@ -73,49 +74,6 @@ impl Layer for DenseLayer {
             .collect()
     }
 
-    /// Backward pass for the dense layer
-    ///
-    /// - `d_out`: Gradient of the loss with respect to the output of this layer
-    /// - Returns: Gradient of the loss with respect to the input of this layer
-    fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
-        // Initialize gradients for weights and biases
-        self.bias_grads = d_out.to_vec();
-
-        // Calculate weight gradients
-        for (i, row_grad) in self.weight_grads.iter_mut().enumerate() {
-            for (j, grad) in row_grad.iter_mut().enumerate() {
-                *grad = d_out[i] * self.input_cache[j];
-            }
-        }
-
-        // Calculate input gradients
-        let mut d_input = vec![0.0; self.input_cache.len()];
-        for (i, weights_row) in self.weights.iter().enumerate() {
-            for (j, &weight) in weights_row.iter().enumerate() {
-                d_input[j] += weight * d_out[i];
-            }
-        }
-
-        d_input
-    }
-
-    /// Update weights and biases using their respective gradients
-    ///
-    /// - `learning_rate`: The step size for gradient descent
-    fn update_weights(&mut self, learning_rate: f64) {
-        // Update weights
-        for (i, weights_row) in self.weights.iter_mut().enumerate() {
-            for (j, weight) in weights_row.iter_mut().enumerate() {
-                *weight -= learning_rate * self.weight_grads.get_unchecked(i, j);
-            }
-        }
-
-        // Update biases
-        for (i, bias) in self.biases.iter_mut().enumerate() {
-            *bias -= learning_rate * self.bias_grads[i];
-        }
-    }
-
     #[allow(clippy::needless_range_loop)]
     fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
         // Store input for potential use in backward pass (not needed in this function)
@@ -142,32 +100,6 @@ impl Layer for DenseLayer {
         }
 
         output
-    }
-
-    #[allow(clippy::needless_range_loop)]
-    fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        // Initialize grad_input with the size of input_cache, filled with zeros
-        let mut grad_input = vec![0.0; self.input_cache.len()];
-
-        let num_rows = self.weights.rows();
-        let num_cols = self.weights.cols();
-        let last_input_cache = &self.input_batch_cache[self.input_batch_cache.len() - 1];
-        // Check dimensions or panic:
-        assert_eq!(num_rows, self.biases.len());
-        assert_eq!(num_cols, last_input_cache.len());
-
-        // Calculate gradients for weights and biases
-        for i in 0..num_rows {
-            for j in 0..num_cols {
-                // Update weight gradients
-                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * last_input_cache[j];
-                grad_input[j] += self.weights.get_unchecked(i, j) * grad_output[i];
-            }
-            // Update bias gradients
-            self.bias_grads[i] += grad_output[i];
-        }
-
-        grad_input
     }
 
     fn input_size(&self) -> usize {
@@ -227,6 +159,85 @@ impl Layer for DenseLayer {
         Ok(())
     }
 
+    fn get_weights(&self) -> Matrix<f64> {
+        self.weights.clone()
+    }
+
+    fn get_biases(&self) -> Vec<f64> {
+        self.biases.clone()
+    }
+}
+
+impl TrainableLayer for DenseLayer {
+    /// Backward pass for the dense layer
+    ///
+    /// - `d_out`: Gradient of the loss with respect to the output of this layer
+    /// - Returns: Gradient of the loss with respect to the input of this layer
+    fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
+        // Initialize gradients for weights and biases
+        self.bias_grads = d_out.to_vec();
+
+        // Calculate weight gradients
+        for (i, row_grad) in self.weight_grads.iter_mut().enumerate() {
+            for (j, grad) in row_grad.iter_mut().enumerate() {
+                *grad = d_out[i] * self.input_cache[j];
+            }
+        }
+
+        // Calculate input gradients
+        let mut d_input = vec![0.0; self.input_cache.len()];
+        for (i, weights_row) in self.weights.iter().enumerate() {
+            for (j, &weight) in weights_row.iter().enumerate() {
+                d_input[j] += weight * d_out[i];
+            }
+        }
+
+        d_input
+    }
+
+    /// Update weights and biases using their respective gradients
+    ///
+    /// - `learning_rate`: The step size for gradient descent
+    fn update_weights(&mut self, learning_rate: f64) {
+        // Update weights
+        for (i, weights_row) in self.weights.iter_mut().enumerate() {
+            for (j, weight) in weights_row.iter_mut().enumerate() {
+                *weight -= learning_rate * self.weight_grads.get_unchecked(i, j);
+            }
+        }
+
+        // Update biases
+        for (i, bias) in self.biases.iter_mut().enumerate() {
+            *bias -= learning_rate * self.bias_grads[i];
+        }
+    }
+
+    #[allow(clippy::needless_range_loop)]
+    fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
+        // Initialize grad_input with the size of input_cache, filled with zeros
+        let mut grad_input = vec![0.0; self.input_cache.len()];
+
+        let num_rows = self.weights.rows();
+        let num_cols = self.weights.cols();
+        let last_input_cache = &self.input_batch_cache[self.input_batch_cache.len() - 1];
+        // Check dimensions or panic:
+        assert_eq!(num_rows, self.biases.len());
+        assert_eq!(num_cols, last_input_cache.len());
+
+        // Calculate gradients for weights and biases
+        for i in 0..num_rows {
+            for j in 0..num_cols {
+                // Update weight gradients
+                *self.weight_grads.get_mut_unchecked(i, j) += grad_output[i] * last_input_cache[j];
+                grad_input[j] += self.weights.get_unchecked(i, j) * grad_output[i];
+            }
+            // Update bias gradients
+            self.bias_grads[i] += grad_output[i];
+        }
+
+        grad_input
+    }
+
     fn resize(&mut self, input_size: usize, output_size: usize) {
         let old_weights = self.weights.clone();
         let old_biases = self.biases.clone();
@@ -249,7 +260,7 @@ impl Layer for DenseLayer {
         }
     }
 
-    fn assign_weights(&mut self, other: &dyn Layer) {
+    fn assign_weights(&mut self, other: &dyn TrainableLayer) {
         let weights = other.get_weights();
 
         let biases = other.get_biases();
@@ -264,14 +275,6 @@ impl Layer for DenseLayer {
                 self.biases[i] = biases[i];
             }
         }
-    }
-
-    fn get_weights(&self) -> Matrix<f64> {
-        self.weights.clone()
-    }
-
-    fn get_biases(&self) -> Vec<f64> {
-        self.biases.clone()
     }
 
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {

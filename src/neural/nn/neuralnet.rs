@@ -4,6 +4,7 @@ use crate::neural::activation::{
 };
 use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::Layer;
+use crate::neural::layer::TrainableLayer;
 use crate::neural::nn::shape::*;
 
 use indicatif::ProgressDrawTarget;
@@ -20,7 +21,7 @@ use std::boxed::Box;
 /// A neural network.
 #[derive(Debug, Clone, Default)]
 pub struct NeuralNetwork {
-    layers: Vec<Box<dyn Layer + Send>>,
+    layers: Vec<Box<dyn TrainableLayer + Send>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
 }
@@ -82,7 +83,7 @@ impl NeuralNetwork {
                     layer
                         .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
                         .unwrap();
-                    Box::new(layer) as Box<dyn Layer + Send>
+                    Box::new(layer) as Box<dyn TrainableLayer + Send>
                 }
             };
             let activation = match sh.layers[i].activation.activation_type() {
@@ -105,7 +106,7 @@ impl NeuralNetwork {
     fn add_activation_and_layer(
         &mut self,
         activation: Box<dyn ActivationTrait + Send>,
-        layer: Box<dyn Layer + Send>,
+        layer: Box<dyn TrainableLayer + Send>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
