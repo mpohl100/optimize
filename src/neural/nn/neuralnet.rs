@@ -2,6 +2,7 @@ use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
+use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::dense_layer::TrainableDenseLayer;
 use crate::neural::layer::Layer;
 use crate::neural::layer::TrainableLayer;
@@ -17,6 +18,126 @@ use std::sync::Arc;
 static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiProgress::new()));
 
 use std::boxed::Box;
+
+/// A neural network.
+#[derive(Debug, Clone, Default)]
+pub struct NeuralNetwork {
+    layers: Vec<Box<dyn Layer + Send>>,
+    activations: Vec<Box<dyn ActivationTrait + Send>>,
+    shape: NeuralNetworkShape,
+}
+
+impl NeuralNetwork {
+    /// Creates a new `NeuralNetwork` from the given shape.
+    pub fn new(shape: NeuralNetworkShape) -> Self {
+        let shape_clone = shape.clone();
+        let mut network = NeuralNetwork {
+            layers: Vec::new(),
+            activations: Vec::new(),
+            shape,
+        };
+
+        // Initialize layers and activations based on the provided shape.
+        for layer_shape in shape_clone.layers {
+            // Here you would instantiate the appropriate Layer and Activation objects.
+            let layer = Box::new(DenseLayer::new(
+                layer_shape.input_size(),
+                layer_shape.output_size(),
+            ));
+            let activation = match layer_shape.activation.activation_type() {
+                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => {
+                    Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
+                        as Box<dyn ActivationTrait + Send>
+                }
+            };
+
+            network.add_activation_and_layer(activation, layer);
+        }
+
+        network
+    }
+
+    /// Creates a new `NeuralNetwork` from the given model directory.
+    #[allow(clippy::question_mark)]
+    pub fn from_disk(model_directory: &String) -> Option<TrainableNeuralNetwork> {
+        let shape = NeuralNetworkShape::from_disk(model_directory);
+        if shape.is_none() {
+            return None;
+        }
+        let sh = shape.unwrap();
+        let mut network = TrainableNeuralNetwork {
+            layers: Vec::new(),
+            activations: Vec::new(),
+            shape: sh.clone(),
+        };
+
+        for i in 0..sh.layers.len() {
+            let layer = match &sh.layers[i].layer_type() {
+                LayerType::Dense {
+                    input_size,
+                    output_size,
+                } => {
+                    let mut layer = TrainableDenseLayer::new(*input_size, *output_size);
+                    layer
+                        .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
+                        .unwrap();
+                    Box::new(layer) as Box<dyn TrainableLayer + Send>
+                }
+            };
+            let activation = match sh.layers[i].activation.activation_type() {
+                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => {
+                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
+                        as Box<dyn ActivationTrait + Send>
+                }
+            };
+
+            network.add_activation_and_layer(activation, layer);
+        }
+
+        Some(network)
+    }
+
+    /// Adds an activation and a layer to the neural network.
+    fn add_activation_and_layer(
+        &mut self,
+        activation: Box<dyn ActivationTrait + Send>,
+        layer: Box<dyn Layer + Send>,
+    ) {
+        self.activations.push(activation);
+        self.layers.push(layer);
+    }
+
+    /// Performs a forward pass through the network with the given input.
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        let mut output = input.to_vec();
+        for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
+            output = layer.forward(&output);
+            // this operation should not change the dimension of output
+            output = activation.forward(&output);
+        }
+        output
+    }
+
+    /// Performs a forward pass through the network with the given input doing batch caching.
+    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        let mut output = input.to_vec();
+        for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
+            output = layer.forward_batch(&output);
+            output = activation.forward(&output);
+        }
+        output
+    }
+
+    pub fn shape(&self) -> &NeuralNetworkShape {
+        &self.shape
+    }
+}
 
 /// A neural network.
 #[derive(Debug, Clone, Default)]

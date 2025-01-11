@@ -14,6 +14,17 @@ pub struct DenseLayer {
     biases: Vec<f64>,
 }
 
+impl DenseLayer {
+    pub fn new(input_size: usize, output_size: usize) -> Self {
+        let dense_layer = DenseLayer {
+            weights: Matrix::new(output_size, input_size),
+            biases: vec![0.0; output_size],
+        };
+
+        dense_layer
+    }
+}
+
 impl Layer for DenseLayer {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.weights
