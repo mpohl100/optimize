@@ -8,6 +8,61 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 
+#[derive(Debug, Clone)]
+pub struct DenseLayer {
+    weights: Matrix<f64>,
+    biases: Vec<f64>,
+}
+
+impl Layer for DenseLayer {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.weights
+            .iter()
+            .enumerate() // Include the row index in the iteration
+            .map(|(row_idx, weights_row)| {
+                weights_row
+                    .iter()
+                    .zip(input.iter())
+                    .map(|(&w, &x)| w * x)
+                    .sum::<f64>()
+                    + self.biases[row_idx] // Use the bias corresponding to the row index
+            })
+            .collect()
+    }
+
+    fn forward_batch(&mut self, _input: &[f64]) -> Vec<f64> {
+        unimplemented!()
+    }
+
+    fn input_size(&self) -> usize {
+        self.weights.cols()
+    }
+
+    fn output_size(&self) -> usize {
+        self.weights.rows()
+    }
+
+    fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        save(path, &self.weights, &self.biases)
+    }
+
+    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+        // Read weights and biases from a file at the specified path
+        let (weights, biases) = read(path)?;
+        self.weights = weights;
+        self.biases = biases;
+        Ok(())
+    }
+
+    fn get_weights(&self) -> Matrix<f64> {
+        self.weights.clone()
+    }
+
+    fn get_biases(&self) -> Vec<f64> {
+        self.biases.clone()
+    }
+}
+
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
 pub struct TrainableDenseLayer {
@@ -111,51 +166,14 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        // Save weights and biases to a file at the specified path
-        let mut file = File::create(path)?;
-        writeln!(file, "{} {}", self.weights.rows(), self.weights.cols())?;
-        for i in 0..self.weights.rows() {
-            for j in 0..self.weights.cols() {
-                write!(file, "{} ", self.weights.get_unchecked(i, j))?;
-            }
-            writeln!(file)?;
-        }
-        for i in 0..self.biases.len() {
-            write!(file, "{} ", self.biases[i])?;
-        }
-        writeln!(file)?;
-        Ok(())
+        save(path, &self.weights, &self.biases)
     }
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let mut lines = reader.lines();
-        if let Some(Ok(line)) = lines.next() {
-            let mut parts = line.split_whitespace();
-            let rows = parts.next().unwrap().parse::<usize>()?;
-            let cols = parts.next().unwrap().parse::<usize>()?;
-            self.weights = Matrix::new(rows, cols);
-            for i in 0..rows {
-                if let Some(Ok(line)) = lines.next() {
-                    let mut parts = line.split_whitespace();
-                    for j in 0..cols {
-                        if let Some(part) = parts.next() {
-                            *self.weights.get_mut_unchecked(i, j) = part.parse::<f64>()?;
-                        }
-                    }
-                }
-            }
-        }
-        if let Some(Ok(line)) = lines.next() {
-            let mut parts = line.split_whitespace();
-            for i in 0..self.biases.len() {
-                if let Some(part) = parts.next() {
-                    self.biases[i] = part.parse::<f64>()?;
-                }
-            }
-        }
+        let (weights, biases) = read(path)?;
+        self.weights = weights;
+        self.biases = biases;
         Ok(())
     }
 
@@ -320,6 +338,57 @@ impl TrainableLayer for TrainableDenseLayer {
             self.biases[i] -= adjusted_learning_rate * m_hat;
         }
     }
+}
+
+fn save(path: &str, weights: &Matrix<f64>, biases: &Vec<f64>) -> Result<(), Box<dyn Error>> {
+    // Save weights and biases to a file at the specified path
+    let mut file = File::create(path)?;
+    writeln!(file, "{} {}", weights.rows(), weights.cols())?;
+    for i in 0..weights.rows() {
+        for j in 0..weights.cols() {
+            write!(file, "{} ", weights.get_unchecked(i, j))?;
+        }
+        writeln!(file)?;
+    }
+    for i in 0..biases.len() {
+        write!(file, "{} ", biases[i])?;
+    }
+    writeln!(file)?;
+    Ok(())
+}
+
+fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut weights = Matrix::new(1, 1);
+    let mut biases = vec![0.0; 1];
+    if let Some(Ok(line)) = lines.next() {
+        let mut parts = line.split_whitespace();
+        let rows = parts.next().unwrap().parse::<usize>()?;
+        let cols = parts.next().unwrap().parse::<usize>()?;
+        weights = Matrix::new(rows, cols);
+        for i in 0..rows {
+            if let Some(Ok(line)) = lines.next() {
+                let mut parts = line.split_whitespace();
+                for j in 0..cols {
+                    if let Some(part) = parts.next() {
+                        *weights.get_mut_unchecked(i, j) = part.parse::<f64>()?;
+                    }
+                }
+            }
+        }
+    }
+    if let Some(Ok(line)) = lines.next() {
+        let mut parts = line.split_whitespace();
+        biases = vec![0.0; weights.rows()];
+        for i in 0..biases.len() {
+            if let Some(part) = parts.next() {
+                biases[i] = part.parse::<f64>()?;
+            }
+        }
+    }
+    Ok((weights, biases))
 }
 
 #[cfg(test)]
