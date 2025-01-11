@@ -1,4 +1,4 @@
-use learn::neural::nn::neuralnet::NeuralNetwork;
+use learn::neural::nn::neuralnet::TrainableNeuralNetwork;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 
 use clap::Parser;
@@ -72,7 +72,7 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    let nn_opt = NeuralNetwork::from_disk(model_directory);
+    let nn_opt = TrainableNeuralNetwork::from_disk(model_directory);
     if nn_opt.is_none() {
         panic!("Model directory does not exist");
     }

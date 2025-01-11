@@ -2,7 +2,7 @@ use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
-use crate::neural::layer::dense_layer::DenseLayer;
+use crate::neural::layer::dense_layer::TrainableDenseLayer;
 use crate::neural::layer::Layer;
 use crate::neural::layer::TrainableLayer;
 use crate::neural::nn::shape::*;
@@ -20,17 +20,17 @@ use std::boxed::Box;
 
 /// A neural network.
 #[derive(Debug, Clone, Default)]
-pub struct NeuralNetwork {
+pub struct TrainableNeuralNetwork {
     layers: Vec<Box<dyn TrainableLayer + Send>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
 }
 
-impl NeuralNetwork {
+impl TrainableNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
     pub fn new(shape: NeuralNetworkShape) -> Self {
         let shape_clone = shape.clone();
-        let mut network = NeuralNetwork {
+        let mut network = TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
@@ -39,7 +39,7 @@ impl NeuralNetwork {
         // Initialize layers and activations based on the provided shape.
         for layer_shape in shape_clone.layers {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let layer = Box::new(DenseLayer::new(
+            let layer = Box::new(TrainableDenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
             ));
@@ -61,13 +61,13 @@ impl NeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: &String) -> Option<NeuralNetwork> {
+    pub fn from_disk(model_directory: &String) -> Option<TrainableNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory);
         if shape.is_none() {
             return None;
         }
         let sh = shape.unwrap();
-        let mut network = NeuralNetwork {
+        let mut network = TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
@@ -79,7 +79,7 @@ impl NeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let mut layer = DenseLayer::new(*input_size, *output_size);
+                    let mut layer = TrainableDenseLayer::new(*input_size, *output_size);
                     layer
                         .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
                         .unwrap();
@@ -403,12 +403,12 @@ impl NeuralNetwork {
     }
 
     pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
-        let mut nn = NeuralNetwork::new(shape.to_neural_network_shape());
+        let mut nn = TrainableNeuralNetwork::new(shape.to_neural_network_shape());
         nn.assign_weights(self);
         *self = nn;
     }
 
-    pub fn assign_weights(&mut self, other: &NeuralNetwork) {
+    pub fn assign_weights(&mut self, other: &TrainableNeuralNetwork) {
         for i in 0..self.layers.len() {
             if other.layers.len() <= i {
                 break;
@@ -418,15 +418,15 @@ impl NeuralNetwork {
         }
     }
 
-    pub fn merge(&self, other: NeuralNetwork) -> NeuralNetwork {
-        let mut new_nn = NeuralNetwork::default();
+    pub fn merge(&self, other: TrainableNeuralNetwork) -> TrainableNeuralNetwork {
+        let mut new_nn = TrainableNeuralNetwork::default();
         for i in 0..self.layers.len() {
             new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
 
         let merge_layer_input_size = self.layers.last().unwrap().output_size();
         let merge_layer_output_size = other.layers.first().unwrap().input_size();
-        let merge_layer = Box::new(DenseLayer::new(
+        let merge_layer = Box::new(TrainableDenseLayer::new(
             merge_layer_input_size,
             merge_layer_output_size,
         ));
@@ -461,11 +461,11 @@ impl NeuralNetwork {
     }
 
     /// gets a subnetwork from the neural network according to the passed shape
-    pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<NeuralNetwork> {
+    pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<TrainableNeuralNetwork> {
         if shape.num_layers() == 0 {
             return None;
         }
-        let mut subnetwork = NeuralNetwork::default();
+        let mut subnetwork = TrainableNeuralNetwork::default();
         let (start, end) = self.deduce_start_end(&shape);
         if start == -1 || end == -1 {
             return None;
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_neural_network_train() {
-        let mut nn = NeuralNetwork::new(NeuralNetworkShape {
+        let mut nn = TrainableNeuralNetwork::new(NeuralNetworkShape {
             layers: vec![
                 LayerShape {
                     layer_type: LayerType::Dense {
