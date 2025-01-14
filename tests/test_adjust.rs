@@ -69,9 +69,9 @@ impl Challenge<XCoordinate> for XCoordinateChallenge {
 }
 
 #[test]
-fn test_ordinary() {
+fn test_adjust() {
     let mut rng = RandomNumberGenerator::new();
-    let starting_value = XCoordinate::new(100.0);
+    let starting_value = XCoordinate::new(20.0);
     let options = EvolutionOptions::default();
     let challenge = XCoordinateChallenge::new(2.0);
     let strategy = AdjustStrategy::default();

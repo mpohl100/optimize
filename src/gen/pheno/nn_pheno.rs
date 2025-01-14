@@ -2,6 +2,7 @@ use super::{
     nn_mutater::fetch_activation_data, nn_mutater::NeuralNetworkMutater, rng_wrapper::RealRng,
 };
 use crate::evol::phenotype::Phenotype;
+use crate::evol::strategy::Adjust;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 use crate::neural::nn::shape::NeuralNetworkShape;
@@ -13,6 +14,7 @@ pub struct NeuralNetworkPhenotype {
     nn: Arc<Mutex<TrainableNeuralNetwork>>,
     left_half_shape: Option<NeuralNetworkShape>,
     right_half_shape: Option<NeuralNetworkShape>,
+    nb_mutates: usize,
 }
 
 impl Clone for NeuralNetworkPhenotype {
@@ -21,6 +23,7 @@ impl Clone for NeuralNetworkPhenotype {
             nn: Arc::new(Mutex::new(self.get_nn())),
             left_half_shape: self.left_half_shape.clone(),
             right_half_shape: self.right_half_shape.clone(),
+            nb_mutates: self.nb_mutates,
         }
     }
 }
@@ -31,6 +34,7 @@ impl NeuralNetworkPhenotype {
             nn: Arc::new(Mutex::new(nn)),
             left_half_shape: None,
             right_half_shape: None,
+            nb_mutates: 0,
         }
     }
 
@@ -108,5 +112,23 @@ impl Phenotype for NeuralNetworkPhenotype {
         let nn = TrainableNeuralNetwork::new(mutated_shape.to_neural_network_shape());
         self.set_nn(nn);
         self.reset_half_shapes();
+    }
+}
+
+impl Adjust<NeuralNetworkPhenotype> for NeuralNetworkPhenotype{
+    fn incr_number_mutates(&mut self) -> usize {
+        self.nb_mutates += 1;
+        self.nb_mutates
+    }
+
+    fn decr_number_mutates(&mut self) -> usize {
+        if self.nb_mutates > 0 {
+            self.nb_mutates -= 1;
+        }
+        self.nb_mutates
+    }
+
+    fn get_number_mutates(&self) -> usize {
+        self.nb_mutates
     }
 }

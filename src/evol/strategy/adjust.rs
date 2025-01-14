@@ -66,10 +66,10 @@ where
         rng: &mut crate::evol::rng::RandomNumberGenerator,
     ) -> Result<Vec<Pheno>, Error> {
         let mut children: Vec<Pheno> = Vec::new();
-        let mut winner_previous_generation = parents[0].clone();
-        winner_previous_generation.incr_number_mutates();
-
-        children.push(winner_previous_generation.clone());
+        let winner_previous_generation = parents[0].clone();
+        let mut first_child = winner_previous_generation.clone();
+        first_child.incr_number_mutates();
+        children.push(first_child);
 
         parents
             .iter()

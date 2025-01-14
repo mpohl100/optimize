@@ -1,7 +1,7 @@
 use crate::evol::evolution::EvolutionOptions;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::BreedStrategy;
-use crate::evol::strategy::OrdinaryStrategy;
+use crate::evol::strategy::AdjustStrategy;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 
 use std::fmt::Error;
@@ -24,7 +24,7 @@ impl BreedStrategy<NeuralNetworkPhenotype> for NeuralNetworkStrategy {
         evol_options: &EvolutionOptions,
         rng: &mut RandomNumberGenerator,
     ) -> Result<Vec<NeuralNetworkPhenotype>, Error> {
-        let ordinary_strategy = OrdinaryStrategy;
+        let adjust_strategy = AdjustStrategy::default();
         let nn = parents[0].get_nn();
         println!(
             "Saving model to: {} with shape: {:?}",
@@ -32,6 +32,6 @@ impl BreedStrategy<NeuralNetworkPhenotype> for NeuralNetworkStrategy {
             nn.shape()
         );
         let _ = nn.save(self.model_directory.clone());
-        ordinary_strategy.breed(parents, evol_options, rng)
+        adjust_strategy.breed(parents, evol_options, rng)
     }
 }
