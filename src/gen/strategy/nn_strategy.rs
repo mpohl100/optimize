@@ -1,7 +1,7 @@
 use crate::evol::evolution::EvolutionOptions;
 use crate::evol::rng::RandomNumberGenerator;
-use crate::evol::strategy::BreedStrategy;
 use crate::evol::strategy::AdjustStrategy;
+use crate::evol::strategy::BreedStrategy;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 
 use std::fmt::Error;

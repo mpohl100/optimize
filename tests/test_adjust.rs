@@ -2,7 +2,7 @@ use learn::evol::{
     evolution::{Challenge, EvolutionLauncher, EvolutionOptions},
     phenotype::Phenotype,
     rng::RandomNumberGenerator,
-    strategy::{AdjustStrategy, Adjust},
+    strategy::{Adjust, AdjustStrategy},
 };
 
 #[derive(Clone, Copy, Debug)]

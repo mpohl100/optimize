@@ -2,9 +2,9 @@
 //!
 //! The `BreedStrategy` trait defines the interface for strategies responsible for breeding
 //! new individuals (phenotypes) based on a set of parent individuals and evolution options.
+pub mod adjust;
 pub mod bounded;
 pub mod ordinary;
-pub mod adjust;
 
 use std::fmt::{Debug, Error};
 
@@ -42,6 +42,6 @@ where
     ) -> Result<Vec<Pheno>, Error>;
 }
 
+pub use adjust::{Adjust, AdjustStrategy};
 pub use bounded::{BoundedBreedStrategy, Magnitude};
 pub use ordinary::OrdinaryStrategy;
-pub use adjust::{AdjustStrategy, Adjust};

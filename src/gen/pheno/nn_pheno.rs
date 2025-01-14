@@ -2,8 +2,8 @@ use super::{
     nn_mutater::fetch_activation_data, nn_mutater::NeuralNetworkMutater, rng_wrapper::RealRng,
 };
 use crate::evol::phenotype::Phenotype;
-use crate::evol::strategy::Adjust;
 use crate::evol::rng::RandomNumberGenerator;
+use crate::evol::strategy::Adjust;
 use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
@@ -115,7 +115,7 @@ impl Phenotype for NeuralNetworkPhenotype {
     }
 }
 
-impl Adjust<NeuralNetworkPhenotype> for NeuralNetworkPhenotype{
+impl Adjust<NeuralNetworkPhenotype> for NeuralNetworkPhenotype {
     fn incr_number_mutates(&mut self) -> usize {
         self.nb_mutates += 1;
         self.nb_mutates
