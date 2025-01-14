@@ -9,6 +9,12 @@ use super::BreedStrategy;
 use crate::evol::phenotype::Phenotype;
 use std::{fmt::Error, marker::PhantomData};
 
+pub trait Adjust<Pheno: Phenotype> {
+    fn incr_number_mutates(&mut self) -> usize;
+    fn decr_number_mutates(&mut self) -> usize;
+    fn get_number_mutates(&self) -> usize;
+}
+
 /// # AdjustStrategy
 ///
 /// The `AdjustStrategy` struct represents a breeding strategy where the first
@@ -19,14 +25,14 @@ use std::{fmt::Error, marker::PhantomData};
 #[derive(Debug, Clone)]
 pub struct AdjustStrategy<Pheno>
 where
-    Pheno: Phenotype,
+    Pheno: Phenotype + Adjust<Pheno>,
 {
     _marker: PhantomData<Pheno>,
 }
 
 impl<Pheno> Default for AdjustStrategy<Pheno>
 where
-    Pheno: Phenotype,
+    Pheno: Phenotype + Adjust<Pheno>,
 {
     fn default() -> Self {
         Self {
@@ -37,7 +43,7 @@ where
 
 impl<Pheno> BreedStrategy<Pheno> for AdjustStrategy<Pheno>
 where
-    Pheno: Phenotype,
+    Pheno: Phenotype + Adjust<Pheno>,
 {
     /// Breeds offspring from a set of parent phenotypes
     ///
@@ -60,7 +66,8 @@ where
         rng: &mut crate::evol::rng::RandomNumberGenerator,
     ) -> Result<Vec<Pheno>, Error> {
         let mut children: Vec<Pheno> = Vec::new();
-        let winner_previous_generation = parents[0].clone();
+        let mut winner_previous_generation = parents[0].clone();
+        winner_previous_generation.incr_number_mutates();
 
         children.push(winner_previous_generation.clone());
 
@@ -70,7 +77,8 @@ where
             .try_for_each(|parent| -> Result<(), Error> {
                 let mut child = winner_previous_generation.clone();
                 child.crossover(parent);
-                let mutated_child = self.develop(child, rng)?;
+                let mut mutated_child = self.develop(child, rng)?;
+                mutated_child.decr_number_mutates();
                 children.push(mutated_child);
                 Ok(())
             })?;
@@ -78,7 +86,8 @@ where
         (parents.len()..evol_options.get_num_offspring()).try_for_each(
             |_| -> Result<(), Error> {
                 let child = winner_previous_generation.clone();
-                let mutated_child = self.develop(child, rng)?;
+                let mut mutated_child = self.develop(child, rng)?;
+                mutated_child.decr_number_mutates();
                 children.push(mutated_child);
                 Ok(())
             },
@@ -90,7 +99,7 @@ where
 
 impl<Pheno> AdjustStrategy<Pheno>
 where
-    Pheno: Phenotype,
+    Pheno: Phenotype + Adjust<Pheno>,
 {
     /// Develops a phenotype with consideration of the fitness increase of the previous generation
     ///
@@ -114,17 +123,12 @@ where
         rng: &mut crate::evol::rng::RandomNumberGenerator,
     ) -> Result<Pheno, Error> {
         let mut phenotype = pheno;
+        let number_of_mutations = phenotype.get_number_mutates();
         phenotype.mutate(rng);
-        let number_of_mutations = self.calculate_number_of_mutations();
         // call mutate number_of_mutations times
         for _ in 0..number_of_mutations {
             phenotype.mutate(rng);
         }
         Ok(phenotype)
-    }
-
-    /// Calculates the number of mutations to be performed
-    fn calculate_number_of_mutations(&self) -> usize {
-        100
     }
 }

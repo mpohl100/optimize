@@ -44,4 +44,4 @@ where
 
 pub use bounded::{BoundedBreedStrategy, Magnitude};
 pub use ordinary::OrdinaryStrategy;
-pub use adjust::AdjustStrategy;
+pub use adjust::{AdjustStrategy, Adjust};

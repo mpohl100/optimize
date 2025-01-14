@@ -2,17 +2,18 @@ use learn::evol::{
     evolution::{Challenge, EvolutionLauncher, EvolutionOptions},
     phenotype::Phenotype,
     rng::RandomNumberGenerator,
-    strategy::AdjustStrategy,
+    strategy::{AdjustStrategy, Adjust},
 };
 
 #[derive(Clone, Copy, Debug)]
 struct XCoordinate {
     x: f64,
+    nb_mutates: usize,
 }
 
 impl XCoordinate {
     fn new(x: f64) -> Self {
-        Self { x }
+        Self { x, nb_mutates: 0 }
     }
 
     fn get_x(&self) -> f64 {
@@ -28,6 +29,24 @@ impl Phenotype for XCoordinate {
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
         let delta = *rng.fetch_uniform(-100.0, 100.0, 1).front().unwrap() as f64;
         self.x += delta / 100.0;
+    }
+}
+
+impl Adjust<XCoordinate> for XCoordinate {
+    fn incr_number_mutates(&mut self) -> usize {
+        self.nb_mutates += 1;
+        self.nb_mutates
+    }
+
+    fn decr_number_mutates(&mut self) -> usize {
+        if self.nb_mutates > 0 {
+            self.nb_mutates -= 1;
+        }
+        self.nb_mutates
+    }
+
+    fn get_number_mutates(&self) -> usize {
+        self.nb_mutates
     }
 }
 
@@ -52,7 +71,7 @@ impl Challenge<XCoordinate> for XCoordinateChallenge {
 #[test]
 fn test_ordinary() {
     let mut rng = RandomNumberGenerator::new();
-    let starting_value = XCoordinate::new(100000.0);
+    let starting_value = XCoordinate::new(100.0);
     let options = EvolutionOptions::default();
     let challenge = XCoordinateChallenge::new(2.0);
     let strategy = AdjustStrategy::default();
