@@ -3,6 +3,7 @@ use crate::neural::mat::matrix::Matrix;
 
 use dyn_clone::DynClone;
 use std::error::Error;
+use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
 pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
@@ -49,6 +50,82 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
 
 dyn_clone::clone_trait_object!(Layer);
 
+pub trait AllocatableLayer: Allocatable + Layer {}
+
+
+#[derive(Debug, Clone)]
+pub struct WrappedLayer {
+    layer: Arc<Mutex<Box<dyn AllocatableLayer + Send>>>,
+}
+
+impl WrappedLayer {
+    pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
+        Self {
+            layer: Arc::new(Mutex::new(layer)),
+        }
+    }
+
+    pub fn allocate(&mut self) {
+        self.layer.lock().unwrap().allocate();
+    }
+
+    pub fn deallocate(&mut self) {
+        self.layer.lock().unwrap().deallocate();
+    }
+
+    pub fn is_allocated(&self) -> bool {
+        self.layer.lock().unwrap().is_allocated()
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.layer.lock().unwrap().get_size()
+    }
+
+    pub fn mark_for_use(&mut self) {
+        self.layer.lock().unwrap().mark_for_use();
+    }
+
+    pub fn free_from_use(&mut self) {
+        self.layer.lock().unwrap().free_from_use();
+    }
+
+    pub fn is_in_use(&self) -> bool {
+        self.layer.lock().unwrap().is_in_use()
+    }
+
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward(input)
+    }
+
+    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward_batch(input)
+    }
+
+    pub fn input_size(&self) -> usize {
+        self.layer.lock().unwrap().input_size()
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.layer.lock().unwrap().output_size()
+    }
+
+    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().save(path)
+    }
+
+    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().read(path)
+    }
+
+    pub fn get_weights(&self) -> Matrix<f64> {
+        self.layer.lock().unwrap().get_weights()
+    }
+
+    pub fn get_biases(&self) -> Vec<f64> {
+        self.layer.lock().unwrap().get_biases()
+    }
+}
+
 pub trait TrainableLayer: Layer {
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
     ///
@@ -73,10 +150,105 @@ pub trait TrainableLayer: Layer {
     fn update_weights(&mut self, learning_rate: f64);
 
     /// Assigns the weight of the input other layer
-    fn assign_weights(&mut self, other: &dyn TrainableLayer);
+    fn assign_weights(&mut self, other: WrappedTrainableLayer);
 
     /// Adjusts the weights according to the Adam optimizer.
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64);
 }
 
 dyn_clone::clone_trait_object!(TrainableLayer);
+
+pub trait TrainableAllocatableLayer: Allocatable + TrainableLayer {}
+
+#[derive(Debug, Clone)]
+pub struct WrappedTrainableLayer {
+    layer: Arc<Mutex<Box<dyn TrainableAllocatableLayer + Send>>>,
+}
+
+impl WrappedTrainableLayer {
+    pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
+        Self {
+            layer: Arc::new(Mutex::new(layer)),
+        }
+    }
+
+    pub fn allocate(&mut self) {
+        self.layer.lock().unwrap().allocate();
+    }
+
+    pub fn deallocate(&mut self) {
+        self.layer.lock().unwrap().deallocate();
+    }
+
+    pub fn is_allocated(&self) -> bool {
+        self.layer.lock().unwrap().is_allocated()
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.layer.lock().unwrap().get_size()
+    }
+
+    pub fn mark_for_use(&mut self) {
+        self.layer.lock().unwrap().mark_for_use();
+    }
+
+    pub fn free_from_use(&mut self) {
+        self.layer.lock().unwrap().free_from_use();
+    }
+
+    pub fn is_in_use(&self) -> bool {
+        self.layer.lock().unwrap().is_in_use()
+    }
+
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward(input)
+    }
+
+    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward_batch(input)
+    }
+
+    pub fn input_size(&self) -> usize {
+        self.layer.lock().unwrap().input_size()
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.layer.lock().unwrap().output_size()
+    }
+
+    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().save(path)
+    }
+
+    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().read(path)
+    }
+    
+    pub fn get_weights(&self) -> Matrix<f64> {
+        self.layer.lock().unwrap().get_weights()
+    }
+
+    pub fn get_biases(&self) -> Vec<f64> {
+        self.layer.lock().unwrap().get_biases()
+    }
+
+    pub fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().backward(grad_output)
+    }
+
+    pub fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().backward_batch(grad_output)
+    }
+
+    pub fn update_weights(&mut self, learning_rate: f64) {
+        self.layer.lock().unwrap().update_weights(learning_rate)
+    }
+
+    pub fn assign_weights(&mut self, other: WrappedTrainableLayer) {
+        self.layer.lock().unwrap().assign_weights(other)
+    }
+
+    pub fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
+        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon)
+    }
+}
