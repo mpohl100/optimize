@@ -61,10 +61,11 @@ impl AllocManager {
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use super::*;
     use crate::alloc::allocatable::Allocatable;
-    use std::sync::{Arc, Mutex};
+    use crate::alloc::alloc_manager::AllocManager;
+    use crate::alloc::allocatable::WrappedAllocatable;
 
     struct TestAllocatable {
         size: usize,
