@@ -117,10 +117,10 @@ impl NeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input.
-    pub fn forward(&mut self, input: &[f64], alloc_manager: &mut WrappedAllocManager) -> Vec<f64> {
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            alloc_manager.allocate(layer);
+            layer.allocate();
             layer.mark_for_use();
             output = layer.forward(&output);
             layer.free_from_use();
@@ -243,7 +243,10 @@ impl TrainableNeuralNetwork {
     pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
+            layer.allocate();
+            layer.mark_for_use();
             output = layer.forward(&output);
+            layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
         }

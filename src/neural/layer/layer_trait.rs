@@ -7,9 +7,6 @@ use std::error::Error;
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
 pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
-    fn upcast(&self) -> &dyn Allocatable;
-    fn upcast_mut (&mut self) -> &mut dyn Allocatable;
-
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
     /// # Arguments
