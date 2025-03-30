@@ -66,14 +66,6 @@ impl Allocatable for DenseLayer {
 }
 
 impl Layer for DenseLayer {
-    fn upcast(&self) -> &dyn Allocatable {
-        self
-    }
-
-    fn upcast_mut(&mut self) -> &mut dyn Allocatable {
-        self
-    }
-
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         if !self.is_allocated() {
             panic!("Layer not allocated");
@@ -172,11 +164,6 @@ impl WrappedDenseLayer {
 
     pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
-    }
-
-    fn as_allocatable(&mut self) -> WrappedAllocatable {
-        let new_layer = Box::new(self.layer.lock().unwrap().upcast());
-        WrappedAllocatable::new(new_layer)
     }
 }
 
