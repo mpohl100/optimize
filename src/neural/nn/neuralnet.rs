@@ -1,6 +1,3 @@
-use crate::alloc::alloc_manager::WrappedAllocManager;
-use crate::alloc::allocatable::WrappedAllocatable;
-use crate::alloc::allocatable::Allocatable;
 use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,

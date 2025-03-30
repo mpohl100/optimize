@@ -1,6 +1,5 @@
-use crate::neural::mat::matrix::Matrix;
 use crate::alloc::allocatable::Allocatable;
-use crate::alloc::allocatable::WrappedAllocatable;
+use crate::neural::mat::matrix::Matrix;
 
 use dyn_clone::DynClone;
 use std::error::Error;

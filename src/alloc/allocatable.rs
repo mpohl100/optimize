@@ -1,4 +1,4 @@
-use std::{ops::DerefMut, sync::{Arc, Mutex}};
+use std::sync::{Arc, Mutex};
 
 pub trait Allocatable {
     fn allocate(&mut self);
