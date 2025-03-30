@@ -1,8 +1,6 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
-use crate::alloc::allocatable;
 use crate::alloc::allocatable::Allocatable;
-use crate::alloc::allocatable::WrappedAllocatable;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
 use std::error::Error;
@@ -10,7 +8,6 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
@@ -35,6 +32,9 @@ impl DenseLayer {
 
 impl Allocatable for DenseLayer {
     fn allocate(&mut self) {
+        if self.is_allocated(){
+            return;
+        }
         self.weights = Some(Matrix::new(self.rows, self.cols));
         self.biases = Some(vec![0.0; self.rows]);
     }
@@ -101,14 +101,16 @@ impl Layer for DenseLayer {
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
         save(
             path,
-            &self.weights.as_ref().unwrap(),
-            &self.biases.as_ref().unwrap(),
+            self.weights.as_ref().unwrap(),
+            self.biases.as_ref().unwrap(),
         )
     }
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
+        self.rows = weights.rows();
+        self.cols = weights.cols();
         self.weights = Some(weights);
         self.biases = Some(biases);
         Ok(())
@@ -120,50 +122,6 @@ impl Layer for DenseLayer {
 
     fn get_biases(&self) -> Vec<f64> {
         self.biases.as_ref().unwrap().clone()
-    }
-}
-
-struct WrappedDenseLayer {
-    layer: Arc<Mutex<Box<dyn Layer + Send>>>,
-}
-
-impl WrappedDenseLayer {
-    pub fn new(layer: Box<dyn Layer + Send>) -> Self {
-        Self {
-            layer: Arc::new(Mutex::new(layer)),
-        }
-    }
-
-    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-        self.layer.lock().unwrap().forward(input)
-    }
-
-    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
-        self.layer.lock().unwrap().forward_batch(input)
-    }
-
-    pub fn input_size(&self) -> usize {
-        self.layer.lock().unwrap().input_size()
-    }
-
-    pub fn output_size(&self) -> usize {
-        self.layer.lock().unwrap().output_size()
-    }
-
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().save(path)
-    }
-
-    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().read(path)
-    }
-
-    pub fn get_weights(&self) -> Matrix<f64> {
-        self.layer.lock().unwrap().get_weights()
-    }
-
-    pub fn get_biases(&self) -> Vec<f64> {
-        self.layer.lock().unwrap().get_biases()
     }
 }
 
@@ -198,8 +156,7 @@ pub struct TrainableDenseLayer {
 impl TrainableDenseLayer {
     /// Creates a new TrainableDenseLayer with given input and output sizes.
     pub fn new(input_size: usize, output_size: usize) -> Self {
-        // Create a dense layer with default weights
-        let dense_layer = TrainableDenseLayer {
+        TrainableDenseLayer {
             rows: output_size,
             cols: input_size,
             weights: None,
@@ -207,9 +164,7 @@ impl TrainableDenseLayer {
             input_cache: None,
             input_batch_cache: None,
             in_use: false,
-        };
-
-        dense_layer
+        }
     }
 
     /// Initialize the weights with random values in the range [-0.5, 0.5]
@@ -227,6 +182,9 @@ impl TrainableDenseLayer {
 
 impl Allocatable for TrainableDenseLayer {
     fn allocate(&mut self) {
+        if self.is_allocated(){
+            return;
+        }
         self.weights = Some(Matrix::new(self.rows, self.cols));
         self.biases = Some(vec![Bias::default(); self.rows]);
         self.initialize_weights();
@@ -285,7 +243,7 @@ impl Layer for TrainableDenseLayer {
     }
 
     #[allow(clippy::needless_range_loop)]
-    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward_batch(&mut self, _input: &[f64]) -> Vec<f64> {
         unimplemented!()
     }
 
@@ -298,6 +256,9 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        if !self.is_allocated() {
+            return Err("Layer not allocated".into());
+        }
         // assign weights and biases to a matrix and vector
         let mut weights = Matrix::new(
             self.weights.as_ref().unwrap().rows(),
@@ -317,11 +278,11 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
-        if !self.is_allocated() {
-            panic!("Layer not allocated");
-        }
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
+        self.rows = weights.rows();
+        self.cols = weights.cols();
+        self.allocate();
         // assign all weights and biases
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
@@ -540,7 +501,10 @@ mod tests {
         let mut layer = TrainableDenseLayer::new(3, 2);
 
         let input = vec![1.0, 2.0, 3.0];
+        layer.allocate();
+        layer.mark_for_use();
         let output = layer.forward(&input);
+        layer.free_from_use();
 
         assert_eq!(output.len(), 2);
 

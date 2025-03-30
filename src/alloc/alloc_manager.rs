@@ -63,7 +63,7 @@ impl AllocManager {
     }
 }
 
-pub struct WrappedAllocManager{
+pub struct WrappedAllocManager {
     alloc_manager: Arc<Mutex<AllocManager>>,
 }
 
@@ -85,8 +85,8 @@ impl WrappedAllocManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::allocatable::Allocatable;
     use crate::alloc::alloc_manager::AllocManager;
+    use crate::alloc::allocatable::Allocatable;
     use crate::alloc::allocatable::WrappedAllocatable;
 
     struct TestAllocatable {
