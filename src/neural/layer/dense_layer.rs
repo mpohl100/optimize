@@ -32,7 +32,7 @@ impl DenseLayer {
 
 impl Allocatable for DenseLayer {
     fn allocate(&mut self) {
-        if self.is_allocated(){
+        if self.is_allocated() {
             return;
         }
         self.weights = Some(Matrix::new(self.rows, self.cols));
@@ -182,7 +182,7 @@ impl TrainableDenseLayer {
 
 impl Allocatable for TrainableDenseLayer {
     fn allocate(&mut self) {
-        if self.is_allocated(){
+        if self.is_allocated() {
             return;
         }
         self.weights = Some(Matrix::new(self.rows, self.cols));
