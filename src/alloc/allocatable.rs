@@ -12,11 +12,11 @@ pub trait Allocatable {
 
 #[derive(Clone)]
 pub struct WrappedAllocatable {
-    allocatable: Arc<Mutex<Box<dyn Allocatable>>>,
+    allocatable: Arc<Mutex<Box<dyn Allocatable + Send>>>,
 }
 
 impl WrappedAllocatable {
-    pub fn new(allocatable: Box<dyn Allocatable>) -> Self {
+    pub fn new(allocatable: Box<dyn Allocatable + Send>) -> Self {
         Self {
             allocatable: Arc::new(Mutex::new(allocatable)),
         }
