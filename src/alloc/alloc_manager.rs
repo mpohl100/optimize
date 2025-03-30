@@ -1,6 +1,5 @@
 use super::allocatable::WrappedAllocatable;
 
-
 pub struct AllocManager {
     currently_allocated: Vec<WrappedAllocatable>,
     max_allocated_size: usize,
@@ -16,7 +15,7 @@ impl AllocManager {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: &mut WrappedAllocatable) -> bool{
+    pub fn allocate(&mut self, allocatable: &mut WrappedAllocatable) -> bool {
         if allocatable.is_allocated() {
             return false;
         }
@@ -27,8 +26,7 @@ impl AllocManager {
             self.currently_allocated.push(allocatable.clone());
             self.currently_allocated_size += allocatable.get_size();
             return true;
-        }
-        else {
+        } else {
             // too much is allocated, try cleaning up and to then do the allocation
             self.cleanup();
             if self.currently_allocated_size + allocatable.get_size() <= self.max_allocated_size {
@@ -63,7 +61,7 @@ impl AllocManager {
     }
 }
 
-mod tests{
+mod tests {
     use super::*;
     use crate::alloc::allocatable::Allocatable;
     use std::sync::{Arc, Mutex};
@@ -123,21 +121,24 @@ mod tests{
     }
 
     #[test]
-    fn test_alloc_manager_gets_through_loop_with_not_much_memory(){
+    fn test_alloc_manager_gets_through_loop_with_not_much_memory() {
         let mut alloc_manager = AllocManager::new(60);
         let mut allocatable1 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
         let mut allocatable2 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
         let mut allocatable3 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
         let allocatable4 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let mut allocatables = vec![allocatable1.clone(), allocatable2.clone(), allocatable3.clone(), allocatable4.clone()];
+        let mut allocatables = vec![
+            allocatable1.clone(),
+            allocatable2.clone(),
+            allocatable3.clone(),
+            allocatable4.clone(),
+        ];
         for (index, this_allocatable) in allocatables.iter_mut().enumerate() {
             if index == 1 {
                 allocatable1.free_from_use();
-            }
-            else if index == 2 {
+            } else if index == 2 {
                 allocatable2.free_from_use();
-            }
-            else if index == 3 {
+            } else if index == 3 {
                 allocatable3.free_from_use();
             }
             let result = alloc_manager.allocate(&mut this_allocatable.clone());
