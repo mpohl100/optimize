@@ -1,5 +1,8 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
+use super::AllocatableLayer;
+use super::TrainableAllocatableLayer;
+use super::layer_trait::WrappedTrainableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
@@ -124,6 +127,8 @@ impl Layer for DenseLayer {
         self.biases.as_ref().unwrap().clone()
     }
 }
+
+impl AllocatableLayer for DenseLayer {}
 
 #[derive(Default, Debug, Clone, Copy)]
 struct Weight {
@@ -371,7 +376,7 @@ impl TrainableLayer for TrainableDenseLayer {
         unimplemented!()
     }
 
-    fn assign_weights(&mut self, other: &dyn TrainableLayer) {
+    fn assign_weights(&mut self, other: WrappedTrainableLayer) {
         let weights = other.get_weights();
 
         let biases = other.get_biases();
@@ -440,6 +445,8 @@ impl TrainableLayer for TrainableDenseLayer {
         }
     }
 }
+
+impl TrainableAllocatableLayer for TrainableDenseLayer {}
 
 fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
     // Save weights and biases to a file at the specified path
