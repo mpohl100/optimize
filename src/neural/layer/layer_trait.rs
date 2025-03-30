@@ -1,10 +1,11 @@
 use crate::neural::mat::matrix::Matrix;
+use crate::alloc::allocatable::Allocatable;
 
 use dyn_clone::DynClone;
 use std::error::Error;
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
-pub trait Layer: std::fmt::Debug + DynClone {
+pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
     /// # Arguments
@@ -70,9 +71,6 @@ pub trait TrainableLayer: Layer {
     ///
     /// * `learning_rate` - A `f64` value representing the learning rate for weight updates.
     fn update_weights(&mut self, learning_rate: f64);
-
-    /// Resizes the layer to the input dimensions.
-    fn resize(&mut self, input_size: usize, output_size: usize);
 
     /// Assigns the weight of the input other layer
     fn assign_weights(&mut self, other: &dyn TrainableLayer);
