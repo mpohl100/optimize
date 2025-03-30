@@ -1,5 +1,7 @@
 use super::allocatable::WrappedAllocatable;
 
+use std::sync::{Arc, Mutex};
+
 pub struct AllocManager {
     currently_allocated: Vec<WrappedAllocatable>,
     max_allocated_size: usize,
@@ -58,6 +60,26 @@ impl AllocManager {
 
     pub fn get_max_allocated_size(&self) -> usize {
         self.max_allocated_size
+    }
+}
+
+pub struct WrappedAllocManager{
+    alloc_manager: Arc<Mutex<AllocManager>>,
+}
+
+impl WrappedAllocManager {
+    pub fn new(alloc_manager: AllocManager) -> Self {
+        Self {
+            alloc_manager: Arc::new(Mutex::new(alloc_manager)),
+        }
+    }
+
+    pub fn allocate(&mut self, allocatable: &mut WrappedAllocatable) -> bool {
+        self.alloc_manager.lock().unwrap().allocate(allocatable)
+    }
+
+    pub fn get_max_allocated_size(&self) -> usize {
+        self.alloc_manager.lock().unwrap().get_max_allocated_size()
     }
 }
 

@@ -1,13 +1,16 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
-pub use crate::neural::mat::matrix::Matrix;
+use crate::alloc::allocatable;
 use crate::alloc::allocatable::Allocatable;
+use crate::alloc::allocatable::WrappedAllocatable;
+pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
@@ -63,9 +66,17 @@ impl Allocatable for DenseLayer {
 }
 
 impl Layer for DenseLayer {
+    fn upcast(&self) -> &dyn Allocatable {
+        self
+    }
+
+    fn upcast_mut(&mut self) -> &mut dyn Allocatable {
+        self
+    }
+
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         if !self.is_allocated() {
-            panic!("Layer not allocated");   
+            panic!("Layer not allocated");
         }
         let weights = self.weights.as_ref().unwrap();
         let biases = self.biases.as_ref().unwrap();
@@ -96,7 +107,11 @@ impl Layer for DenseLayer {
     }
 
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
-        save(path, &self.weights.as_ref().unwrap(), &self.biases.as_ref().unwrap())
+        save(
+            path,
+            &self.weights.as_ref().unwrap(),
+            &self.biases.as_ref().unwrap(),
+        )
     }
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
@@ -113,6 +128,55 @@ impl Layer for DenseLayer {
 
     fn get_biases(&self) -> Vec<f64> {
         self.biases.as_ref().unwrap().clone()
+    }
+}
+
+struct WrappedDenseLayer {
+    layer: Arc<Mutex<Box<dyn Layer + Send>>>,
+}
+
+impl WrappedDenseLayer {
+    pub fn new(layer: Box<dyn Layer + Send>) -> Self {
+        Self {
+            layer: Arc::new(Mutex::new(layer)),
+        }
+    }
+
+    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward(input)
+    }
+
+    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+        self.layer.lock().unwrap().forward_batch(input)
+    }
+
+    pub fn input_size(&self) -> usize {
+        self.layer.lock().unwrap().input_size()
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.layer.lock().unwrap().output_size()
+    }
+
+    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().save(path)
+    }
+
+    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().read(path)
+    }
+
+    pub fn get_weights(&self) -> Matrix<f64> {
+        self.layer.lock().unwrap().get_weights()
+    }
+
+    pub fn get_biases(&self) -> Vec<f64> {
+        self.layer.lock().unwrap().get_biases()
+    }
+
+    fn as_allocatable(&mut self) -> WrappedAllocatable {
+        let new_layer = Box::new(self.layer.lock().unwrap().upcast());
+        WrappedAllocatable::new(new_layer)
     }
 }
 
@@ -137,9 +201,9 @@ struct Bias {
 pub struct TrainableDenseLayer {
     rows: usize,
     cols: usize,
-    weights: Option<Matrix<Weight>>,          // Weight matrix (output_size x input_size)
-    biases: Option<Vec<Bias>>,                // Bias vector (output_size)
-    input_cache: Option<Vec<f64>>,            // Cache input for use in backward pass
+    weights: Option<Matrix<Weight>>, // Weight matrix (output_size x input_size)
+    biases: Option<Vec<Bias>>,       // Bias vector (output_size)
+    input_cache: Option<Vec<f64>>,   // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
     in_use: bool,
 }
@@ -167,7 +231,8 @@ impl TrainableDenseLayer {
         // initialize weights from -0.5 to 0.5
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value = rng.gen_range(-0.5..0.5);
+                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
+                    rng.gen_range(-0.5..0.5);
             }
         }
     }
@@ -213,7 +278,7 @@ impl Allocatable for TrainableDenseLayer {
 impl Layer for TrainableDenseLayer {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         if !self.is_allocated() {
-            panic!("Layer not allocated");   
+            panic!("Layer not allocated");
         }
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
         let weights = self.weights.as_ref().unwrap();
@@ -247,11 +312,15 @@ impl Layer for TrainableDenseLayer {
 
     fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
         // assign weights and biases to a matrix and vector
-        let mut weights = Matrix::new(self.weights.as_ref().unwrap().rows(), self.weights.as_ref().unwrap().cols());
+        let mut weights = Matrix::new(
+            self.weights.as_ref().unwrap().rows(),
+            self.weights.as_ref().unwrap().cols(),
+        );
         let mut biases = vec![0.0; self.biases.as_ref().unwrap().len()];
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                *weights.get_mut_unchecked(i, j) = self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                *weights.get_mut_unchecked(i, j) =
+                    self.weights.as_ref().unwrap().get_unchecked(i, j).value;
             }
         }
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
@@ -262,7 +331,7 @@ impl Layer for TrainableDenseLayer {
 
     fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
-            panic!("Layer not allocated");   
+            panic!("Layer not allocated");
         }
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
@@ -270,7 +339,8 @@ impl Layer for TrainableDenseLayer {
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value = *weights.get_unchecked(i, j);
+                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
+                        *weights.get_unchecked(i, j);
                 }
             }
             if i < biases.len() {
@@ -281,17 +351,26 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn get_weights(&self) -> Matrix<f64> {
-        let mut weights = Matrix::new(self.weights.as_ref().unwrap().rows(), self.weights.as_ref().unwrap().cols());
+        let mut weights = Matrix::new(
+            self.weights.as_ref().unwrap().rows(),
+            self.weights.as_ref().unwrap().cols(),
+        );
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                *weights.get_mut_unchecked(i, j) = self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                *weights.get_mut_unchecked(i, j) =
+                    self.weights.as_ref().unwrap().get_unchecked(i, j).value;
             }
         }
         weights
     }
 
     fn get_biases(&self) -> Vec<f64> {
-        self.biases.as_ref().unwrap().iter().map(|bias| bias.value).collect()
+        self.biases
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|bias| bias.value)
+            .collect()
     }
 }
 
@@ -324,7 +403,7 @@ impl TrainableLayer for TrainableDenseLayer {
     /// - `learning_rate`: The step size for gradient descent
     fn update_weights(&mut self, learning_rate: f64) {
         if !self.is_allocated() {
-            panic!("Layer not allocated");   
+            panic!("Layer not allocated");
         }
         // Update weight
         for weights_row in self.weights.as_mut().unwrap().iter_mut() {
@@ -352,7 +431,8 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value = *weights.get_unchecked(i, j);
+                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
+                        *weights.get_unchecked(i, j);
                 }
             }
             if i < biases.len() {
@@ -368,20 +448,25 @@ impl TrainableLayer for TrainableDenseLayer {
                 let grad = self.weights.as_ref().unwrap().get_unchecked(i, j).grad;
 
                 // Update first and second moments
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).m =
-                    beta1 * self.weights.as_ref().unwrap().get_unchecked(i, j).m + (1.0 - beta1) * grad;
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).v =
-                    beta2 * self.weights.as_ref().unwrap().get_unchecked(i, j).v + (1.0 - beta2) * grad.powi(2);
+                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).m = beta1
+                    * self.weights.as_ref().unwrap().get_unchecked(i, j).m
+                    + (1.0 - beta1) * grad;
+                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).v = beta2
+                    * self.weights.as_ref().unwrap().get_unchecked(i, j).v
+                    + (1.0 - beta2) * grad.powi(2);
 
                 // Bias correction
-                let m_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).m / (1.0 - beta1.powi(t as i32));
-                let v_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).v / (1.0 - beta2.powi(t as i32));
+                let m_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).m
+                    / (1.0 - beta1.powi(t as i32));
+                let v_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).v
+                    / (1.0 - beta2.powi(t as i32));
 
                 // Adjusted learning rate
                 let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
 
                 // Update weights
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value -= adjusted_learning_rate * m_hat;
+                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value -=
+                    adjusted_learning_rate * m_hat;
             }
         }
 
@@ -390,8 +475,10 @@ impl TrainableLayer for TrainableDenseLayer {
             let grad = self.biases.as_ref().unwrap()[i].grad;
 
             // Update first and second moments
-            self.biases.as_mut().unwrap()[i].m = beta1 * self.biases.as_ref().unwrap()[i].m + (1.0 - beta1) * grad;
-            self.biases.as_mut().unwrap()[i].v = beta2 * self.biases.as_ref().unwrap()[i].v + (1.0 - beta2) * grad.powi(2);
+            self.biases.as_mut().unwrap()[i].m =
+                beta1 * self.biases.as_ref().unwrap()[i].m + (1.0 - beta1) * grad;
+            self.biases.as_mut().unwrap()[i].v =
+                beta2 * self.biases.as_ref().unwrap()[i].v + (1.0 - beta2) * grad.powi(2);
 
             // Bias correction
             let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t as i32));
