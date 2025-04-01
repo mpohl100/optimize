@@ -4,9 +4,9 @@ use crate::neural::activation::{
 };
 use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::dense_layer::TrainableDenseLayer;
+use crate::neural::layer::layer_trait::Layer;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
-use crate::neural::layer::layer_trait::Layer;
 use crate::neural::nn::shape::*;
 
 use indicatif::ProgressDrawTarget;
@@ -26,25 +26,26 @@ pub struct NeuralNetwork {
     layers: Vec<WrappedLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
+    internal_model_directory: Option<String>,
+    user_model_directory: Option<String>,
 }
 
 impl NeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(shape: NeuralNetworkShape) -> Self {
+    pub fn new(shape: NeuralNetworkShape, internal_model_directory: String) -> Self {
         let shape_clone = shape.clone();
         let mut network = NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
+            internal_model_directory: Some(internal_model_directory),
+            user_model_directory: None,
         };
 
         // Initialize layers and activations based on the provided shape.
         for layer_shape in shape_clone.layers {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let dense_layer = DenseLayer::new(
-                layer_shape.input_size(),
-                layer_shape.output_size(),
-            );
+            let dense_layer = DenseLayer::new(layer_shape.input_size(), layer_shape.output_size());
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -79,6 +80,8 @@ impl NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
+            internal_model_directory: None,
+            user_model_directory: Some(model_directory.clone()),
         };
 
         for i in 0..sh.layers.len() {
@@ -146,6 +149,58 @@ impl NeuralNetwork {
 
     pub fn shape(&self) -> &NeuralNetworkShape {
         &self.shape
+    }
+
+    pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // make a layers subdirectory
+        std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        for (i, layer) in self.layers.iter().enumerate() {
+            layer.save(&format!("{}/layers/layer_{}.txt", model_directory, i))?;
+        }
+        Ok(())
+    }
+
+    pub fn save(&mut self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.user_model_directory = Some(model_directory.clone());
+        // remove the directory if it exists
+        let backup_directory = format!("{}_backup", model_directory);
+        if std::fs::metadata(&model_directory).is_ok() {
+            // copy the directory to a backup
+            std::fs::rename(&model_directory, &backup_directory)?;
+            std::fs::create_dir_all(&model_directory)?;
+        } else {
+            // create directory if it doesn't exist
+            std::fs::create_dir_all(&model_directory)?;
+        }
+
+        let shape = self.shape();
+        shape.to_yaml(model_directory.clone());
+        self.save_layers(model_directory)?;
+
+        // if backup directory exists, remove it
+        if std::fs::metadata(&backup_directory).is_ok() {
+            std::fs::remove_dir_all(&backup_directory)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Drop for NeuralNetwork {
+    fn drop(&mut self) {
+        // The user_model_directory is not removed to allow the user to save the model
+        // Save the model to ensure that everything is on disk
+        if let Some(user_model_directory) = &self.user_model_directory {
+            // Save the model to disk
+            self.save(user_model_directory.clone()).unwrap();
+        }
+
+        if let Some(model_directory) = &self.internal_model_directory {
+            // Remove the internal model directory from disk
+            if std::fs::metadata(model_directory).is_ok() {
+                std::fs::remove_dir_all(model_directory).unwrap();
+            }
+        }
     }
 }
 

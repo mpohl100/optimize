@@ -1,8 +1,8 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
+use super::layer_trait::WrappedTrainableLayer;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
-use super::layer_trait::WrappedTrainableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
 use rand::Rng;

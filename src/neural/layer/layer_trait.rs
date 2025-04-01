@@ -52,7 +52,6 @@ dyn_clone::clone_trait_object!(Layer);
 
 pub trait AllocatableLayer: Allocatable + Layer {}
 
-
 #[derive(Debug, Clone)]
 pub struct WrappedLayer {
     layer: Arc<Mutex<Box<dyn AllocatableLayer + Send>>>,
@@ -223,7 +222,7 @@ impl WrappedTrainableLayer {
     pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read(path)
     }
-    
+
     pub fn get_weights(&self) -> Matrix<f64> {
         self.layer.lock().unwrap().get_weights()
     }
@@ -248,7 +247,17 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().assign_weights(other)
     }
 
-    pub fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
-        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon)
+    pub fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+    ) {
+        self.layer
+            .lock()
+            .unwrap()
+            .adjust_adam(t, learning_rate, beta1, beta2, epsilon)
     }
 }
