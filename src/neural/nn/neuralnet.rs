@@ -20,14 +20,16 @@ static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiPro
 
 use std::boxed::Box;
 
+use super::directory::Directory;
+
 /// A neural network.
 #[derive(Debug, Clone, Default)]
 pub struct NeuralNetwork {
     layers: Vec<WrappedLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
-    internal_model_directory: Option<String>,
-    user_model_directory: Option<String>,
+    model_directory: Directory,
+    past_internal_directory: Option<String>,
 }
 
 impl NeuralNetwork {
@@ -38,8 +40,8 @@ impl NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
-            internal_model_directory: Some(internal_model_directory),
-            user_model_directory: None,
+            model_directory: Directory::Internal(internal_model_directory),
+            past_internal_directory: None,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -80,8 +82,8 @@ impl NeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
-            internal_model_directory: None,
-            user_model_directory: Some(model_directory.clone()),
+            model_directory: Directory::User(model_directory.clone()),
+            past_internal_directory: None,
         };
 
         for i in 0..sh.layers.len() {
@@ -160,8 +162,10 @@ impl NeuralNetwork {
         Ok(())
     }
 
-    pub fn save(&mut self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.user_model_directory = Some(model_directory.clone());
+    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.past_internal_directory = Some(self.model_directory.path());
+        self.model_directory = Directory::User(user_model_directory.clone());
+        let model_directory = self.model_directory.path();
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -188,19 +192,20 @@ impl NeuralNetwork {
 
 impl Drop for NeuralNetwork {
     fn drop(&mut self) {
-        // The user_model_directory is not removed to allow the user to save the model
-        // Save the model to ensure that everything is on disk
-        if let Some(user_model_directory) = &self.user_model_directory {
-            // Save the model to disk
-            self.save(user_model_directory.clone()).unwrap();
-        }
-
-        if let Some(model_directory) = &self.internal_model_directory {
-            // Remove the internal model directory from disk
-            if std::fs::metadata(model_directory).is_ok() {
-                std::fs::remove_dir_all(model_directory).unwrap();
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        if let Directory::User(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                // Save the model to disk
+                self.save(dir.clone()).unwrap();
             }
         }
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+
     }
 }
 
@@ -210,16 +215,20 @@ pub struct TrainableNeuralNetwork {
     layers: Vec<WrappedTrainableLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
+    model_directory: Directory,
+    past_internal_model_directory: Option<String>,
 }
 
 impl TrainableNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(shape: NeuralNetworkShape) -> Self {
+    pub fn new(shape: NeuralNetworkShape, model_directory: Directory) -> Self {
         let shape_clone = shape.clone();
         let mut network = TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
+            model_directory: model_directory,
+            past_internal_model_directory: None,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -257,6 +266,8 @@ impl TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
+            model_directory: Directory::User(model_directory.clone()),
+            past_internal_model_directory: None,
         };
 
         for i in 0..sh.layers.len() {
@@ -567,7 +578,11 @@ impl TrainableNeuralNetwork {
         Ok(())
     }
 
-    pub fn save(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.past_internal_model_directory = Some(self.model_directory.path());
+        self.model_directory = Directory::User(user_model_directory.clone());
+        let model_directory = self.model_directory.path();
+
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -592,7 +607,7 @@ impl TrainableNeuralNetwork {
     }
 
     pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
-        let mut nn = TrainableNeuralNetwork::new(shape.to_neural_network_shape());
+        let mut nn = TrainableNeuralNetwork::new(shape.to_neural_network_shape(), self.model_directory.clone());
         nn.assign_weights(self);
         *self = nn;
     }
@@ -729,7 +744,8 @@ mod tests {
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
-        });
+        }, 
+        Directory::Internal("internal_model".to_string()));
 
         let inputs = vec![vec![1.0, 1.0, 1.0]];
         let targets = vec![vec![0.0, 0.0, 0.0]];
