@@ -188,6 +188,10 @@ impl NeuralNetwork {
 
         Ok(())
     }
+
+    pub fn get_model_directory(&self) -> Directory {
+        self.model_directory.clone()
+    }
 }
 
 impl Drop for NeuralNetwork {
@@ -718,7 +722,30 @@ impl TrainableNeuralNetwork {
             layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
         }
     }
+
+    pub fn get_model_directory(&self) -> Directory {
+        self.model_directory.clone()
+    }
 }
+
+impl Drop for TrainableNeuralNetwork {
+    fn drop(&mut self) {
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        if let Directory::User(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                // Save the model to disk
+                self.save(dir.clone()).unwrap();
+            }
+        }
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

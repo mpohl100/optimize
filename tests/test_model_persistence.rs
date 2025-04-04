@@ -1,3 +1,4 @@
+use learn::neural::nn::directory::Directory;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
@@ -72,7 +73,7 @@ fn train_model(model_directory: String) {
     let data_importer = MockDataImporter::new(nn_shape);
 
     let training_session = TrainingSession::from_disk(
-        &model_directory,
+        model_directory.clone(),
         training_params.clone(),
         Box::new(data_importer.clone()),
     );
@@ -92,7 +93,7 @@ fn train_model(model_directory: String) {
         }
     }
 
-    let mut training_session = TrainingSession::new(training_params, Box::new(data_importer))
+    let mut training_session = TrainingSession::new(training_params, Box::new(data_importer), Directory::Internal("internal_test_model".to_string()))
         .expect("Failed to create TrainingSession");
 
     // Train the neural network and check the success rate

@@ -1,3 +1,4 @@
+use crate::neural::nn::directory::Directory;
 use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 use crate::neural::training::data_importer::DataImporter;
 
@@ -28,7 +29,7 @@ impl NeuralNetworkGenerator {
         model_directory: String,
         nb_threads: usize,
     ) -> Self {
-        let nn = TrainableNeuralNetwork::new(params.shape().clone());
+        let nn = TrainableNeuralNetwork::new(params.shape().clone(), Directory::User(model_directory.clone()));
         Self {
             current_winner: nn,
             params,
@@ -93,7 +94,7 @@ impl NeuralNetworkGenerator {
     }
 
     /// Save the current winner to disk
-    pub fn save(&self) {
+    pub fn save(&mut self) {
         let _ = self.current_winner.save(self.model_directory.clone());
     }
 }
