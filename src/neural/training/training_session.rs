@@ -1,6 +1,7 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
 use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
+use crate::neural::nn::directory::Directory;
 
 use std::error::Error;
 
@@ -15,12 +16,13 @@ impl TrainingSession {
     pub fn new(
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
+        model_directory: Directory,
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
         Ok(Self {
             params,
-            neural_network: TrainableNeuralNetwork::new(shape),
+            neural_network: TrainableNeuralNetwork::new(shape, model_directory),
             data_importer,
         })
     }
@@ -42,15 +44,15 @@ impl TrainingSession {
 
     // Load a model from disk and create a training session
     pub fn from_disk(
-        model_directory: &String,
+        model_directory: String,
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
     ) -> Result<TrainingSession, Box<dyn Error>> {
         // if the directory does not esist, return an error
-        if std::fs::metadata(model_directory).is_err() {
+        if std::fs::metadata(&model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = TrainableNeuralNetwork::from_disk(model_directory);
+        let nn = TrainableNeuralNetwork::from_disk(&model_directory.clone());
         if let Some(nnw) = nn {
             Ok(TrainingSession {
                 params,
@@ -58,7 +60,7 @@ impl TrainingSession {
                 data_importer,
             })
         } else {
-            Self::new(params, data_importer)
+            Self::new(params, data_importer, Directory::User(model_directory))
         }
     }
 
@@ -124,7 +126,7 @@ impl TrainingSession {
     }
 
     /// Save the model to disk
-    pub fn save_model(&self, model_directory: String) -> Result<(), Box<dyn Error>> {
+    pub fn save_model(&mut self, model_directory: String) -> Result<(), Box<dyn Error>> {
         self.neural_network.save(model_directory)
     }
 
@@ -229,7 +231,7 @@ mod tests {
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
-        let mut training_session = TrainingSession::new(training_params, Box::new(data_importer))
+        let mut training_session = TrainingSession::new(training_params, Box::new(data_importer), Directory::Internal("test_session_model".to_string()))
             .expect("Failed to create TrainingSession");
 
         // Train the neural network and check the success rate

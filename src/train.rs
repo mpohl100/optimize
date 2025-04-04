@@ -3,6 +3,7 @@ use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, Layer
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
+use learn::neural::nn::directory::Directory;
 
 use clap::Parser;
 
@@ -132,23 +133,23 @@ impl FileDataImporter {
 
 fn main() {
     let args = Args::parse();
-    let model_directory = &args.model_directory;
+    let model_directory = args.model_directory.clone();
 
     let training_params = args.get_training_params();
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
     // if the model_directory exists load the model from disk
-    let mut training_session = if std::fs::metadata(model_directory).is_ok() {
+    let mut training_session = if std::fs::metadata(model_directory.clone()).is_ok() {
         if args.shape_file.is_empty() {
-            TrainingSession::from_disk(model_directory, training_params, Box::new(data_importer))
+            TrainingSession::from_disk(model_directory.clone(), training_params, Box::new(data_importer))
                 .expect("Failed to load model from disk")
         } else {
-            TrainingSession::new(training_params, Box::new(data_importer))
+            TrainingSession::new(training_params, Box::new(data_importer), Directory::User("internal_model".to_string()))
                 .expect("Failed to create TrainingSession")
         }
     } else {
-        TrainingSession::new(training_params, Box::new(data_importer))
+        TrainingSession::new(training_params, Box::new(data_importer), Directory::Internal("internal_model".to_string()))
             .expect("Failed to create TrainingSession")
     };
 
