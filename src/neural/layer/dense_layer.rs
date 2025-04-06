@@ -31,11 +31,14 @@ impl DenseLayer {
         position_in_nn: usize,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = Directory::Internal(format!(
-            "{}/layers/layer_{}.txt",
-            model_directory.path(),
-            position_in_nn
-        ));
+        let layer_path = match model_directory {
+            Directory::User(path) => {
+                Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+            }
+            Directory::Internal(path) => {
+                Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+            }
+        };
         DenseLayer {
             rows: output_size,
             cols: input_size,
@@ -165,7 +168,35 @@ impl Layer for DenseLayer {
     }
 }
 
-impl AllocatableLayer for DenseLayer {}
+impl AllocatableLayer for DenseLayer {
+    fn duplicate(
+        &mut self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Box<dyn AllocatableLayer + Send> {
+        self.deallocate();
+        let new_layer = Box::new(DenseLayer::new(
+            self.input_size(),
+            self.output_size(),
+            Directory::Internal(model_directory),
+            position_in_nn,
+        )) as Box<dyn AllocatableLayer + Send>;
+        new_layer.copy_on_filesystem(self.layer_path.path().clone());
+        new_layer
+    }
+
+    fn copy_on_filesystem(&self, layer_path: String) {
+        // Copy the layer to the new directory
+        let new_layer_path = self.layer_path.clone();
+        let original_path = layer_path.clone();
+        // Create the new directory if it doesn't exist
+        if !new_layer_path.exists() {
+            std::fs::create_dir_all(new_layer_path.path()).expect("Failed to create directory");
+        }
+        // Copy the file of the original path to the new path on the filesystem
+        std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+    }
+}
 
 #[derive(Default, Debug, Clone, Copy)]
 struct Weight {
@@ -201,14 +232,18 @@ impl TrainableDenseLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: String,
+        model_directory: Directory,
         position_in_nn: usize,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = Directory::Internal(format!(
-            "{}/layers/layer_{}.txt",
-            model_directory, position_in_nn
-        ));
+        let layer_path = match model_directory {
+            Directory::User(path) => {
+                Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+            }
+            Directory::Internal(path) => {
+                Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+            }
+        };
         TrainableDenseLayer {
             rows: output_size,
             cols: input_size,
@@ -518,7 +553,35 @@ impl TrainableLayer for TrainableDenseLayer {
     }
 }
 
-impl TrainableAllocatableLayer for TrainableDenseLayer {}
+impl TrainableAllocatableLayer for TrainableDenseLayer {
+    fn duplicate(
+        &mut self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Box<dyn TrainableAllocatableLayer + Send> {
+        self.deallocate();
+        let new_layer = Box::new(TrainableDenseLayer::new(
+            self.input_size(),
+            self.output_size(),
+            Directory::Internal(model_directory),
+            position_in_nn,
+        )) as Box<dyn TrainableAllocatableLayer + Send>;
+        new_layer.copy_on_filesystem(self.layer_path.path().clone());
+        new_layer
+    }
+
+    fn copy_on_filesystem(&self, layer_path: String) {
+        // Copy the layer to the new directory
+        let new_layer_path = self.layer_path.clone();
+        let original_path = layer_path.clone();
+        // Create the new directory if it doesn't exist
+        if !new_layer_path.exists() {
+            std::fs::create_dir_all(new_layer_path.path()).expect("Failed to create directory");
+        }
+        // Copy the file of the original path to the new path on the filesystem
+        std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+    }
+}
 
 fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
     // Save weights and biases to a file at the specified path
@@ -653,7 +716,8 @@ mod tests {
 
     #[test]
     fn test_dense_layer() {
-        let mut layer = TrainableDenseLayer::new(3, 2, "test_model".to_string(), 0);
+        let mut layer =
+            TrainableDenseLayer::new(3, 2, Directory::Internal("test_model".to_string()), 0);
 
         let input = vec![1.0, 2.0, 3.0];
         layer.allocate();

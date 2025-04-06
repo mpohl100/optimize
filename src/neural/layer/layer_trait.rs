@@ -50,7 +50,17 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
 
 dyn_clone::clone_trait_object!(Layer);
 
-pub trait AllocatableLayer: Allocatable + Layer {}
+pub trait AllocatableLayer: Allocatable + Layer {
+    /// Duplicates the layer, creating a new instance with the same parameters.
+    fn duplicate(
+        &mut self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Box<dyn AllocatableLayer + Send>;
+
+    /// Copy the layer on the filesystem
+    fn copy_on_filesystem(&self, layer_path: String);
+}
 
 #[derive(Debug, Clone)]
 pub struct WrappedLayer {
@@ -61,6 +71,14 @@ impl WrappedLayer {
     pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
         Self {
             layer: Arc::new(Mutex::new(layer)),
+        }
+    }
+
+    pub fn duplicate(&self, model_directory: String, position_in_nn: usize) -> Self {
+        let mut layer = self.layer.lock().unwrap();
+        let new_layer = layer.duplicate(model_directory, position_in_nn);
+        Self {
+            layer: Arc::new(Mutex::new(new_layer)),
         }
     }
 
@@ -157,7 +175,17 @@ pub trait TrainableLayer: Layer {
 
 dyn_clone::clone_trait_object!(TrainableLayer);
 
-pub trait TrainableAllocatableLayer: Allocatable + TrainableLayer {}
+pub trait TrainableAllocatableLayer: Allocatable + TrainableLayer {
+    /// Duplicates the layer, creating a new instance with the same parameters.
+    fn duplicate(
+        &mut self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Box<dyn TrainableAllocatableLayer + Send>;
+
+    /// Copy the layer on the filesystem
+    fn copy_on_filesystem(&self, layer_path: String);
+}
 
 #[derive(Debug, Clone)]
 pub struct WrappedTrainableLayer {
@@ -168,6 +196,14 @@ impl WrappedTrainableLayer {
     pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
         Self {
             layer: Arc::new(Mutex::new(layer)),
+        }
+    }
+
+    pub fn duplicate(&self, model_directory: String, position_in_nn: usize) -> Self {
+        let mut layer = self.layer.lock().unwrap();
+        let new_layer = layer.duplicate(model_directory, position_in_nn);
+        Self {
+            layer: Arc::new(Mutex::new(new_layer)),
         }
     }
 

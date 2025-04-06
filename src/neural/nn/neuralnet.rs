@@ -263,7 +263,7 @@ impl TrainableNeuralNetwork {
             let layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
-                network.model_directory.path().clone(),
+                network.model_directory.clone(),
                 i,
             )));
             let activation = match layer_shape.activation.activation_type() {
@@ -314,7 +314,7 @@ impl TrainableNeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let layer = TrainableDenseLayer::new(*input_size, *output_size, network.model_directory.path().clone(), i);
+                    let layer = TrainableDenseLayer::new(*input_size, *output_size, network.model_directory.clone(), i);
                     WrappedTrainableLayer::new(Box::new(layer))
                 }
             };
@@ -673,7 +673,7 @@ impl TrainableNeuralNetwork {
         let merge_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
             merge_layer_input_size,
             merge_layer_output_size,
-            new_nn.model_directory.path().clone(),
+            new_nn.model_directory.clone(),
             new_nn.layers.len(),
         )));
         let merge_activation = Box::new(ReLU::new());
