@@ -153,7 +153,7 @@ impl NeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(&format!("{}/layers/layer_{}.txt", model_directory, i))?;
+            layer.save(format!("{}/layers/layer_{}.txt", model_directory, i))?;
         }
         Ok(())
     }
@@ -235,7 +235,6 @@ impl Drop for NeuralNetwork {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
-
     }
 }
 
@@ -612,7 +611,7 @@ impl TrainableNeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(&format!("{}/layers/layer_{}.txt", model_directory, i))?;
+            layer.save(format!("{}/layers/layer_{}.txt", model_directory, i))?;
         }
         Ok(())
     }
