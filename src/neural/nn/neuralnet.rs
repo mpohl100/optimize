@@ -4,7 +4,6 @@ use crate::neural::activation::{
 };
 use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::dense_layer::TrainableDenseLayer;
-use crate::neural::layer::layer_trait::Layer;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 use crate::neural::nn::shape::*;
@@ -45,9 +44,9 @@ impl NeuralNetwork {
         };
 
         // Initialize layers and activations based on the provided shape.
-        for layer_shape in shape_clone.layers {
+        for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let dense_layer = DenseLayer::new(layer_shape.input_size(), layer_shape.output_size());
+            let dense_layer = DenseLayer::new(layer_shape.input_size(), layer_shape.output_size(), network.model_directory.clone(), i);
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -92,10 +91,7 @@ impl NeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let mut layer = DenseLayer::new(*input_size, *output_size);
-                    layer
-                        .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
-                        .unwrap();
+                    let layer = DenseLayer::new(*input_size, *output_size, network.model_directory.clone(), i);
                     WrappedLayer::new(Box::new(layer))
                 }
             };
@@ -262,11 +258,13 @@ impl TrainableNeuralNetwork {
         };
 
         // Initialize layers and activations based on the provided shape.
-        for layer_shape in shape_clone.layers {
+        for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
             // Here you would instantiate the appropriate Layer and Activation objects.
             let layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
+                network.model_directory.path().clone(),
+                i,
             )));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -282,6 +280,16 @@ impl TrainableNeuralNetwork {
         }
 
         network
+    }
+
+    pub fn new_dir(directory: Directory) -> Self {
+        TrainableNeuralNetwork {
+            layers: Vec::new(),
+            activations: Vec::new(),
+            shape: NeuralNetworkShape::default(),
+            model_directory: directory,
+            past_internal_model_directory: None,
+        }
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
@@ -306,10 +314,7 @@ impl TrainableNeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let mut layer = TrainableDenseLayer::new(*input_size, *output_size);
-                    layer
-                        .read(&format!("{}/layers/layer_{}.txt", model_directory, i))
-                        .unwrap();
+                    let layer = TrainableDenseLayer::new(*input_size, *output_size, network.model_directory.path().clone(), i);
                     WrappedTrainableLayer::new(Box::new(layer))
                 }
             };
@@ -657,7 +662,8 @@ impl TrainableNeuralNetwork {
     }
 
     pub fn merge(&self, other: TrainableNeuralNetwork) -> TrainableNeuralNetwork {
-        let mut new_nn = TrainableNeuralNetwork::default();
+        // Rethink this function entirely
+        let mut new_nn = TrainableNeuralNetwork::new_dir(self.model_directory.clone());
         for i in 0..self.layers.len() {
             new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
@@ -667,6 +673,8 @@ impl TrainableNeuralNetwork {
         let merge_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
             merge_layer_input_size,
             merge_layer_output_size,
+            new_nn.model_directory.path().clone(),
+            new_nn.layers.len(),
         )));
         let merge_activation = Box::new(ReLU::new());
         new_nn.add_activation_and_layer(merge_activation, merge_layer);
