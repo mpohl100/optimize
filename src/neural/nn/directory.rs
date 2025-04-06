@@ -26,4 +26,11 @@ impl Directory {
             Directory::Internal(path) => path.clone(),
         }
     }
+
+    pub fn exists(&self) -> bool {
+        match self {
+            Directory::User(path) => std::fs::metadata(path).is_ok(),
+            Directory::Internal(path) => std::fs::metadata(path).is_ok(),
+        }
+    }
 }
