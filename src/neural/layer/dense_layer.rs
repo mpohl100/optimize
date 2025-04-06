@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
@@ -50,6 +51,24 @@ impl DenseLayer {
     }
 }
 
+impl Drop for DenseLayer {
+    fn drop(&mut self) {
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        if let Directory::User(dir) = &self.layer_path {
+            if std::fs::metadata(dir).is_ok() {
+                // Save the model to disk
+                self.deallocate();
+            }
+        }
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete the file
+            std::fs::remove_file(dir).expect("Failed to remove file");
+        }
+    }
+}
+
+
 impl Allocatable for DenseLayer {
     fn allocate(&mut self) {
         if self.is_allocated() {
@@ -60,7 +79,7 @@ impl Allocatable for DenseLayer {
             self.weights = Some(Matrix::new(self.rows, self.cols));
             self.biases = Some(vec![0.0; self.rows]);
             save(
-                &self.layer_path.path(),
+                self.layer_path.path(),
                 self.weights.as_ref().unwrap(),
                 self.biases.as_ref().unwrap(),
             )
@@ -68,7 +87,7 @@ impl Allocatable for DenseLayer {
         } else {
             // if the layer_path exists, read the matrix and store it
             let (weights, biases) =
-                read(&self.layer_path.path()).expect("Failed to read layer weights and biases");
+                read(self.layer_path.path()).expect("Failed to read layer weights and biases");
             self.rows = weights.rows();
             self.cols = weights.cols();
             self.weights = Some(weights);
@@ -78,7 +97,7 @@ impl Allocatable for DenseLayer {
 
     fn deallocate(&mut self) {
         save(
-            &self.layer_path.path(),
+            self.layer_path.path(),
             self.weights.as_ref().unwrap(),
             self.biases.as_ref().unwrap(),
         )
@@ -141,7 +160,7 @@ impl Layer for DenseLayer {
         self.weights.as_ref().unwrap().rows()
     }
 
-    fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+    fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         save(
             path,
             self.weights.as_ref().unwrap(),
@@ -149,7 +168,7 @@ impl Layer for DenseLayer {
         )
     }
 
-    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
         self.rows = weights.rows();
@@ -269,6 +288,26 @@ impl TrainableDenseLayer {
     }
 }
 
+impl Drop for TrainableDenseLayer {
+    fn drop(&mut self) {
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        if let Directory::User(dir) = &self.layer_path {
+            if std::fs::metadata(dir).is_ok() {
+                // Save the model to disk
+                self.deallocate();
+            }
+        }
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete file
+            if std::fs::metadata(dir).is_ok() {
+                // delete the file
+                std::fs::remove_file(dir).expect("Failed to remove file");
+            }
+        }
+    }
+}
+
 impl Allocatable for TrainableDenseLayer {
     fn allocate(&mut self) {
         if self.is_allocated() {
@@ -280,14 +319,14 @@ impl Allocatable for TrainableDenseLayer {
             self.biases = Some(vec![Bias::default(); self.rows]);
             self.initialize_weights();
             save_weight(
-                &self.layer_path.path(),
+                self.layer_path.path(),
                 self.weights.as_ref().unwrap(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
         } else {
             // if the layer_path exists, read the matrix and store it
-            let (weights, biases) = read_weight(&self.layer_path.path())
+            let (weights, biases) = read_weight(self.layer_path.path())
                 .expect("Failed to read layer weights and biases");
             self.rows = weights.rows();
             self.cols = weights.cols();
@@ -300,7 +339,7 @@ impl Allocatable for TrainableDenseLayer {
 
     fn deallocate(&mut self) {
         save_weight(
-            &self.layer_path.path(),
+            self.layer_path.path(),
             self.weights.as_ref().unwrap(),
             self.biases.as_ref().unwrap(),
         )
@@ -367,7 +406,7 @@ impl Layer for TrainableDenseLayer {
         self.weights.as_ref().unwrap().rows()
     }
 
-    fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+    fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
             return Err("Layer not allocated".into());
         }
@@ -389,7 +428,7 @@ impl Layer for TrainableDenseLayer {
         save(path, &weights, &biases)
     }
 
-    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
         self.rows = weights.rows();
@@ -583,7 +622,12 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
     }
 }
 
-fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
+fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
+    // Ensure the directory exists
+    let p = Path::new(&path);
+    if let Some(dir) = p.parent() {
+        std::fs::create_dir_all(dir).expect("Failed to create directory");
+    }
     // Save weights and biases to a file at the specified path
     let mut file = File::create(path)?;
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
@@ -601,10 +645,15 @@ fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn
 }
 
 fn save_weight(
-    path: &str,
+    path: String,
     weights: &Matrix<Weight>,
     biases: &[Bias],
 ) -> Result<(), Box<dyn Error>> {
+    // Ensure the directory exists
+    let p = Path::new(&path);
+    if let Some(dir) = p.parent() {
+        std::fs::create_dir_all(dir).expect("Failed to create directory");
+    }
     // Save weights and biases to a file at the specified path
     let mut file = File::create(path)?;
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
@@ -626,7 +675,7 @@ fn save_weight(
     Ok(())
 }
 
-fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
+fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
@@ -660,7 +709,7 @@ fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     Ok((weights, biases))
 }
 
-fn read_weight(path: &str) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>> {
+fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
@@ -673,10 +722,15 @@ fn read_weight(path: &str) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>
         weights = Matrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
-                let mut parts = line.split(";");
+                let parts = line.split(";").collect::<Vec<_>>();
+                // parts len must be euqal to cols
+                if parts.len() != cols {
+                    return Err("Invalid weight format".into());
+                }
                 for j in 0..cols {
-                    if let Some(part) = parts.next() {
-                        let figures = part.split_whitespace().collect::<Vec<_>>();
+                    let part = parts.get(j);
+                    if let Some(p) = part {
+                        let figures = p.split_whitespace().collect::<Vec<_>>();
                         if figures.len() != 4 {
                             return Err("Invalid weight format".into());
                         }
@@ -692,11 +746,16 @@ fn read_weight(path: &str) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>
         }
     }
     if let Some(Ok(line)) = lines.next() {
-        let mut parts = line.split(";");
+        let parts = line.split(";").collect::<Vec<_>>();
         biases = vec![Bias::default(); weights.rows()];
-        for bias in &mut biases {
-            if let Some(part) = parts.next() {
-                let figures = part.split_whitespace().collect::<Vec<_>>();
+        // parts len must be equal to rows
+        if parts.len() != weights.rows() {
+            return Err("Invalid bias format amount of values".into());
+        }
+        for (i, bias) in biases.iter_mut().enumerate() {
+            let part = parts.get(i);
+            if let Some(p) = part {
+                let figures = p.split_whitespace().collect::<Vec<_>>();
                 if figures.len() != 4 {
                     return Err("Invalid bias format".into());
                 }

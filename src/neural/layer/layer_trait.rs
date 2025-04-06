@@ -36,10 +36,10 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     fn output_size(&self) -> usize;
 
     /// Saves the layer to a file at the specified path.
-    fn save(&self, path: &str) -> Result<(), Box<dyn Error>>;
+    fn save(&self, path: String) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
-    fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>>;
+    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
     fn get_weights(&self) -> Matrix<f64>;
@@ -126,11 +126,11 @@ impl WrappedLayer {
         self.layer.lock().unwrap().output_size()
     }
 
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+    pub fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().save(path)
     }
 
-    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+    pub fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read(path)
     }
 
@@ -251,11 +251,11 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().output_size()
     }
 
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn Error>> {
+    pub fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().save(path)
     }
 
-    pub fn read(&mut self, path: &str) -> Result<(), Box<dyn Error>> {
+    pub fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read(path)
     }
 
