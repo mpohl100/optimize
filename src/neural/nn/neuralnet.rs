@@ -23,7 +23,7 @@ use std::boxed::Box;
 use super::directory::Directory;
 
 /// A neural network.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct NeuralNetwork {
     layers: Vec<WrappedLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
@@ -166,6 +166,10 @@ impl NeuralNetwork {
         self.past_internal_directory = Some(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
+        self.save_internal(model_directory.clone())
+    }
+
+    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -194,6 +198,28 @@ impl NeuralNetwork {
     }
 }
 
+impl Clone for NeuralNetwork {
+    fn clone(&self) -> Self {
+        // create a sibling directory with the postfix _clone appendended to model_direcotory path
+        let mut model_directory = self.model_directory.path();
+        if let Directory::User(dir) = &self.model_directory {
+            model_directory = format!("{}_clone", dir);
+        } else if let Directory::Internal(dir) = &self.model_directory {
+            model_directory = format!("{}_clone", dir);
+        }
+        // Save the model to the new directory
+        self.save_internal(model_directory.clone()).unwrap();
+        // Clone the neural network by cloning its layers and activations
+        NeuralNetwork {
+            layers: self.layers.clone(),
+            activations: self.activations.clone(),
+            shape: self.shape.clone(),
+            model_directory: Directory::Internal(model_directory),
+            past_internal_directory: None,
+        }
+    }
+}
+
 impl Drop for NeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
@@ -214,7 +240,7 @@ impl Drop for NeuralNetwork {
 }
 
 /// A neural network.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct TrainableNeuralNetwork {
     layers: Vec<WrappedTrainableLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
@@ -586,6 +612,10 @@ impl TrainableNeuralNetwork {
         self.past_internal_model_directory = Some(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
+        self.save_internal(model_directory.clone())
+    }
+
+    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
 
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
@@ -725,6 +755,28 @@ impl TrainableNeuralNetwork {
 
     pub fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
+    }
+}
+
+impl Clone for TrainableNeuralNetwork {
+    fn clone(&self) -> Self {
+        // create a sibling directory with the postfix _clone appendended to model_direcotory path
+        let mut model_directory = self.model_directory.path();
+        if let Directory::User(dir) = &self.model_directory {
+            model_directory = format!("{}_clone", dir);
+        } else if let Directory::Internal(dir) = &self.model_directory {
+            model_directory = format!("{}_clone", dir);
+        }
+        // Save the model to the new directory
+        self.save_internal(model_directory.clone()).unwrap();
+        // Clone the neural network by cloning its layers and activations
+        TrainableNeuralNetwork {
+            layers: self.layers.clone(),
+            activations: self.activations.clone(),
+            shape: self.shape.clone(),
+            model_directory: Directory::Internal(model_directory),
+            past_internal_model_directory: None,
+        }
     }
 }
 
