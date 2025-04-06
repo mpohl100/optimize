@@ -206,8 +206,12 @@ impl Clone for NeuralNetwork {
         // Save the model to the new directory
         self.save_internal(model_directory.clone()).unwrap();
         // Clone the neural network by cloning its layers and activations
+        let mut new_layers = Vec::new();
+        for (i, layer) in self.layers.iter().enumerate() {
+            new_layers.push(layer.duplicate(model_directory.clone(), i));
+        }
         NeuralNetwork {
-            layers: self.layers.clone(),
+            layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
@@ -778,8 +782,12 @@ impl Clone for TrainableNeuralNetwork {
         // Save the model to the new directory
         self.save_internal(model_directory.clone()).unwrap();
         // Clone the neural network by cloning its layers and activations
+        let mut new_layers = Vec::new();
+        for (i, layer) in self.layers.iter().enumerate() {
+            new_layers.push(layer.duplicate(model_directory.clone(), i));
+        }
         TrainableNeuralNetwork {
-            layers: self.layers.clone(),
+            layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
