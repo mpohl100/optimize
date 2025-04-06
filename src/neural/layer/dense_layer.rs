@@ -338,12 +338,14 @@ impl Allocatable for TrainableDenseLayer {
     }
 
     fn deallocate(&mut self) {
-        save_weight(
-            self.layer_path.path(),
-            self.weights.as_ref().unwrap(),
-            self.biases.as_ref().unwrap(),
-        )
-        .expect("Failed to save layer weights and biases");
+        if self.is_allocated(){
+            save_weight(
+                self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
+        }
         self.weights = None;
         self.biases = None;
         self.input_cache = None;
@@ -724,8 +726,8 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
             if let Some(Ok(line)) = lines.next() {
                 let parts = line.split(";").collect::<Vec<_>>();
                 // parts len must be euqal to cols
-                if parts.len() != cols {
-                    return Err("Invalid weight format".into());
+                if parts.len() - 1  != cols {
+                    return Err(format!("Invalid weight format cause of cols: expected {}, found {}", cols, parts.len() - 1).into());
                 }
                 for j in 0..cols {
                     let part = parts.get(j);
@@ -749,7 +751,7 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
         let parts = line.split(";").collect::<Vec<_>>();
         biases = vec![Bias::default(); weights.rows()];
         // parts len must be equal to rows
-        if parts.len() != weights.rows() {
+        if parts.len() - 1 != weights.rows() {
             return Err("Invalid bias format amount of values".into());
         }
         for (i, bias) in biases.iter_mut().enumerate() {
