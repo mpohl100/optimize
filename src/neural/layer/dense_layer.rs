@@ -5,6 +5,7 @@ use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
+use crate::neural::nn::directory::Directory;
 use rand::Rng;
 use std::error::Error;
 use std::fs::File;
@@ -19,16 +20,29 @@ pub struct DenseLayer {
     weights: Option<Matrix<f64>>,
     biases: Option<Vec<f64>>,
     in_use: bool,
+    layer_path: Directory,
 }
 
 impl DenseLayer {
-    pub fn new(input_size: usize, output_size: usize) -> Self {
+    pub fn new(
+        input_size: usize,
+        output_size: usize,
+        model_directory: Directory,
+        position_in_nn: usize,
+    ) -> Self {
+        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
+        let layer_path = Directory::Internal(format!(
+            "{}/layers/layer_{}.txt",
+            model_directory.path(),
+            position_in_nn
+        ));
         DenseLayer {
             rows: output_size,
             cols: input_size,
             weights: None,
             biases: None,
             in_use: false,
+            layer_path,
         }
     }
 }
@@ -38,11 +52,34 @@ impl Allocatable for DenseLayer {
         if self.is_allocated() {
             return;
         }
-        self.weights = Some(Matrix::new(self.rows, self.cols));
-        self.biases = Some(vec![0.0; self.rows]);
+        // if the layer_path does not exist, create a new matrix and store it
+        if !self.layer_path.exists() {
+            self.weights = Some(Matrix::new(self.rows, self.cols));
+            self.biases = Some(vec![0.0; self.rows]);
+            save(
+                &self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
+        } else {
+            // if the layer_path exists, read the matrix and store it
+            let (weights, biases) =
+                read(&self.layer_path.path()).expect("Failed to read layer weights and biases");
+            self.rows = weights.rows();
+            self.cols = weights.cols();
+            self.weights = Some(weights);
+            self.biases = Some(biases);
+        }
     }
 
     fn deallocate(&mut self) {
+        save(
+            &self.layer_path.path(),
+            self.weights.as_ref().unwrap(),
+            self.biases.as_ref().unwrap(),
+        )
+        .expect("Failed to save layer weights and biases");
         self.weights = None;
         self.biases = None;
     }
@@ -156,11 +193,22 @@ pub struct TrainableDenseLayer {
     input_cache: Option<Vec<f64>>,   // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
     in_use: bool,
+    layer_path: Directory,
 }
 
 impl TrainableDenseLayer {
     /// Creates a new TrainableDenseLayer with given input and output sizes.
-    pub fn new(input_size: usize, output_size: usize) -> Self {
+    pub fn new(
+        input_size: usize,
+        output_size: usize,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Self {
+        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
+        let layer_path = Directory::Internal(format!(
+            "{}/layers/layer_{}.txt",
+            model_directory, position_in_nn
+        ));
         TrainableDenseLayer {
             rows: output_size,
             cols: input_size,
@@ -169,6 +217,7 @@ impl TrainableDenseLayer {
             input_cache: None,
             input_batch_cache: None,
             in_use: false,
+            layer_path,
         }
     }
 
@@ -190,14 +239,37 @@ impl Allocatable for TrainableDenseLayer {
         if self.is_allocated() {
             return;
         }
-        self.weights = Some(Matrix::new(self.rows, self.cols));
-        self.biases = Some(vec![Bias::default(); self.rows]);
-        self.initialize_weights();
+        // if the layer_path does not exist, create a new matrix and store it
+        if !self.layer_path.exists() {
+            self.weights = Some(Matrix::new(self.rows, self.cols));
+            self.biases = Some(vec![Bias::default(); self.rows]);
+            self.initialize_weights();
+            save_weight(
+                &self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
+        } else {
+            // if the layer_path exists, read the matrix and store it
+            let (weights, biases) = read_weight(&self.layer_path.path())
+                .expect("Failed to read layer weights and biases");
+            self.rows = weights.rows();
+            self.cols = weights.cols();
+            self.weights = Some(weights);
+            self.biases = Some(biases);
+        }
         self.input_cache = Some(Vec::new());
         self.input_batch_cache = Some(Vec::new());
     }
 
     fn deallocate(&mut self) {
+        save_weight(
+            &self.layer_path.path(),
+            self.weights.as_ref().unwrap(),
+            self.biases.as_ref().unwrap(),
+        )
+        .expect("Failed to save layer weights and biases");
         self.weights = None;
         self.biases = None;
         self.input_cache = None;
@@ -465,6 +537,32 @@ fn save(path: &str, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn
     Ok(())
 }
 
+fn save_weight(
+    path: &str,
+    weights: &Matrix<Weight>,
+    biases: &[Bias],
+) -> Result<(), Box<dyn Error>> {
+    // Save weights and biases to a file at the specified path
+    let mut file = File::create(path)?;
+    writeln!(file, "{} {}", weights.rows(), weights.cols())?;
+    for i in 0..weights.rows() {
+        for j in 0..weights.cols() {
+            let weight = weights.get_unchecked(i, j);
+            write!(
+                file,
+                "{} {} {} {};",
+                weight.value, weight.grad, weight.m, weight.v
+            )?;
+        }
+        writeln!(file)?;
+    }
+    for bias in biases.iter() {
+        write!(file, "{} {} {} {};", bias.value, bias.grad, bias.m, bias.v)?;
+    }
+    writeln!(file)?;
+    Ok(())
+}
+
 fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -493,6 +591,56 @@ fn read(path: &str) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
         for bias in &mut biases {
             if let Some(part) = parts.next() {
                 *bias = part.parse::<f64>()?;
+            }
+        }
+    }
+    Ok((weights, biases))
+}
+
+fn read_weight(path: &str) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
+    let mut weights = Matrix::new(1, 1);
+    let mut biases = vec![Bias::default(); 1];
+    if let Some(Ok(line)) = lines.next() {
+        let mut parts = line.split_whitespace();
+        let rows = parts.next().unwrap().parse::<usize>()?;
+        let cols = parts.next().unwrap().parse::<usize>()?;
+        weights = Matrix::new(rows, cols);
+        for i in 0..rows {
+            if let Some(Ok(line)) = lines.next() {
+                let mut parts = line.split(";");
+                for j in 0..cols {
+                    if let Some(part) = parts.next() {
+                        let figures = part.split_whitespace().collect::<Vec<_>>();
+                        if figures.len() != 4 {
+                            return Err("Invalid weight format".into());
+                        }
+                        *weights.get_mut_unchecked(i, j) = Weight {
+                            value: figures[0].parse::<f64>()?,
+                            grad: figures[1].parse::<f64>()?,
+                            m: figures[2].parse::<f64>()?,
+                            v: figures[3].parse::<f64>()?,
+                        };
+                    }
+                }
+            }
+        }
+    }
+    if let Some(Ok(line)) = lines.next() {
+        let mut parts = line.split(";");
+        biases = vec![Bias::default(); weights.rows()];
+        for bias in &mut biases {
+            if let Some(part) = parts.next() {
+                let figures = part.split_whitespace().collect::<Vec<_>>();
+                if figures.len() != 4 {
+                    return Err("Invalid bias format".into());
+                }
+                bias.value = figures[0].parse::<f64>()?;
+                bias.grad = figures[1].parse::<f64>()?;
+                bias.m = figures[2].parse::<f64>()?;
+                bias.v = figures[3].parse::<f64>()?;
             }
         }
     }
