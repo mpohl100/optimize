@@ -43,7 +43,7 @@ fn test_neural_network_breeding() {
     let input_data = vec![0.0; 128]; // Example input data
 
     // Create a neural network phenotype
-    let mut nn = TrainableNeuralNetwork::new(nn_shape, Directory::Internal("test_model".to_string()));
+    let mut nn = TrainableNeuralNetwork::new(nn_shape, Directory::Internal("breeding_test_model".to_string()));
     let _ = nn.predict(input_data);
     let nn_phenotype = NeuralNetworkPhenotype::new(nn);
     let mut parents = vec![nn_phenotype];
