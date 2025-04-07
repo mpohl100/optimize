@@ -96,12 +96,14 @@ impl Allocatable for DenseLayer {
     }
 
     fn deallocate(&mut self) {
-        save(
-            self.layer_path.path(),
-            self.weights.as_ref().unwrap(),
-            self.biases.as_ref().unwrap(),
-        )
-        .expect("Failed to save layer weights and biases");
+        if self.is_allocated(){
+            save(
+                self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
+        }
         self.weights = None;
         self.biases = None;
     }
