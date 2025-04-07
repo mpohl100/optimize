@@ -195,6 +195,17 @@ impl NeuralNetwork {
     pub fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
     }
+
+    pub fn deallocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.deallocate();
+        }
+    }
+
+    pub fn save_layout(&self){
+        let shape = self.shape();
+        shape.to_yaml(self.model_directory.path());
+    }
 }
 
 impl Clone for NeuralNetwork {
@@ -226,12 +237,8 @@ impl Clone for NeuralNetwork {
 impl Drop for NeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
-        if let Directory::User(dir) = &self.model_directory {
-            if std::fs::metadata(dir).is_ok() {
-                // Save the model to disk
-                self.save(dir.clone()).unwrap();
-            }
-        }
+        self.save_layout();
+        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {
@@ -770,6 +777,23 @@ impl TrainableNeuralNetwork {
     pub fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
     }
+
+    pub fn deallocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.deallocate();
+        }
+    }
+
+    pub fn allocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.allocate();
+        }
+    }
+
+    pub fn save_layout(&self){
+        let shape = self.shape();
+        shape.to_yaml(self.model_directory.path());
+    }
 }
 
 impl Clone for TrainableNeuralNetwork {
@@ -801,12 +825,8 @@ impl Clone for TrainableNeuralNetwork {
 impl Drop for TrainableNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
-        if let Directory::User(dir) = &self.model_directory {
-            if std::fs::metadata(dir).is_ok() {
-                // Save the model to disk
-                self.save(dir.clone()).unwrap();
-            }
-        }
+        self.save_layout();
+        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {

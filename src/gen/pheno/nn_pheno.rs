@@ -58,6 +58,10 @@ impl NeuralNetworkPhenotype {
         self.left_half_shape = None;
         self.right_half_shape = None;
     }
+
+    pub fn allocate(&mut self) {
+        self.nn.lock().unwrap().allocate();
+    }
 }
 
 impl Phenotype for NeuralNetworkPhenotype {

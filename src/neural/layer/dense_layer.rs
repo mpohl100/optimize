@@ -155,11 +155,11 @@ impl Layer for DenseLayer {
     }
 
     fn input_size(&self) -> usize {
-        self.weights.as_ref().unwrap().cols()
+        self.cols
     }
 
     fn output_size(&self) -> usize {
-        self.weights.as_ref().unwrap().rows()
+        self.rows
     }
 
     fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
@@ -403,11 +403,11 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn input_size(&self) -> usize {
-        self.weights.as_ref().unwrap().cols()
+        self.cols
     }
 
     fn output_size(&self) -> usize {
-        self.weights.as_ref().unwrap().rows()
+        self.rows
     }
 
     fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
@@ -597,7 +597,7 @@ impl TrainableLayer for TrainableDenseLayer {
 
     fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
-            panic!("Layer not allocated");
+            return Err("Layer not allocated".into());
         }
         // assign weights and biases to a matrix and vector
         let mut weights = Matrix::new(
@@ -763,9 +763,9 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
     let mut weights = Matrix::new(1, 1);
     let mut biases = vec![Bias::default(); 1];
     if let Some(Ok(line)) = lines.next() {
-        let mut parts = line.split_whitespace();
-        let rows = parts.next().unwrap().parse::<usize>()?;
-        let cols = parts.next().unwrap().parse::<usize>()?;
+        let mut dim_parts = line.split_whitespace();
+        let rows = dim_parts.next().unwrap().parse::<usize>()?;
+        let cols = dim_parts.next().unwrap().parse::<usize>()?;
         weights = Matrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
@@ -797,7 +797,7 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
         biases = vec![Bias::default(); weights.rows()];
         // parts len must be equal to rows
         if parts.len() - 1 != weights.rows() {
-            return Err("Invalid bias format amount of values".into());
+            return Err(format!("Invalid bias format amount of values: expected {}, found {}", weights.rows(), parts.len() - 1).into());
         }
         for (i, bias) in biases.iter_mut().enumerate() {
             let part = parts.get(i);
