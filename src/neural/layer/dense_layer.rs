@@ -823,7 +823,7 @@ mod tests {
     #[test]
     fn test_dense_layer() {
         let mut layer =
-            TrainableDenseLayer::new(3, 2, Directory::Internal("test_model".to_string()), 0);
+            TrainableDenseLayer::new(3, 2, Directory::Internal("test_model_unit".to_string()), 0);
 
         let input = vec![1.0, 2.0, 3.0];
         layer.allocate();

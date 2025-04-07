@@ -31,7 +31,7 @@ impl DataImporter for MockDataImporter {
     }
 }
 
-fn train_model(model_directory: String) {
+fn train_model(model_directory: String, internal_model_directory: String) {
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
@@ -93,8 +93,12 @@ fn train_model(model_directory: String) {
         }
     }
 
-    let mut training_session = TrainingSession::new(training_params, Box::new(data_importer), Directory::Internal("internal_test_model".to_string()))
-        .expect("Failed to create TrainingSession");
+    let mut training_session = TrainingSession::new(
+        training_params,
+        Box::new(data_importer),
+        Directory::Internal(internal_model_directory),
+    )
+    .expect("Failed to create TrainingSession");
 
     // Train the neural network and check the success rate
     let success_rate = training_session.train().expect("Training failed");
@@ -111,7 +115,7 @@ fn new_model_is_persisted() {
     let model_directory = "tests/test_model_persistence_1".to_string();
 
     // Act
-    train_model(model_directory.clone());
+    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string());
 
     // Assert
     // Check if the model directory exists
@@ -125,10 +129,10 @@ fn new_model_is_persisted() {
 fn already_trained_model_is_loaded() {
     // Arrange
     let model_directory = "tests/test_model_persistence_2".to_string();
-    train_model(model_directory.clone());
+    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string());
 
     // Act
-    train_model(model_directory.clone());
+    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
 
     // Assert
     // Check if the model directory exists
