@@ -57,6 +57,7 @@ fn test_neural_network_breeding() {
     let nn_strategy = NeuralNetworkStrategy::new(model_directory.clone());
 
     for _ in 0..20 {
+
         let children = nn_strategy
             .breed(&parents, &evol_opts, &mut rng)
             .expect("Breed failed");
@@ -68,6 +69,7 @@ fn test_neural_network_breeding() {
         for child in children.iter().take(4) {
             parents.push(child.clone());
         }
+        parents[0].allocate();
     }
 
     // Remove model directory
