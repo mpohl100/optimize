@@ -13,6 +13,9 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use once_cell::sync::Lazy;
 use std::sync::Arc;
+use std::path::Path;
+use std::fs;
+use std::io;
 
 // Create a static MultiProgress instance
 static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiProgress::new()));
@@ -170,7 +173,7 @@ impl NeuralNetwork {
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
             // copy the directory to a backup
-            std::fs::rename(&model_directory, &backup_directory)?;
+            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
             std::fs::create_dir_all(&model_directory)?;
         } else {
             // create directory if it doesn't exist
@@ -611,7 +614,7 @@ impl TrainableNeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(format!("{}/layers/layer_{}.txt", model_directory, i))?;
+            layer.save_weight(format!("{}/layers/layer_{}.txt", model_directory, i))?;
         }
         Ok(())
     }
@@ -628,8 +631,8 @@ impl TrainableNeuralNetwork {
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
-            // copy the directory to a backup
-            std::fs::rename(&model_directory, &backup_directory)?;
+            // copy the directory to a backup not move
+            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
             std::fs::create_dir_all(&model_directory)?;
         } else {
             // create directory if it doesn't exist
@@ -813,6 +816,25 @@ impl Drop for TrainableNeuralNetwork {
     }
 }
 
+fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
+    if !dst.exists() {
+        fs::create_dir_all(dst)?;
+    }
+
+    for entry_result in fs::read_dir(src)? {
+        let entry = entry_result?;
+        let path = entry.path();
+        let dest_path = dst.join(entry.file_name());
+
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            fs::copy(&path, &dest_path)?;
+        }
+    }
+
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {

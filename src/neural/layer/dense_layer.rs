@@ -594,6 +594,49 @@ impl TrainableLayer for TrainableDenseLayer {
             self.biases.as_mut().unwrap()[i].value -= adjusted_learning_rate * m_hat;
         }
     }
+
+    fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
+        if !self.is_allocated() {
+            panic!("Layer not allocated");
+        }
+        // assign weights and biases to a matrix and vector
+        let mut weights = Matrix::new(
+            self.weights.as_ref().unwrap().rows(),
+            self.weights.as_ref().unwrap().cols(),
+        );
+        let mut biases = vec![Bias::default(); self.biases.as_ref().unwrap().len()];
+        for i in 0..self.weights.as_ref().unwrap().rows() {
+            for j in 0..self.weights.as_ref().unwrap().cols() {
+                *weights.get_mut_unchecked(i, j) =
+                    self.weights.as_ref().unwrap().get_unchecked(i, j).clone();
+            }
+        }
+        for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
+            biases[i] = bias.clone();
+        }
+        save_weight(path, &weights, &biases)
+    }
+
+    fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+        // Read weights and biases from a file at the specified path
+        let (weights, biases) = read_weight(path)?;
+        self.rows = weights.rows();
+        self.cols = weights.cols();
+        self.allocate();
+        // assign all weights and biases
+        for i in 0..weights.rows() {
+            for j in 0..weights.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    *self.weights.as_mut().unwrap().get_mut_unchecked(i, j) = 
+                        weights.get_unchecked(i, j).clone();
+                }
+            }
+            if i < biases.len() {
+                self.biases.as_mut().unwrap()[i] = biases[i].clone();
+            }
+        }
+        Ok(())
+    }
 }
 
 impl TrainableAllocatableLayer for TrainableDenseLayer {

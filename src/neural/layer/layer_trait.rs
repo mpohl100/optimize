@@ -171,6 +171,12 @@ pub trait TrainableLayer: Layer {
 
     /// Adjusts the weights according to the Adam optimizer.
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64);
+
+    /// Saves the layer to a file at the specified path.
+    fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>>;
+
+    /// Reads the layer from a file at the specified path.
+    fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>>;
 }
 
 dyn_clone::clone_trait_object!(TrainableLayer);
@@ -295,5 +301,12 @@ impl WrappedTrainableLayer {
             .lock()
             .unwrap()
             .adjust_adam(t, learning_rate, beta1, beta2, epsilon)
+    }
+
+    pub fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().save_weight(path)
+    }
+    pub fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+        self.layer.lock().unwrap().read_weight(path)
     }
 }
