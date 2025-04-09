@@ -255,6 +255,10 @@ impl Clone for NeuralNetwork {
 impl Drop for NeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
+        // ensure that the model_directory exists
+        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
         self.save_layout();
         self.deallocate();
         // Remove the internal model directory from disk
@@ -860,6 +864,10 @@ impl Clone for TrainableNeuralNetwork {
 impl Drop for TrainableNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
+        // ensure that the model_directory exists
+        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
         self.save_layout();
         self.deallocate();
         // Remove the internal model directory from disk
