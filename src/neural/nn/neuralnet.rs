@@ -206,17 +206,24 @@ impl NeuralNetwork {
         let shape = self.shape();
         shape.to_yaml(self.model_directory.path());
     }
+
+    fn get_first_free_model_directory(&self) -> String {
+        let mut model_directory = self.model_directory.path();
+        let mut i = 1;
+        while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
+            i += 1;
+        }
+        model_directory = format!("{}_{}", model_directory, i);
+        // create the directory to block the name
+        std::fs::create_dir_all(&model_directory).unwrap();
+        model_directory
+    }
 }
 
 impl Clone for NeuralNetwork {
     fn clone(&self) -> Self {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
-        let mut model_directory = self.model_directory.path();
-        if let Directory::User(dir) = &self.model_directory {
-            model_directory = format!("{}_clone", dir);
-        } else if let Directory::Internal(dir) = &self.model_directory {
-            model_directory = format!("{}_clone", dir);
-        }
+        let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
         self.save_internal(model_directory.clone()).unwrap();
         // Clone the neural network by cloning its layers and activations
@@ -794,17 +801,24 @@ impl TrainableNeuralNetwork {
         let shape = self.shape();
         shape.to_yaml(self.model_directory.path());
     }
+
+    fn get_first_free_model_directory(&self) -> String {
+        let mut model_directory = self.model_directory.path();
+        let mut i = 1;
+        while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
+            i += 1;
+        }
+        model_directory = format!("{}_{}", model_directory, i);
+        // create the directory to block the name
+        std::fs::create_dir_all(&model_directory).unwrap();
+        model_directory
+    }
 }
 
 impl Clone for TrainableNeuralNetwork {
     fn clone(&self) -> Self {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
-        let mut model_directory = self.model_directory.path();
-        if let Directory::User(dir) = &self.model_directory {
-            model_directory = format!("{}_clone", dir);
-        } else if let Directory::Internal(dir) = &self.model_directory {
-            model_directory = format!("{}_clone", dir);
-        }
+        let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
         self.save_internal(model_directory.clone()).unwrap();
         // Clone the neural network by cloning its layers and activations
