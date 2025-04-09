@@ -412,7 +412,12 @@ impl Layer for TrainableDenseLayer {
 
     fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
-            return Err("Layer not allocated".into());
+            // just copy the files
+            let original_path = self.layer_path.path();
+            if original_path != path {
+                std::fs::copy(original_path, path).expect("Failed to copy file in save layer");
+            }
+            return Ok(());
         }
         // assign weights and biases to a matrix and vector
         let mut weights = Matrix::new(
@@ -597,7 +602,12 @@ impl TrainableLayer for TrainableDenseLayer {
 
     fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
-            return Err("Layer not allocated".into());
+            // just copy the files
+            let original_path = self.layer_path.path();
+            if original_path != path {
+                std::fs::copy(original_path, path).expect("Failed to copy file in save layer weight");
+            }
+            return Ok(());
         }
         // assign weights and biases to a matrix and vector
         let mut weights = Matrix::new(
