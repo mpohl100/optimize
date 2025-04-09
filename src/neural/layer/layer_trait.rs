@@ -46,6 +46,9 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
 
     /// Returns the biases of the layer.
     fn get_biases(&self) -> Vec<f64>;
+
+    /// Marks the layer as in use.
+    fn cleanup(&self);
 }
 
 dyn_clone::clone_trait_object!(Layer);
@@ -80,6 +83,10 @@ impl WrappedLayer {
         Self {
             layer: Arc::new(Mutex::new(new_layer)),
         }
+    }
+
+    pub fn cleanup(&self) {
+        self.layer.lock().unwrap().cleanup();
     }
 
     pub fn allocate(&mut self) {
@@ -211,6 +218,10 @@ impl WrappedTrainableLayer {
         Self {
             layer: Arc::new(Mutex::new(new_layer)),
         }
+    }
+
+    pub fn cleanup(&self) {
+        self.layer.lock().unwrap().cleanup();
     }
 
     pub fn allocate(&mut self) {
