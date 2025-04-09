@@ -428,7 +428,8 @@ impl Layer for TrainableDenseLayer {
             if !std::fs::metadata(original_path.clone()).is_ok() {
                 return Ok(());
             }
-            if original_path != path {
+            let file_path = Path::new(&path);
+            if file_path.is_file() && original_path != path {
                 std::fs::copy(original_path, path).expect("Failed to copy file in save layer");
             }
             return Ok(());
@@ -637,7 +638,8 @@ impl TrainableLayer for TrainableDenseLayer {
             if !std::fs::metadata(original_path.clone()).is_ok() {
                 return Ok(());
             }
-            if original_path != path {
+            let file_path = Path::new(&path);
+            if file_path.is_file() && original_path != path {
                 std::fs::copy(original_path, path)
                     .expect("Failed to copy file in save layer weight");
             }
@@ -711,10 +713,12 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
         // Copy the file of the original path to the new path on the filesystem
         // check if the original path exists
         if std::fs::metadata(original_path.clone()).is_ok() {
-            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
-        } else {
-            panic!("Original path does not exist");
+            let p = Path::new(&original_path);
+            if p.is_file() {
+                std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+            }
         }
+        // if the layer was never allocated one has nothing to copy
     }
 }
 
