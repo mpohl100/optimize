@@ -691,7 +691,13 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
             std::fs::create_dir_all(new_layer_path.path()).expect("Failed to create directory");
         }
         // Copy the file of the original path to the new path on the filesystem
-        std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+        // check if the original path exists
+        if std::fs::metadata(original_path.clone()).is_ok() {
+            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+        }
+        else{
+            panic!("Original path does not exist");
+        }
     }
 }
 

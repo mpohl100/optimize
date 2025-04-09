@@ -208,7 +208,17 @@ impl NeuralNetwork {
     }
 
     fn get_first_free_model_directory(&self) -> String {
-        let mut model_directory = self.model_directory.path();
+        let model_directory_orig = self.model_directory.path();
+        // truncate _{integer} from the end of the model_directory
+        let mut model_directory = model_directory_orig.clone();
+        if let Some(pos) = model_directory.rfind('_') {
+            // check that the remainder is an integer
+            let remainder = &model_directory[pos + 1..];
+            if remainder.parse::<usize>().is_ok() {
+                model_directory = model_directory[..pos].to_string();
+            }
+        }
+
         let mut i = 1;
         while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
             i += 1;
@@ -803,7 +813,16 @@ impl TrainableNeuralNetwork {
     }
 
     fn get_first_free_model_directory(&self) -> String {
-        let mut model_directory = self.model_directory.path();
+        let model_directory_orig = self.model_directory.path();
+        // truncate _{integer} from the end of the model_directory
+        let mut model_directory = model_directory_orig.clone();
+        if let Some(pos) = model_directory.rfind('_') {
+            // check that the remainder is an integer
+            let remainder = &model_directory[pos + 1..];
+            if remainder.parse::<usize>().is_ok() {
+                model_directory = model_directory[..pos].to_string();
+            }
+        }
         let mut i = 1;
         while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
             i += 1;
