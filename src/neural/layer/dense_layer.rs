@@ -235,8 +235,6 @@ impl AllocatableLayer for DenseLayer {
             let p = Path::new(&new_layer_path_string);
             let parent_dir = p.parent().unwrap();
             std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
-            // create the file
-            std::fs::File::create(new_layer_path.path()).expect("Failed to create file");
         }
         let p_orig = Path::new(&original_path);
         if p_orig.is_file() {
@@ -723,8 +721,6 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
             let p = Path::new(&new_layer_path_string);
             let parent_dir = p.parent().unwrap();
             std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
-            // create the file
-            std::fs::File::create(new_layer_path.path()).expect("Failed to create file");
         }
         // Copy the file of the original path to the new path on the filesystem
         let p_orig = Path::new(&original_path);
