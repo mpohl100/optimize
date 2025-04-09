@@ -229,11 +229,20 @@ impl AllocatableLayer for DenseLayer {
         let new_layer_path = self.layer_path.clone();
         let original_path = layer_path.clone();
         // Create the new directory if it doesn't exist
+        let new_layer_path_string = new_layer_path.path();
         if !new_layer_path.exists() {
-            std::fs::create_dir_all(new_layer_path.path()).expect("Failed to create directory");
+            // create the parent directory if it does not exist
+            let p = Path::new(&new_layer_path_string);
+            let parent_dir = p.parent().unwrap();
+            std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
+            // create the file
+            std::fs::File::create(new_layer_path.path()).expect("Failed to create file");
         }
-        // Copy the file of the original path to the new path on the filesystem
-        std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+        let p_orig = Path::new(&original_path);
+        if p_orig.is_file() {
+            // copy the file
+            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
+        }
     }
 }
 
@@ -430,6 +439,7 @@ impl Layer for TrainableDenseLayer {
             }
             let file_path = Path::new(&path);
             if file_path.is_file() && original_path != path {
+                // copy the file
                 std::fs::copy(original_path, path).expect("Failed to copy file in save layer");
             }
             return Ok(());
@@ -707,18 +717,21 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
         let new_layer_path = self.layer_path.clone();
         let original_path = layer_path.clone();
         // Create the new directory if it doesn't exist
+        let new_layer_path_string = new_layer_path.path();
         if !new_layer_path.exists() {
-            std::fs::create_dir_all(new_layer_path.path()).expect("Failed to create directory");
+            // create the parent directory if it does not exist
+            let p = Path::new(&new_layer_path_string);
+            let parent_dir = p.parent().unwrap();
+            std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
+            // create the file
+            std::fs::File::create(new_layer_path.path()).expect("Failed to create file");
         }
         // Copy the file of the original path to the new path on the filesystem
-        // check if the original path exists
-        if std::fs::metadata(original_path.clone()).is_ok() {
-            let p = Path::new(&original_path);
-            if p.is_file() {
-                std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
-            }
+        let p_orig = Path::new(&original_path);
+        if p_orig.is_file() {
+            // copy the file
+            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
         }
-        // if the layer was never allocated one has nothing to copy
     }
 }
 
