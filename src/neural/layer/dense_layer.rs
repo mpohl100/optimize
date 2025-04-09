@@ -62,12 +62,15 @@ impl Drop for DenseLayer {
         }
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.layer_path {
+            // check that dir is a file
+            let path = Path::new(dir);
             // delete the file
-            std::fs::remove_file(dir).expect("Failed to remove file");
+            if path.is_file() {
+                std::fs::remove_file(dir).expect("Failed to remove file");
+            }
         }
     }
 }
-
 
 impl Allocatable for DenseLayer {
     fn allocate(&mut self) {
@@ -96,7 +99,7 @@ impl Allocatable for DenseLayer {
     }
 
     fn deallocate(&mut self) {
-        if self.is_allocated(){
+        if self.is_allocated() {
             save(
                 self.layer_path.path(),
                 self.weights.as_ref().unwrap(),
@@ -303,8 +306,12 @@ impl Drop for TrainableDenseLayer {
         if let Directory::Internal(dir) = &self.layer_path {
             // delete file
             if std::fs::metadata(dir).is_ok() {
+                // check that dir is a file
+                let path = Path::new(dir);
                 // delete the file
-                std::fs::remove_file(dir).expect("Failed to remove file");
+                if path.is_file() {
+                    std::fs::remove_file(dir).expect("Failed to remove file");
+                }
             }
         }
     }
@@ -340,7 +347,7 @@ impl Allocatable for TrainableDenseLayer {
     }
 
     fn deallocate(&mut self) {
-        if self.is_allocated(){
+        if self.is_allocated() {
             save_weight(
                 self.layer_path.path(),
                 self.weights.as_ref().unwrap(),
@@ -414,6 +421,10 @@ impl Layer for TrainableDenseLayer {
         if !self.is_allocated() {
             // just copy the files
             let original_path = self.layer_path.path();
+            // if the original path does not exist early return
+            if !std::fs::metadata(original_path.clone()).is_ok() {
+                return Ok(());
+            }
             if original_path != path {
                 std::fs::copy(original_path, path).expect("Failed to copy file in save layer");
             }
@@ -604,8 +615,13 @@ impl TrainableLayer for TrainableDenseLayer {
         if !self.is_allocated() {
             // just copy the files
             let original_path = self.layer_path.path();
+            // if the original path does not exist early return
+            if !std::fs::metadata(original_path.clone()).is_ok() {
+                return Ok(());
+            }
             if original_path != path {
-                std::fs::copy(original_path, path).expect("Failed to copy file in save layer weight");
+                std::fs::copy(original_path, path)
+                    .expect("Failed to copy file in save layer weight");
             }
             return Ok(());
         }
@@ -637,7 +653,7 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    *self.weights.as_mut().unwrap().get_mut_unchecked(i, j) = 
+                    *self.weights.as_mut().unwrap().get_mut_unchecked(i, j) =
                         weights.get_unchecked(i, j).clone();
                 }
             }
@@ -781,8 +797,13 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
             if let Some(Ok(line)) = lines.next() {
                 let parts = line.split(";").collect::<Vec<_>>();
                 // parts len must be euqal to cols
-                if parts.len() - 1  != cols {
-                    return Err(format!("Invalid weight format cause of cols: expected {}, found {}", cols, parts.len() - 1).into());
+                if parts.len() - 1 != cols {
+                    return Err(format!(
+                        "Invalid weight format cause of cols: expected {}, found {}",
+                        cols,
+                        parts.len() - 1
+                    )
+                    .into());
                 }
                 for j in 0..cols {
                     let part = parts.get(j);
@@ -807,7 +828,12 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
         biases = vec![Bias::default(); weights.rows()];
         // parts len must be equal to rows
         if parts.len() - 1 != weights.rows() {
-            return Err(format!("Invalid bias format amount of values: expected {}, found {}", weights.rows(), parts.len() - 1).into());
+            return Err(format!(
+                "Invalid bias format amount of values: expected {}, found {}",
+                weights.rows(),
+                parts.len() - 1
+            )
+            .into());
         }
         for (i, bias) in biases.iter_mut().enumerate() {
             let part = parts.get(i);
