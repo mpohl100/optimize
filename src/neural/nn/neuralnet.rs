@@ -240,6 +240,7 @@ impl Clone for NeuralNetwork {
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
+            layer.cleanup();
         }
         NeuralNetwork {
             layers: new_layers,
@@ -693,7 +694,7 @@ impl TrainableNeuralNetwork {
 
     pub fn merge(&self, other: TrainableNeuralNetwork) -> TrainableNeuralNetwork {
         // Rethink this function entirely
-        let mut new_nn = TrainableNeuralNetwork::new_dir(self.model_directory.clone());
+        let mut new_nn = TrainableNeuralNetwork::new_dir(Directory::Internal(self.get_first_free_model_directory()));
         for i in 0..self.layers.len() {
             new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
@@ -844,6 +845,7 @@ impl Clone for TrainableNeuralNetwork {
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
+            layer.cleanup();
         }
         TrainableNeuralNetwork {
             layers: new_layers,

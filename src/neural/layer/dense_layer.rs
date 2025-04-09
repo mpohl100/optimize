@@ -190,6 +190,21 @@ impl Layer for DenseLayer {
     fn get_biases(&self) -> Vec<f64> {
         self.biases.as_ref().unwrap().clone()
     }
+
+    fn cleanup(&self) {
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete file
+            if std::fs::metadata(dir).is_ok() {
+                // check that dir is a file
+                let path = Path::new(dir);
+                // delete the file
+                if path.is_file() {
+                    std::fs::remove_file(dir).expect("Failed to remove file");
+                }
+            }
+        }
+    }
 }
 
 impl AllocatableLayer for DenseLayer {
@@ -300,18 +315,6 @@ impl Drop for TrainableDenseLayer {
             if std::fs::metadata(dir).is_ok() {
                 // Save the model to disk
                 self.deallocate();
-            }
-        }
-        // Remove the internal model directory from disk
-        if let Directory::Internal(dir) = &self.layer_path {
-            // delete file
-            if std::fs::metadata(dir).is_ok() {
-                // check that dir is a file
-                let path = Path::new(dir);
-                // delete the file
-                if path.is_file() {
-                    std::fs::remove_file(dir).expect("Failed to remove file");
-                }
             }
         }
     }
@@ -490,6 +493,21 @@ impl Layer for TrainableDenseLayer {
             .iter()
             .map(|bias| bias.value)
             .collect()
+    }
+
+    fn cleanup(&self) {
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete file
+            if std::fs::metadata(dir).is_ok() {
+                // check that dir is a file
+                let path = Path::new(dir);
+                // delete the file
+                if path.is_file() {
+                    std::fs::remove_file(dir).expect("Failed to remove file");
+                }
+            }
+        }
     }
 }
 
@@ -694,8 +712,7 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
         // check if the original path exists
         if std::fs::metadata(original_path.clone()).is_ok() {
             std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
-        }
-        else{
+        } else {
             panic!("Original path does not exist");
         }
     }
