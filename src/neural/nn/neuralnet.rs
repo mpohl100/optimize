@@ -31,7 +31,7 @@ pub struct NeuralNetwork {
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
-    past_internal_directory: Option<String>,
+    past_internal_directory: Vec<String>,
 }
 
 impl NeuralNetwork {
@@ -43,7 +43,7 @@ impl NeuralNetwork {
             activations: Vec::new(),
             shape,
             model_directory: Directory::Internal(internal_model_directory),
-            past_internal_directory: None,
+            past_internal_directory: Vec::new(),
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -85,7 +85,7 @@ impl NeuralNetwork {
             activations: Vec::new(),
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
-            past_internal_directory: None,
+            past_internal_directory: Vec::new(),
         };
 
         for i in 0..sh.layers.len() {
@@ -162,7 +162,7 @@ impl NeuralNetwork {
     }
 
     pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_directory = Some(self.model_directory.path());
+        self.past_internal_directory.push(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
@@ -247,7 +247,7 @@ impl Clone for NeuralNetwork {
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
-            past_internal_directory: None,
+            past_internal_directory: Vec::new(),
         }
     }
 }
@@ -267,6 +267,12 @@ impl Drop for NeuralNetwork {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
+        // Remove all past internal model directories
+        for dir in &self.past_internal_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
     }
 }
 
@@ -277,7 +283,7 @@ pub struct TrainableNeuralNetwork {
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
-    past_internal_model_directory: Option<String>,
+    past_internal_model_directory: Vec<String>,
 }
 
 impl TrainableNeuralNetwork {
@@ -289,7 +295,7 @@ impl TrainableNeuralNetwork {
             activations: Vec::new(),
             shape,
             model_directory: model_directory,
-            past_internal_model_directory: None,
+            past_internal_model_directory: Vec::new(),
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -323,7 +329,7 @@ impl TrainableNeuralNetwork {
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
             model_directory: directory,
-            past_internal_model_directory: None,
+            past_internal_model_directory: Vec::new(),
         }
     }
 
@@ -340,7 +346,7 @@ impl TrainableNeuralNetwork {
             activations: Vec::new(),
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
-            past_internal_model_directory: None,
+            past_internal_model_directory: Vec::new(),
         };
 
         for i in 0..sh.layers.len() {
@@ -649,7 +655,7 @@ impl TrainableNeuralNetwork {
     }
 
     pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_model_directory = Some(self.model_directory.path());
+        self.past_internal_model_directory.push(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
@@ -856,7 +862,7 @@ impl Clone for TrainableNeuralNetwork {
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
-            past_internal_model_directory: None,
+            past_internal_model_directory: Vec::new(),
         }
     }
 }
@@ -872,6 +878,12 @@ impl Drop for TrainableNeuralNetwork {
         self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+        // Remove all past internal model directories
+        for dir in &self.past_internal_model_directory {
             if std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
