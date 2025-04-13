@@ -269,7 +269,7 @@ impl Drop for NeuralNetwork {
         }
         // Remove all past internal model directories
         for dir in &self.past_internal_directory {
-            if std::fs::metadata(dir).is_ok() {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
@@ -884,7 +884,7 @@ impl Drop for TrainableNeuralNetwork {
         }
         // Remove all past internal model directories
         for dir in &self.past_internal_model_directory {
-            if std::fs::metadata(dir).is_ok() {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
