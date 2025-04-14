@@ -656,7 +656,9 @@ impl TrainableNeuralNetwork {
 
     pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
-        std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        if !std::fs::metadata(format!("{}/layers", model_directory)).is_ok() {
+            std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        }
         for (i, layer) in self.layers.iter().enumerate() {
             layer.save_weight(format!("{}/layers/layer_{}.txt", model_directory, i))?;
         }
