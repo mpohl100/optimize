@@ -6,6 +6,8 @@ use super::TrainableAllocatableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
 use crate::neural::nn::directory::Directory;
+
+use fs2::FileExt;
 use rand::Rng;
 use std::error::Error;
 use std::fs::File;
@@ -13,6 +15,8 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
+
+
 
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
@@ -737,6 +741,10 @@ fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<d
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir).expect("Failed to create directory");
     }
+    // create a lock file which acts as a lock
+    let lock_file_path = format!("{}.lock", path);
+    let lock_file = File::create(&lock_file_path)?;
+    lock_file.lock_exclusive()?;
     // Save weights and biases to a file at the specified path
     let mut file = File::create(path)?;
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
@@ -763,6 +771,12 @@ fn save_weight(
     if let Some(dir) = p.parent() {
         std::fs::create_dir_all(dir).expect("Failed to create directory");
     }
+
+    // create a lock file which acts as a lock
+    let lock_file_path = format!("{}.lock", path);
+    let lock_file = File::create(&lock_file_path)?;
+    lock_file.lock_exclusive()?;
+
     // Save weights and biases to a file at the specified path
     let mut file = File::create(path)?;
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
@@ -785,6 +799,11 @@ fn save_weight(
 }
 
 fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
+    // create a lock file which acts as a lock
+    let lock_file_path = format!("{}.lock", path);
+    let lock_file = File::create(&lock_file_path)?;
+    lock_file.lock_exclusive()?;
+
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
@@ -819,6 +838,11 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
 }
 
 fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>> {
+    // create a lock file which acts as a lock
+    let lock_file_path = format!("{}.lock", path);
+    let lock_file = File::create(&lock_file_path)?;
+    lock_file.lock_exclusive()?;
+
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
