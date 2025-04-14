@@ -29,7 +29,10 @@ impl NeuralNetworkGenerator {
         model_directory: String,
         nb_threads: usize,
     ) -> Self {
-        let nn = TrainableNeuralNetwork::new(params.shape().clone(), Directory::User(model_directory.clone()));
+        let nn = TrainableNeuralNetwork::new(
+            params.shape().clone(),
+            Directory::User(model_directory.clone()),
+        );
         Self {
             current_winner: nn,
             params,

@@ -115,7 +115,10 @@ fn new_model_is_persisted() {
     let model_directory = "tests/test_model_persistence_1".to_string();
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string());
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_1_internal".to_string(),
+    );
 
     // Assert
     // Check if the model directory exists
@@ -129,10 +132,16 @@ fn new_model_is_persisted() {
 fn already_trained_model_is_loaded() {
     // Arrange
     let model_directory = "tests/test_model_persistence_2".to_string();
-    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string());
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_2_internal".to_string(),
+    );
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_3_internal".to_string(),
+    );
 
     // Assert
     // Check if the model directory exists

@@ -1,7 +1,7 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
-use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 use crate::neural::nn::directory::Directory;
+use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
 
 use std::error::Error;
 
@@ -231,8 +231,12 @@ mod tests {
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
-        let mut training_session = TrainingSession::new(training_params, Box::new(data_importer), Directory::Internal("test_session_model".to_string()))
-            .expect("Failed to create TrainingSession");
+        let mut training_session = TrainingSession::new(
+            training_params,
+            Box::new(data_importer),
+            Directory::Internal("test_session_model".to_string()),
+        )
+        .expect("Failed to create TrainingSession");
 
         // Train the neural network and check the success rate
         let success_rate = training_session.train().expect("Training failed");

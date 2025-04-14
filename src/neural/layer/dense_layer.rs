@@ -365,8 +365,7 @@ impl Allocatable for TrainableDenseLayer {
                 self.cols = weights.cols();
                 self.weights = Some(weights);
                 self.biases = Some(biases);
-            }
-            else {
+            } else {
                 self.weights = Some(Matrix::new(self.rows, self.cols));
                 self.biases = Some(vec![Bias::default(); self.rows]);
                 self.initialize_weights();
