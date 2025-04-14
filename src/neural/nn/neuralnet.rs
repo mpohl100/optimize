@@ -22,7 +22,7 @@ static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiPro
 
 use std::boxed::Box;
 
-use super::directory::Directory;
+use super::directory::{self, Directory};
 
 /// A neural network.
 #[derive(Debug, Default)]
@@ -323,12 +323,12 @@ impl TrainableNeuralNetwork {
         network
     }
 
-    pub fn new_dir(directory: Directory) -> Self {
+    pub fn new_dir(model_directory: Directory) -> Self {
         TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
-            model_directory: directory,
+            model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
         }
     }
@@ -824,25 +824,29 @@ impl TrainableNeuralNetwork {
     }
 
     fn get_first_free_model_directory(&self) -> String {
-        let model_directory_orig = self.model_directory.path();
-        // truncate _{integer} from the end of the model_directory
-        let mut model_directory = model_directory_orig.clone();
-        if let Some(pos) = model_directory.rfind('_') {
-            // check that the remainder is an integer
-            let remainder = &model_directory[pos + 1..];
-            if remainder.parse::<usize>().is_ok() {
-                model_directory = model_directory[..pos].to_string();
-            }
-        }
-        let mut i = 1;
-        while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
-            i += 1;
-        }
-        model_directory = format!("{}_{}", model_directory, i);
-        // create the directory to block the name
-        std::fs::create_dir_all(&model_directory).unwrap();
-        model_directory
+        get_first_free_model_directory(self.model_directory.clone())
     }
+}
+
+fn get_first_free_model_directory(model_directory: Directory) -> String {
+    let model_directory_orig = model_directory.path();
+    // truncate _{integer} from the end of the model_directory
+    let mut model_directory = model_directory_orig.clone();
+    if let Some(pos) = model_directory.rfind('_') {
+        // check that the remainder is an integer
+        let remainder = &model_directory[pos + 1..];
+        if remainder.parse::<usize>().is_ok() {
+            model_directory = model_directory[..pos].to_string();
+        }
+    }
+    let mut i = 1;
+    while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
+        i += 1;
+    }
+    model_directory = format!("{}_{}", model_directory, i);
+    // create the directory to block the name
+    std::fs::create_dir_all(&model_directory).unwrap();
+    model_directory
 }
 
 impl Clone for TrainableNeuralNetwork {
