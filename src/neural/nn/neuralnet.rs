@@ -294,7 +294,7 @@ impl TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
-            model_directory: model_directory,
+            model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
         };
 
