@@ -22,7 +22,7 @@ static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiPro
 
 use std::boxed::Box;
 
-use super::directory::{self, Directory};
+use super::directory::Directory;
 
 /// A neural network.
 #[derive(Debug, Default)]
@@ -267,7 +267,7 @@ impl Drop for NeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+        if std::fs::metadata(self.model_directory.path()).is_err() {
             std::fs::create_dir_all(self.model_directory.path()).unwrap();
         }
         self.save_layout();
@@ -672,7 +672,7 @@ impl TrainableNeuralNetwork {
 
     pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
-        if !std::fs::metadata(format!("{}/layers", model_directory)).is_ok() {
+        if std::fs::metadata(format!("{}/layers", model_directory)).is_err() {
             std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         }
         for (i, layer) in self.layers.iter().enumerate() {
@@ -854,7 +854,7 @@ impl TrainableNeuralNetwork {
     pub fn save_layout(&self) {
         let shape = self.shape();
         // ensure the directory exists
-        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+        if std::fs::metadata(self.model_directory.path()).is_err() {
             std::fs::create_dir_all(self.model_directory.path()).unwrap();
         }
         shape.to_yaml(self.model_directory.path());
@@ -912,7 +912,7 @@ impl Drop for TrainableNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+        if std::fs::metadata(self.model_directory.path()).is_err() {
             std::fs::create_dir_all(self.model_directory.path()).unwrap();
         }
         self.save_layout();

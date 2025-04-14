@@ -457,7 +457,7 @@ impl Layer for TrainableDenseLayer {
             // just copy the files
             let original_path = self.layer_path.path();
             // if the original path does not exist early return
-            if !std::fs::metadata(original_path.clone()).is_ok() {
+            if std::fs::metadata(original_path.clone()).is_err() {
                 return Ok(());
             }
             let file_path = Path::new(&path);
@@ -668,7 +668,7 @@ impl TrainableLayer for TrainableDenseLayer {
             // just copy the files
             let original_path = self.layer_path.path();
             // if the original path does not exist early return
-            if !std::fs::metadata(original_path.clone()).is_ok() {
+            if std::fs::metadata(original_path.clone()).is_err() {
                 return Ok(());
             }
             let file_path = Path::new(&path);
@@ -687,11 +687,11 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
                 *weights.get_mut_unchecked(i, j) =
-                    self.weights.as_ref().unwrap().get_unchecked(i, j).clone();
+                    *self.weights.as_ref().unwrap().get_unchecked(i, j);
             }
         }
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
-            biases[i] = bias.clone();
+            biases[i] = *bias;
         }
         save_weight(path, &weights, &biases)
     }
@@ -707,11 +707,11 @@ impl TrainableLayer for TrainableDenseLayer {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     *self.weights.as_mut().unwrap().get_mut_unchecked(i, j) =
-                        weights.get_unchecked(i, j).clone();
+                        *weights.get_unchecked(i, j);
                 }
             }
             if i < biases.len() {
-                self.biases.as_mut().unwrap()[i] = biases[i].clone();
+                self.biases.as_mut().unwrap()[i] = biases[i];
             }
         }
         Ok(())
