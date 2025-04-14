@@ -1,6 +1,5 @@
-
 #[derive(Debug, Clone)]
-pub enum Directory{
+pub enum Directory {
     User(String),
     Internal(String),
 }

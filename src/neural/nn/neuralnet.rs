@@ -12,10 +12,10 @@ use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use once_cell::sync::Lazy;
-use std::sync::Arc;
-use std::path::Path;
 use std::fs;
 use std::io;
+use std::path::Path;
+use std::sync::Arc;
 
 // Create a static MultiProgress instance
 static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiProgress::new()));
@@ -49,7 +49,12 @@ impl NeuralNetwork {
         // Initialize layers and activations based on the provided shape.
         for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let dense_layer = DenseLayer::new(layer_shape.input_size(), layer_shape.output_size(), network.model_directory.clone(), i);
+            let dense_layer = DenseLayer::new(
+                layer_shape.input_size(),
+                layer_shape.output_size(),
+                network.model_directory.clone(),
+                i,
+            );
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -94,7 +99,12 @@ impl NeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let layer = DenseLayer::new(*input_size, *output_size, network.model_directory.clone(), i);
+                    let layer = DenseLayer::new(
+                        *input_size,
+                        *output_size,
+                        network.model_directory.clone(),
+                        i,
+                    );
                     WrappedLayer::new(Box::new(layer))
                 }
             };
@@ -162,7 +172,8 @@ impl NeuralNetwork {
     }
 
     pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_directory.push(self.model_directory.path());
+        self.past_internal_directory
+            .push(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
@@ -202,7 +213,7 @@ impl NeuralNetwork {
         }
     }
 
-    pub fn save_layout(&self){
+    pub fn save_layout(&self) {
         let shape = self.shape();
         shape.to_yaml(self.model_directory.path());
     }
@@ -361,7 +372,12 @@ impl TrainableNeuralNetwork {
                     input_size,
                     output_size,
                 } => {
-                    let layer = TrainableDenseLayer::new(*input_size, *output_size, network.model_directory.clone(), i);
+                    let layer = TrainableDenseLayer::new(
+                        *input_size,
+                        *output_size,
+                        network.model_directory.clone(),
+                        i,
+                    );
                     WrappedTrainableLayer::new(Box::new(layer))
                 }
             };
@@ -666,14 +682,14 @@ impl TrainableNeuralNetwork {
     }
 
     pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_model_directory.push(self.model_directory.path());
+        self.past_internal_model_directory
+            .push(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
     }
 
     fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -698,7 +714,10 @@ impl TrainableNeuralNetwork {
     }
 
     pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
-        let mut nn = TrainableNeuralNetwork::new(shape.to_neural_network_shape(), self.model_directory.clone());
+        let mut nn = TrainableNeuralNetwork::new(
+            shape.to_neural_network_shape(),
+            self.model_directory.clone(),
+        );
         nn.assign_weights(self);
         *self = nn;
     }
@@ -715,7 +734,9 @@ impl TrainableNeuralNetwork {
 
     pub fn merge(&self, other: TrainableNeuralNetwork) -> TrainableNeuralNetwork {
         // Rethink this function entirely
-        let mut new_nn = TrainableNeuralNetwork::new_dir(Directory::Internal(self.get_first_free_model_directory()));
+        let mut new_nn = TrainableNeuralNetwork::new_dir(Directory::Internal(
+            self.get_first_free_model_directory(),
+        ));
         for i in 0..self.layers.len() {
             new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
         }
@@ -830,7 +851,7 @@ impl TrainableNeuralNetwork {
         }
     }
 
-    pub fn save_layout(&self){
+    pub fn save_layout(&self) {
         let shape = self.shape();
         // ensure the directory exists
         if !std::fs::metadata(self.model_directory.path()).is_ok() {
@@ -938,25 +959,27 @@ mod tests {
 
     #[test]
     fn test_neural_network_train() {
-        let mut nn = TrainableNeuralNetwork::new(NeuralNetworkShape {
-            layers: vec![
-                LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 3,
-                        output_size: 3,
+        let mut nn = TrainableNeuralNetwork::new(
+            NeuralNetworkShape {
+                layers: vec![
+                    LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                        },
+                        activation: ActivationData::new(ActivationType::Sigmoid),
                     },
-                    activation: ActivationData::new(ActivationType::Sigmoid),
-                },
-                LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 3,
-                        output_size: 3,
+                    LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                        },
+                        activation: ActivationData::new(ActivationType::ReLU),
                     },
-                    activation: ActivationData::new(ActivationType::ReLU),
-                },
-            ],
-        }, 
-        Directory::Internal("internal_model".to_string()));
+                ],
+            },
+            Directory::Internal("internal_model".to_string()),
+        );
 
         let inputs = vec![vec![1.0, 1.0, 1.0]];
         let targets = vec![vec![0.0, 0.0, 0.0]];

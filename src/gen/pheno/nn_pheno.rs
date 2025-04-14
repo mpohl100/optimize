@@ -113,7 +113,10 @@ impl Phenotype for NeuralNetworkPhenotype {
                 break;
             }
         }
-        let nn = TrainableNeuralNetwork::new(mutated_shape.to_neural_network_shape(), self.nn.lock().unwrap().get_model_directory());
+        let nn = TrainableNeuralNetwork::new(
+            mutated_shape.to_neural_network_shape(),
+            self.nn.lock().unwrap().get_model_directory(),
+        );
         self.set_nn(nn);
         self.reset_half_shapes();
     }

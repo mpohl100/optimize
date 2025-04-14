@@ -1,8 +1,8 @@
 use learn::evol::rng::RandomNumberGenerator;
+use learn::neural::nn::directory::Directory;
 use learn::neural::nn::neuralnet::TrainableNeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
-use learn::neural::nn::directory::Directory;
 
 use learn::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
@@ -43,7 +43,10 @@ fn test_neural_network_breeding() {
     let input_data = vec![0.0; 128]; // Example input data
 
     // Create a neural network phenotype
-    let mut nn = TrainableNeuralNetwork::new(nn_shape, Directory::Internal("breeding_test_model".to_string()));
+    let mut nn = TrainableNeuralNetwork::new(
+        nn_shape,
+        Directory::Internal("breeding_test_model".to_string()),
+    );
     let _ = nn.predict(input_data);
     let nn_phenotype = NeuralNetworkPhenotype::new(nn);
     let mut parents = vec![nn_phenotype];
@@ -57,7 +60,6 @@ fn test_neural_network_breeding() {
     let nn_strategy = NeuralNetworkStrategy::new(model_directory.clone());
 
     for _ in 0..20 {
-
         let children = nn_strategy
             .breed(&parents, &evol_opts, &mut rng)
             .expect("Breed failed");
