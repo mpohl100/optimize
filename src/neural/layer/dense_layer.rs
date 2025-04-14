@@ -16,8 +16,6 @@ use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
 
-
-
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
     rows: usize,
@@ -95,10 +93,21 @@ impl Allocatable for DenseLayer {
             // if the layer_path exists, read the matrix and store it
             let (weights, biases) =
                 read(self.layer_path.path()).expect("Failed to read layer weights and biases");
-            self.rows = weights.rows();
-            self.cols = weights.cols();
-            self.weights = Some(weights);
-            self.biases = Some(biases);
+            if self.rows == weights.rows() && self.cols == weights.cols() {
+                self.rows = weights.rows();
+                self.cols = weights.cols();
+                self.weights = Some(weights);
+                self.biases = Some(biases);
+            } else {
+                self.weights = Some(Matrix::new(self.rows, self.cols));
+                self.biases = Some(vec![0.0; self.rows]);
+                save(
+                    self.layer_path.path(),
+                    self.weights.as_ref().unwrap(),
+                    self.biases.as_ref().unwrap(),
+                )
+                .expect("Failed to save layer weights and biases");
+            }
         }
     }
 
