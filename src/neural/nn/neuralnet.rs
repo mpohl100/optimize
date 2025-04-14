@@ -320,17 +320,23 @@ impl TrainableNeuralNetwork {
             network.add_activation_and_layer(activation, layer);
         }
 
+        network.save_layout();
+
         network
     }
 
     pub fn new_dir(model_directory: Directory) -> Self {
-        TrainableNeuralNetwork {
+        let network = TrainableNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
             model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
-        }
+        };
+
+        network.save_layout();
+
+        network
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
