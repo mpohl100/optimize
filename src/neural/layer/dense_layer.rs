@@ -360,10 +360,23 @@ impl Allocatable for TrainableDenseLayer {
             // if the layer_path exists, read the matrix and store it
             let (weights, biases) = read_weight(self.layer_path.path())
                 .expect("Failed to read layer weights and biases");
-            self.rows = weights.rows();
-            self.cols = weights.cols();
-            self.weights = Some(weights);
-            self.biases = Some(biases);
+            if self.rows == weights.rows() && self.cols == weights.cols() {
+                self.rows = weights.rows();
+                self.cols = weights.cols();
+                self.weights = Some(weights);
+                self.biases = Some(biases);
+            }
+            else {
+                self.weights = Some(Matrix::new(self.rows, self.cols));
+                self.biases = Some(vec![Bias::default(); self.rows]);
+                self.initialize_weights();
+                save_weight(
+                    self.layer_path.path(),
+                    self.weights.as_ref().unwrap(),
+                    self.biases.as_ref().unwrap(),
+                )
+                .expect("Failed to save layer weights and biases");
+            }
         }
         self.input_cache = Some(Vec::new());
         self.input_batch_cache = Some(Vec::new());
