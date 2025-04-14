@@ -425,7 +425,10 @@ impl TrainableNeuralNetwork {
             .zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
+            layer.allocate();
+            layer.mark_for_use();
             grad = layer.backward(&grad);
+            layer.free_from_use();
         }
     }
 
@@ -730,6 +733,7 @@ impl TrainableNeuralNetwork {
             new_nn.add_activation_and_layer(other.activations[i].clone(), other.layers[i].clone());
         }
         new_nn.deduce_shape();
+        new_nn.save_layout();
         new_nn
     }
 
@@ -826,6 +830,10 @@ impl TrainableNeuralNetwork {
 
     pub fn save_layout(&self){
         let shape = self.shape();
+        // ensure the directory exists
+        if !std::fs::metadata(self.model_directory.path()).is_ok() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
         shape.to_yaml(self.model_directory.path());
     }
 
