@@ -49,7 +49,7 @@ impl TrainingSession {
         data_importer: Box<dyn DataImporter>,
     ) -> Result<TrainingSession, Box<dyn Error>> {
         // if the directory does not esist, return an error
-        if std::fs::metadata(&model_directory.clone()).is_err() {
+        if std::fs::metadata(model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
         let nn = TrainableNeuralNetwork::from_disk(&model_directory.clone());
