@@ -3,6 +3,7 @@ use learn::neural::nn::directory::Directory;
 use learn::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+use learn::neural::nn::nn_trait::NeuralNetwork;
 
 use learn::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;

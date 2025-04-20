@@ -9,6 +9,7 @@ use crate::evol::rng::RandomNumberGenerator;
 use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use crate::neural::training::training_params::TrainingParams;
+use crate::neural::nn::nn_trait::NeuralNetwork;
 
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
 

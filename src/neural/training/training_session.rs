@@ -2,6 +2,8 @@ use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
 use crate::neural::nn::directory::Directory;
 use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
+use crate::neural::nn::nn_trait::NeuralNetwork;
+use crate::neural::nn::nn_trait::TrainableNeuralNetwork;
 
 use std::error::Error;
 

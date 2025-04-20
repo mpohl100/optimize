@@ -6,6 +6,7 @@ use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::Adjust;
 use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::neural::nn::shape::NeuralNetworkShape;
+use crate::neural::nn::nn_trait::NeuralNetwork;
 
 use std::sync::{Arc, Mutex};
 
