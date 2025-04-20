@@ -1,5 +1,5 @@
 use crate::neural::nn::directory::Directory;
-use crate::neural::nn::neuralnet::TrainableNeuralNetwork;
+use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::neural::training::data_importer::DataImporter;
 
 use crate::evol::evolution::EvolutionOptions;
@@ -17,7 +17,7 @@ pub struct NeuralNetworkGenerator {
     nb_threads: usize,
     params: TrainingParams,
     evolution_params: EvolutionOptions,
-    current_winner: TrainableNeuralNetwork,
+    current_winner: TrainableClassicNeuralNetwork,
     data_importer: Box<dyn DataImporter + Send + Sync>,
 }
 
@@ -29,7 +29,7 @@ impl NeuralNetworkGenerator {
         model_directory: String,
         nb_threads: usize,
     ) -> Self {
-        let nn = TrainableNeuralNetwork::new(
+        let nn = TrainableClassicNeuralNetwork::new(
             params.shape().clone(),
             Directory::User(model_directory.clone()),
         );
@@ -50,7 +50,7 @@ impl NeuralNetworkGenerator {
         model_directory: &String,
         nb_threads: usize,
     ) -> Self {
-        let nn = TrainableNeuralNetwork::from_disk(model_directory);
+        let nn = TrainableClassicNeuralNetwork::from_disk(model_directory);
         if nn.is_some() {
             let mut changed_params = params.clone();
             changed_params.set_shape(nn.as_ref().unwrap().shape().clone());
