@@ -1,5 +1,6 @@
 use learn::neural::nn::neuralnet::ClassicNeuralNetwork;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
+use learn::neural::nn::nn_trait::NeuralNetwork;
 
 use clap::Parser;
 

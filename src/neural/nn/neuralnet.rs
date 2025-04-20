@@ -6,8 +6,8 @@ use crate::neural::layer::dense_layer::DenseLayer;
 use crate::neural::layer::dense_layer::TrainableDenseLayer;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
-use crate::neural::nn::shape::*;
 use crate::neural::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
+use crate::neural::nn::shape::*;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -331,7 +331,7 @@ impl TrainableClassicNeuralNetwork {
                 }
             };
 
-            network.add_activation_and_layer(activation, layer);
+            network.add_activation_and_trainable_layer(activation, layer);
         }
 
         network.save_layout();
@@ -353,9 +353,102 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
+    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // remove the directory if it exists
+        let backup_directory = format!("{}_backup", model_directory);
+        if std::fs::metadata(&model_directory).is_ok() {
+            // copy the directory to a backup not move
+            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
+            std::fs::create_dir_all(&model_directory)?;
+        } else {
+            // create directory if it doesn't exist
+            std::fs::create_dir_all(&model_directory)?;
+        }
+
+        let shape = self.shape();
+        shape.to_yaml(model_directory.clone());
+        self.save_layers(model_directory)?;
+
+        // if backup directory exists, remove it
+        if std::fs::metadata(&backup_directory).is_ok() {
+            std::fs::remove_dir_all(&backup_directory)?;
+        }
+
+        Ok(())
+    }
+
+    /// Deduces the shape of the neural network based on the layers and activations.
+    fn deduce_shape(&mut self) {
+        let mut layers = Vec::new();
+        for i in 0..self.layers.len() {
+            let layer_shape = LayerShape {
+                layer_type: LayerType::Dense {
+                    input_size: self.layers[i].input_size(),
+                    output_size: self.layers[i].output_size(),
+                },
+                activation: self.activations[i].get_activation_data(),
+            };
+            layers.push(layer_shape);
+        }
+        self.shape = NeuralNetworkShape { layers };
+        if !self.shape.is_valid() {
+            println!("Invalid shape: {:?}", self.shape);
+            panic!("Invalid shape");
+        }
+    }
+
+    /// deduce start and end of the subnetwork shape from the neural network
+    fn deduce_start_end(&self, shape: &NeuralNetworkShape) -> (i32, i32) {
+        for (i, layer) in self.layers.iter().enumerate() {
+            // if the layer is not equal to the first one of shape continue
+            if layer.input_size() != shape.layers[0].input_size()
+                || layer.output_size() != shape.layers[0].output_size()
+            {
+                continue;
+            }
+            // if the layer is equal to the first one of shape, check if the rest of the layers are equal
+            let mut equal = true;
+            for j in 1..shape.layers.len() {
+                if i + j >= self.layers.len()
+                    || self.layers[i + j].input_size() != shape.layers[j].input_size()
+                    || self.layers[i + j].output_size() != shape.layers[j].output_size()
+                {
+                    equal = false;
+                    break;
+                }
+            }
+            if equal {
+                let mut to = i + shape.layers.len();
+                if to >= self.layers.len() {
+                    to = self.layers.len();
+                }
+                return (i as i32, to as i32);
+            }
+        }
+        (-1, -1)
+    }
+
+    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
+        for layer in &mut self.layers {
+            layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
+        }
+    }
+
+    pub fn allocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.allocate();
+        }
+    }
+
+    fn get_first_free_model_directory(&self) -> String {
+        get_first_free_model_directory(self.model_directory.clone())
+    }
+}
+
+impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: &String) -> Option<TrainableClassicNeuralNetwork> {
+    fn from_disk(model_directory: &String) -> Option<TrainableClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory);
         if shape.is_none() {
             return None;
@@ -394,7 +487,7 @@ impl TrainableClassicNeuralNetwork {
                 }
             };
 
-            network.add_activation_and_layer(activation, layer);
+            network.add_activation_and_trainable_layer(activation, layer);
         }
 
         Some(network)
@@ -403,15 +496,14 @@ impl TrainableClassicNeuralNetwork {
     /// Adds an activation and a layer to the neural network.
     fn add_activation_and_layer(
         &mut self,
-        activation: Box<dyn ActivationTrait + Send>,
-        layer: WrappedTrainableLayer,
+        _activation: Box<dyn ActivationTrait + Send>,
+        _layer: WrappedLayer,
     ) {
-        self.activations.push(activation);
-        self.layers.push(layer);
+        unimplemented!()
     }
 
     /// Performs a forward pass through the network with the given input.
-    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.allocate();
@@ -425,7 +517,7 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input doing batch caching.
-    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             output = layer.forward_batch(&output);
@@ -434,8 +526,67 @@ impl TrainableClassicNeuralNetwork {
         output
     }
 
+    /// Makes a prediction based on a single input by performing a forward pass.
+    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+        self.forward(input.as_slice())
+    }
+
+    fn shape(&self) -> &NeuralNetworkShape {
+        &self.shape
+    }
+
+    fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // make a layers subdirectory
+        if std::fs::metadata(format!("{}/layers", model_directory)).is_err() {
+            std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        }
+        for (i, layer) in self.layers.iter().enumerate() {
+            layer.save_weight(format!("{}/layers/layer_{}.txt", model_directory, i))?;
+        }
+        Ok(())
+    }
+
+    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.past_internal_model_directory
+            .push(self.model_directory.path());
+        self.model_directory = Directory::User(user_model_directory.clone());
+        let model_directory = self.model_directory.path();
+        self.save_internal(model_directory.clone())
+    }
+
+    fn get_model_directory(&self) -> Directory {
+        self.model_directory.clone()
+    }
+
+    fn deallocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.deallocate();
+        }
+    }
+
+    fn save_layout(&self) {
+        let shape = self.shape();
+        // ensure the directory exists
+        if std::fs::metadata(self.model_directory.path()).is_err() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
+        shape.to_yaml(self.model_directory.path());
+    }
+}
+
+impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
+    /// Adds an activation and a layer to the neural network.
+    fn add_activation_and_trainable_layer(
+        &mut self,
+        activation: Box<dyn ActivationTrait + Send>,
+        layer: WrappedTrainableLayer,
+    ) {
+        self.activations.push(activation);
+        self.layers.push(layer);
+    }
+
     /// Performs a backward pass through the network with the given output gradient.
-    pub fn backward(&mut self, grad_output: Vec<f64>) {
+    fn backward(&mut self, grad_output: Vec<f64>) {
         let mut grad = grad_output;
         for (layer, activation) in self
             .layers
@@ -452,7 +603,7 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a backward pass through the network with the given output gradient doing batch caching.
-    pub fn backward_batch(&mut self, grad_output: Vec<f64>) {
+    fn backward_batch(&mut self, grad_output: Vec<f64>) {
         let mut grad = grad_output;
         for (layer, activation) in self
             .layers
@@ -468,7 +619,7 @@ impl TrainableClassicNeuralNetwork {
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_arguments)]
-    pub fn train(
+    fn train(
         &mut self,
         inputs: &[Vec<f64>],
         targets: &[Vec<f64>],
@@ -593,7 +744,7 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Trains the neural network doing batch back propagation.
-    pub fn train_batch(
+    fn train_batch(
         &mut self,
         inputs: &[Vec<f64>],
         targets: &[Vec<f64>],
@@ -648,13 +799,8 @@ impl TrainableClassicNeuralNetwork {
         }
     }
 
-    /// Makes a prediction based on a single input by performing a forward pass.
-    pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
-        self.forward(input.as_slice())
-    }
-
     /// Returns the input size of the first layer in the network.
-    pub fn input_size(&self) -> usize {
+    fn input_size(&self) -> usize {
         self.shape
             .layers
             .first()
@@ -662,61 +808,14 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Returns the output size of the last layer in the network.
-    pub fn output_size(&self) -> usize {
+    fn output_size(&self) -> usize {
         self.shape
             .layers
             .last()
             .map_or(0, |layer| layer.output_size())
     }
 
-    pub fn shape(&self) -> &NeuralNetworkShape {
-        &self.shape
-    }
-
-    pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        // make a layers subdirectory
-        if std::fs::metadata(format!("{}/layers", model_directory)).is_err() {
-            std::fs::create_dir_all(format!("{}/layers", model_directory))?;
-        }
-        for (i, layer) in self.layers.iter().enumerate() {
-            layer.save_weight(format!("{}/layers/layer_{}.txt", model_directory, i))?;
-        }
-        Ok(())
-    }
-
-    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_model_directory
-            .push(self.model_directory.path());
-        self.model_directory = Directory::User(user_model_directory.clone());
-        let model_directory = self.model_directory.path();
-        self.save_internal(model_directory.clone())
-    }
-
-    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        // remove the directory if it exists
-        let backup_directory = format!("{}_backup", model_directory);
-        if std::fs::metadata(&model_directory).is_ok() {
-            // copy the directory to a backup not move
-            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(&model_directory)?;
-        } else {
-            // create directory if it doesn't exist
-            std::fs::create_dir_all(&model_directory)?;
-        }
-
-        let shape = self.shape();
-        shape.to_yaml(model_directory.clone());
-        self.save_layers(model_directory)?;
-
-        // if backup directory exists, remove it
-        if std::fs::metadata(&backup_directory).is_ok() {
-            std::fs::remove_dir_all(&backup_directory)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
+    fn adapt_to_shape(&mut self, shape: AnnotatedNeuralNetworkShape) {
         let mut nn = TrainableClassicNeuralNetwork::new(
             shape.to_neural_network_shape(),
             self.model_directory.clone(),
@@ -725,7 +824,7 @@ impl TrainableClassicNeuralNetwork {
         *self = nn;
     }
 
-    pub fn assign_weights(&mut self, other: &TrainableClassicNeuralNetwork) {
+    fn assign_weights(&mut self, other: &TrainableClassicNeuralNetwork) {
         for i in 0..self.layers.len() {
             if other.layers.len() <= i {
                 break;
@@ -735,13 +834,13 @@ impl TrainableClassicNeuralNetwork {
         }
     }
 
-    pub fn merge(&self, other: TrainableClassicNeuralNetwork) -> TrainableClassicNeuralNetwork {
+    fn merge(&self, other: TrainableClassicNeuralNetwork) -> TrainableClassicNeuralNetwork {
         // Rethink this function entirely
         let mut new_nn = TrainableClassicNeuralNetwork::new_dir(Directory::Internal(
             self.get_first_free_model_directory(),
         ));
         for i in 0..self.layers.len() {
-            new_nn.add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
+            new_nn.add_activation_and_trainable_layer(self.activations[i].clone(), self.layers[i].clone());
         }
 
         let merge_layer_input_size = self.layers.last().unwrap().output_size();
@@ -753,38 +852,18 @@ impl TrainableClassicNeuralNetwork {
             new_nn.layers.len(),
         )));
         let merge_activation = Box::new(ReLU::new());
-        new_nn.add_activation_and_layer(merge_activation, merge_layer);
+        new_nn.add_activation_and_trainable_layer(merge_activation, merge_layer);
 
         for i in 0..other.layers.len() {
-            new_nn.add_activation_and_layer(other.activations[i].clone(), other.layers[i].clone());
+            new_nn.add_activation_and_trainable_layer(other.activations[i].clone(), other.layers[i].clone());
         }
         new_nn.deduce_shape();
         new_nn.save_layout();
         new_nn
     }
 
-    /// Deduces the shape of the neural network based on the layers and activations.
-    fn deduce_shape(&mut self) {
-        let mut layers = Vec::new();
-        for i in 0..self.layers.len() {
-            let layer_shape = LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: self.layers[i].input_size(),
-                    output_size: self.layers[i].output_size(),
-                },
-                activation: self.activations[i].get_activation_data(),
-            };
-            layers.push(layer_shape);
-        }
-        self.shape = NeuralNetworkShape { layers };
-        if !self.shape.is_valid() {
-            println!("Invalid shape: {:?}", self.shape);
-            panic!("Invalid shape");
-        }
-    }
-
     /// gets a subnetwork from the neural network according to the passed shape
-    pub fn get_subnetwork(
+    fn get_subnetwork(
         &self,
         shape: NeuralNetworkShape,
     ) -> Option<TrainableClassicNeuralNetwork> {
@@ -798,76 +877,10 @@ impl TrainableClassicNeuralNetwork {
         }
         for i in start as usize..end as usize {
             subnetwork
-                .add_activation_and_layer(self.activations[i].clone(), self.layers[i].clone());
+                .add_activation_and_trainable_layer(self.activations[i].clone(), self.layers[i].clone());
         }
         subnetwork.deduce_shape();
         Some(subnetwork)
-    }
-
-    /// deduce start and end of the subnetwork shape from the neural network
-    fn deduce_start_end(&self, shape: &NeuralNetworkShape) -> (i32, i32) {
-        for (i, layer) in self.layers.iter().enumerate() {
-            // if the layer is not equal to the first one of shape continue
-            if layer.input_size() != shape.layers[0].input_size()
-                || layer.output_size() != shape.layers[0].output_size()
-            {
-                continue;
-            }
-            // if the layer is equal to the first one of shape, check if the rest of the layers are equal
-            let mut equal = true;
-            for j in 1..shape.layers.len() {
-                if i + j >= self.layers.len()
-                    || self.layers[i + j].input_size() != shape.layers[j].input_size()
-                    || self.layers[i + j].output_size() != shape.layers[j].output_size()
-                {
-                    equal = false;
-                    break;
-                }
-            }
-            if equal {
-                let mut to = i + shape.layers.len();
-                if to >= self.layers.len() {
-                    to = self.layers.len();
-                }
-                return (i as i32, to as i32);
-            }
-        }
-        (-1, -1)
-    }
-
-    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
-        for layer in &mut self.layers {
-            layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
-        }
-    }
-
-    pub fn get_model_directory(&self) -> Directory {
-        self.model_directory.clone()
-    }
-
-    pub fn deallocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.deallocate();
-        }
-    }
-
-    pub fn allocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.allocate();
-        }
-    }
-
-    pub fn save_layout(&self) {
-        let shape = self.shape();
-        // ensure the directory exists
-        if std::fs::metadata(self.model_directory.path()).is_err() {
-            std::fs::create_dir_all(self.model_directory.path()).unwrap();
-        }
-        shape.to_yaml(self.model_directory.path());
-    }
-
-    fn get_first_free_model_directory(&self) -> String {
-        get_first_free_model_directory(self.model_directory.clone())
     }
 }
 

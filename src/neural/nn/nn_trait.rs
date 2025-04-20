@@ -1,6 +1,7 @@
 use crate::neural::activation::activate::ActivationTrait;
 use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::neural::layer::layer_trait::WrappedLayer;
+use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::nn::directory::Directory;
 
@@ -36,6 +37,12 @@ pub trait TrainableNeuralNetwork: NeuralNetwork{
         /// Performs a backward pass through the network with the given output gradient doing batch caching.
         fn backward_batch(&mut self, grad_output: Vec<f64>);
     
+        fn add_activation_and_trainable_layer(
+            &mut self,
+            activation: Box<dyn ActivationTrait + Send>,
+            layer: WrappedTrainableLayer,
+        );
+
         /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
         /// Includes validation using a split of the data.
         #[allow(clippy::too_many_arguments)]
