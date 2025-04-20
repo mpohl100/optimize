@@ -7,6 +7,7 @@ use crate::neural::layer::dense_layer::TrainableDenseLayer;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 use crate::neural::nn::shape::*;
+use crate::neural::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -26,7 +27,7 @@ use super::directory::Directory;
 
 /// A neural network.
 #[derive(Debug, Default)]
-pub struct ClassicNeuralNetwork{
+pub struct ClassicNeuralNetwork {
     layers: Vec<WrappedLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
@@ -34,11 +35,11 @@ pub struct ClassicNeuralNetwork{
     past_internal_directory: Vec<String>,
 }
 
-impl ClassicNeuralNetwork{
+impl ClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
     pub fn new(shape: NeuralNetworkShape, internal_model_directory: String) -> Self {
         let shape_clone = shape.clone();
-        let mut network = ClassicNeuralNetwork{
+        let mut network = ClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
@@ -72,20 +73,68 @@ impl ClassicNeuralNetwork{
         network
     }
 
+    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        // remove the directory if it exists
+        let backup_directory = format!("{}_backup", model_directory);
+        if std::fs::metadata(&model_directory).is_ok() {
+            // copy the directory to a backup
+            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
+            std::fs::create_dir_all(&model_directory)?;
+        } else {
+            // create directory if it doesn't exist
+            std::fs::create_dir_all(&model_directory)?;
+        }
+
+        let shape = self.shape();
+        shape.to_yaml(model_directory.clone());
+        self.save_layers(model_directory)?;
+
+        // if backup directory exists, remove it
+        if std::fs::metadata(&backup_directory).is_ok() {
+            std::fs::remove_dir_all(&backup_directory)?;
+        }
+
+        Ok(())
+    }
+
+    fn get_first_free_model_directory(&self) -> String {
+        let model_directory_orig = self.model_directory.path();
+        // truncate _{integer} from the end of the model_directory
+        let mut model_directory = model_directory_orig.clone();
+        if let Some(pos) = model_directory.rfind('_') {
+            // check that the remainder is an integer
+            let remainder = &model_directory[pos + 1..];
+            if remainder.parse::<usize>().is_ok() {
+                model_directory = model_directory[..pos].to_string();
+            }
+        }
+
+        let mut i = 1;
+        while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
+            i += 1;
+        }
+        model_directory = format!("{}_{}", model_directory, i);
+        // create the directory to block the name
+        std::fs::create_dir_all(&model_directory).unwrap();
+        model_directory
+    }
+}
+
+impl NeuralNetwork for ClassicNeuralNetwork {
     /// Makes a prediction based on a single input by performing a forward pass.
-    pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
         self.forward(input.as_slice())
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: &String) -> Option<ClassicNeuralNetwork> {
+    fn from_disk(model_directory: &String) -> Option<ClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory);
         if shape.is_none() {
             return None;
         }
         let sh = shape.unwrap();
-        let mut network = ClassicNeuralNetwork{
+        let mut network = ClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
@@ -135,7 +184,7 @@ impl ClassicNeuralNetwork{
     }
 
     /// Performs a forward pass through the network with the given input.
-    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.allocate();
@@ -149,7 +198,7 @@ impl ClassicNeuralNetwork{
     }
 
     /// Performs a forward pass through the network with the given input doing batch caching.
-    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             output = layer.forward_batch(&output);
@@ -158,11 +207,11 @@ impl ClassicNeuralNetwork{
         output
     }
 
-    pub fn shape(&self) -> &NeuralNetworkShape {
+    fn shape(&self) -> &NeuralNetworkShape {
         &self.shape
     }
 
-    pub fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
@@ -171,7 +220,7 @@ impl ClassicNeuralNetwork{
         Ok(())
     }
 
-    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         self.past_internal_directory
             .push(self.model_directory.path());
         self.model_directory = Directory::User(user_model_directory.clone());
@@ -179,69 +228,23 @@ impl ClassicNeuralNetwork{
         self.save_internal(model_directory.clone())
     }
 
-    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        // remove the directory if it exists
-        let backup_directory = format!("{}_backup", model_directory);
-        if std::fs::metadata(&model_directory).is_ok() {
-            // copy the directory to a backup
-            copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(&model_directory)?;
-        } else {
-            // create directory if it doesn't exist
-            std::fs::create_dir_all(&model_directory)?;
-        }
-
-        let shape = self.shape();
-        shape.to_yaml(model_directory.clone());
-        self.save_layers(model_directory)?;
-
-        // if backup directory exists, remove it
-        if std::fs::metadata(&backup_directory).is_ok() {
-            std::fs::remove_dir_all(&backup_directory)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn get_model_directory(&self) -> Directory {
+    fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
     }
 
-    pub fn deallocate(&mut self) {
+    fn deallocate(&mut self) {
         for layer in &mut self.layers {
             layer.deallocate();
         }
     }
 
-    pub fn save_layout(&self) {
+    fn save_layout(&self) {
         let shape = self.shape();
         shape.to_yaml(self.model_directory.path());
     }
-
-    fn get_first_free_model_directory(&self) -> String {
-        let model_directory_orig = self.model_directory.path();
-        // truncate _{integer} from the end of the model_directory
-        let mut model_directory = model_directory_orig.clone();
-        if let Some(pos) = model_directory.rfind('_') {
-            // check that the remainder is an integer
-            let remainder = &model_directory[pos + 1..];
-            if remainder.parse::<usize>().is_ok() {
-                model_directory = model_directory[..pos].to_string();
-            }
-        }
-
-        let mut i = 1;
-        while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
-            i += 1;
-        }
-        model_directory = format!("{}_{}", model_directory, i);
-        // create the directory to block the name
-        std::fs::create_dir_all(&model_directory).unwrap();
-        model_directory
-    }
 }
 
-impl Clone for ClassicNeuralNetwork{
+impl Clone for ClassicNeuralNetwork {
     fn clone(&self) -> Self {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
@@ -253,7 +256,7 @@ impl Clone for ClassicNeuralNetwork{
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        ClassicNeuralNetwork{
+        ClassicNeuralNetwork {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
@@ -263,7 +266,7 @@ impl Clone for ClassicNeuralNetwork{
     }
 }
 
-impl Drop for ClassicNeuralNetwork{
+impl Drop for ClassicNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
@@ -289,7 +292,7 @@ impl Drop for ClassicNeuralNetwork{
 
 /// A neural network.
 #[derive(Debug, Default)]
-pub struct TrainableClassicNeuralNetwork{
+pub struct TrainableClassicNeuralNetwork {
     layers: Vec<WrappedTrainableLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
@@ -297,11 +300,11 @@ pub struct TrainableClassicNeuralNetwork{
     past_internal_model_directory: Vec<String>,
 }
 
-impl TrainableClassicNeuralNetwork{
+impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
     pub fn new(shape: NeuralNetworkShape, model_directory: Directory) -> Self {
         let shape_clone = shape.clone();
-        let mut network = TrainableClassicNeuralNetwork{
+        let mut network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
@@ -337,7 +340,7 @@ impl TrainableClassicNeuralNetwork{
     }
 
     pub fn new_dir(model_directory: Directory) -> Self {
-        let network = TrainableClassicNeuralNetwork{
+        let network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
@@ -358,7 +361,7 @@ impl TrainableClassicNeuralNetwork{
             return None;
         }
         let sh = shape.unwrap();
-        let mut network = TrainableClassicNeuralNetwork{
+        let mut network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
@@ -732,7 +735,7 @@ impl TrainableClassicNeuralNetwork{
         }
     }
 
-    pub fn merge(&self, other: TrainableClassicNeuralNetwork) -> TrainableClassicNeuralNetwork{
+    pub fn merge(&self, other: TrainableClassicNeuralNetwork) -> TrainableClassicNeuralNetwork {
         // Rethink this function entirely
         let mut new_nn = TrainableClassicNeuralNetwork::new_dir(Directory::Internal(
             self.get_first_free_model_directory(),
@@ -781,7 +784,10 @@ impl TrainableClassicNeuralNetwork{
     }
 
     /// gets a subnetwork from the neural network according to the passed shape
-    pub fn get_subnetwork(&self, shape: NeuralNetworkShape) -> Option<TrainableClassicNeuralNetwork> {
+    pub fn get_subnetwork(
+        &self,
+        shape: NeuralNetworkShape,
+    ) -> Option<TrainableClassicNeuralNetwork> {
         if shape.num_layers() == 0 {
             return None;
         }
@@ -886,7 +892,7 @@ fn get_first_free_model_directory(model_directory: Directory) -> String {
     model_directory
 }
 
-impl Clone for TrainableClassicNeuralNetwork{
+impl Clone for TrainableClassicNeuralNetwork {
     fn clone(&self) -> Self {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
@@ -898,7 +904,7 @@ impl Clone for TrainableClassicNeuralNetwork{
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        TrainableClassicNeuralNetwork{
+        TrainableClassicNeuralNetwork {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
@@ -908,7 +914,7 @@ impl Clone for TrainableClassicNeuralNetwork{
     }
 }
 
-impl Drop for TrainableClassicNeuralNetwork{
+impl Drop for TrainableClassicNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists

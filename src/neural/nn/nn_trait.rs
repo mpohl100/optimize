@@ -2,8 +2,9 @@ use crate::neural::activation::activate::ActivationTrait;
 use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
+use crate::neural::nn::directory::Directory;
 
-pub trait NeuralNetwork: Clone{
+pub trait NeuralNetwork: Clone {
     fn predict(&mut self, input: Vec<f64>) -> Vec<f64>;
     /// Creates a new `NeuralNetwork` from the given model directory.
     fn from_disk(model_directory: &String) -> Option<Self>;
@@ -23,7 +24,7 @@ pub trait NeuralNetwork: Clone{
     fn shape(&self) -> &NeuralNetworkShape;
     fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
-    fn get_model_directory(&self) -> String;
+    fn get_model_directory(&self) -> Directory;
     fn deallocate(&mut self);
     fn save_layout(&self);
 }
