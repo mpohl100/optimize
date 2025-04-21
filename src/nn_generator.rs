@@ -179,7 +179,7 @@ fn main() {
                 training_params,
                 evolution_options,
                 Box::new(data_importer),
-                model_directory,
+                model_directory.clone(),
                 nb_threads,
             )
         } else {

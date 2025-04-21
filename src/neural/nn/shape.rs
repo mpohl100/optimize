@@ -119,7 +119,7 @@ impl NeuralNetworkShape {
     }
 
     /// Creates a new `NeuralNetworkShape` with the given layers from disk.
-    pub fn from_disk(model_directory: &String) -> Option<Self> {
+    pub fn from_disk(model_directory: String) -> Option<Self> {
         let path = format!("{}/shape.yaml", model_directory);
         if !std::path::Path::new(&path).exists() {
             return None;
