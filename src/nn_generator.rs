@@ -182,6 +182,7 @@ fn main() {
                 model_directory.clone(),
                 nb_threads,
             )
+            .unwrap()
         } else {
             NeuralNetworkGenerator::new(
                 training_params,

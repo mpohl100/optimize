@@ -79,5 +79,5 @@ fn test_neural_network_generator() {
     nn_generator.save();
 
     // clear directory
-    std::fs::remove_dir_all(model_directory).unwrap();
+    std::fs::remove_dir_all(nn_generator.get_model_directory()).unwrap();
 }

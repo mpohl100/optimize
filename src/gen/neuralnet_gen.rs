@@ -14,7 +14,6 @@ use crate::neural::training::training_params::TrainingParams;
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
 
 pub struct NeuralNetworkGenerator {
-    model_directory: String,
     nb_threads: usize,
     params: TrainingParams,
     evolution_params: EvolutionOptions,
@@ -34,12 +33,11 @@ impl NeuralNetworkGenerator {
             params.shape().clone(),
             Directory::User(model_directory.clone()),
         );
-        let dir = nn.get_model_directory();
         Self {
             current_winner: nn,
             params,
             evolution_params,
-            model_directory: dir.path(),
+
             nb_threads,
             data_importer,
         }
@@ -51,28 +49,20 @@ impl NeuralNetworkGenerator {
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
         nb_threads: usize,
-    ) -> Self {
+    ) -> Option<Self> {
         let nn = TrainableClassicNeuralNetwork::from_disk(model_directory.clone());
         if nn.is_some() {
             let mut changed_params = params.clone();
             changed_params.set_shape(nn.as_ref().unwrap().shape().clone());
-            Self {
+            return Some(Self {
                 current_winner: nn.unwrap(),
                 params: changed_params,
                 evolution_params,
-                model_directory: model_directory.clone(),
                 nb_threads,
                 data_importer,
-            }
-        } else {
-            Self::new(
-                params,
-                evolution_params,
-                data_importer,
-                model_directory.clone(),
-                nb_threads,
-            )
+            });
         }
+        None
     }
 
     /// Generate a new neural network using a genetic algorithm
@@ -88,7 +78,8 @@ impl NeuralNetworkGenerator {
         let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());
-        let strategy = NeuralNetworkStrategy::new(self.model_directory.clone());
+        let strategy =
+            NeuralNetworkStrategy::new(self.current_winner.get_model_directory().path().clone());
         let launcher: ParallelEvolutionLauncher<
             NeuralNetworkPhenotype,
             NeuralNetworkStrategy,
@@ -100,6 +91,13 @@ impl NeuralNetworkGenerator {
 
     /// Save the current winner to disk
     pub fn save(&mut self) {
-        let _ = self.current_winner.save(self.model_directory.clone());
+        let _ = self
+            .current_winner
+            .save(self.current_winner.get_model_directory().path().clone());
+    }
+
+    /// Get the model directory
+    pub fn get_model_directory(&self) -> String {
+        self.current_winner.get_model_directory().path().clone()
     }
 }
