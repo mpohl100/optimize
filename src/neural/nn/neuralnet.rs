@@ -158,8 +158,8 @@ impl NeuralNetwork for ClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    fn from_disk(model_directory: &String) -> Option<ClassicNeuralNetwork> {
-        let shape = NeuralNetworkShape::from_disk(model_directory);
+    fn from_disk(model_directory: String) -> Option<ClassicNeuralNetwork> {
+        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
         }
@@ -562,8 +562,8 @@ impl TrainableClassicNeuralNetwork {
 impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    fn from_disk(model_directory: &String) -> Option<TrainableClassicNeuralNetwork> {
-        let shape = NeuralNetworkShape::from_disk(model_directory);
+    fn from_disk(model_directory: String) -> Option<TrainableClassicNeuralNetwork> {
+        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
         }

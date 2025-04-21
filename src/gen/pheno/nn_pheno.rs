@@ -5,8 +5,8 @@ use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::Adjust;
 use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
-use crate::neural::nn::shape::NeuralNetworkShape;
 use crate::neural::nn::nn_trait::NeuralNetwork;
+use crate::neural::nn::shape::NeuralNetworkShape;
 
 use std::sync::{Arc, Mutex};
 
@@ -39,7 +39,7 @@ impl NeuralNetworkPhenotype {
         }
     }
 
-    pub fn get_nn(&self) -> TrainableClassicNeuralNetwork{
+    pub fn get_nn(&self) -> TrainableClassicNeuralNetwork {
         self.nn.lock().unwrap().clone()
     }
 

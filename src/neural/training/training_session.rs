@@ -54,7 +54,7 @@ impl TrainingSession {
         if std::fs::metadata(model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = TrainableClassicNeuralNetwork::from_disk(&model_directory.clone());
+        let nn = TrainableClassicNeuralNetwork::from_disk(model_directory.clone());
         if let Some(nnw) = nn {
             Ok(TrainingSession {
                 params,
@@ -133,7 +133,7 @@ impl TrainingSession {
     }
 
     /// get the resulting neural network
-    pub fn get_nn(&self) -> &TrainableClassicNeuralNetwork{
+    pub fn get_nn(&self) -> &TrainableClassicNeuralNetwork {
         &self.neural_network
     }
 }
