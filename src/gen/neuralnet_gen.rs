@@ -34,11 +34,12 @@ impl NeuralNetworkGenerator {
             params.shape().clone(),
             Directory::User(model_directory.clone()),
         );
+        let dir = nn.get_model_directory();
         Self {
             current_winner: nn,
             params,
             evolution_params,
-            model_directory,
+            model_directory: dir.path(),
             nb_threads,
             data_importer,
         }
