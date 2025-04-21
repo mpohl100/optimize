@@ -167,7 +167,6 @@ impl NeuralNetworkShape {
     }
 
     pub fn to_yaml(&self, model_directory: String) {
-        let yaml = serde_yaml::to_string(self).unwrap();
         // Create file in shape.yaml in model_directory and put the yaml there
         // ensure model_directory exists
         if std::fs::metadata(&model_directory).is_err() {
@@ -175,6 +174,7 @@ impl NeuralNetworkShape {
         }
         let path = format!("{}/shape.yaml", model_directory);
         let mut file = File::create(path).unwrap();
+        let yaml = serde_yaml::to_string(self).unwrap();
         file.write_all(yaml.as_bytes()).unwrap();
     }
 

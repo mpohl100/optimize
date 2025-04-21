@@ -956,5 +956,7 @@ mod tests {
         assert_eq!(grad_input.len(), 3);
 
         layer.update_weights(0.01);
+
+        std::fs::remove_dir_all("test_model_unit").unwrap();
     }
 }

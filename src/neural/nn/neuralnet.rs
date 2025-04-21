@@ -148,16 +148,6 @@ impl ClassicNeuralNetwork {
         }
         output
     }
-
-    /// Performs a forward pass through the network with the given input doing batch caching.
-    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
-        let mut output = input.to_vec();
-        for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            output = layer.forward_batch(&output);
-            output = activation.forward(&output);
-        }
-        output
-    }
 }
 
 impl NeuralNetwork for ClassicNeuralNetwork {
@@ -537,7 +527,7 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         if self.model_directory.path() != user_model_directory {
             self.past_internal_model_directory
-            .push(self.model_directory.path());
+                .push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
