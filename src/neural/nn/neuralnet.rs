@@ -535,8 +535,10 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
     }
 
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_model_directory
+        if self.model_directory.path() != user_model_directory {
+            self.past_internal_model_directory
             .push(self.model_directory.path());
+        }
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
