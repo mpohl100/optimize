@@ -72,6 +72,53 @@ impl ClassicNeuralNetwork {
         network
     }
 
+    /// Creates a new `NeuralNetwork` from the given model directory.
+    #[allow(clippy::question_mark)]
+    pub fn from_disk(model_directory: String) -> Option<ClassicNeuralNetwork> {
+        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
+        if shape.is_none() {
+            return None;
+        }
+        let sh = shape.unwrap();
+        let mut network = ClassicNeuralNetwork {
+            layers: Vec::new(),
+            activations: Vec::new(),
+            shape: sh.clone(),
+            model_directory: Directory::User(model_directory.clone()),
+            past_internal_directory: Vec::new(),
+        };
+
+        for i in 0..sh.layers.len() {
+            let layer = match &sh.layers[i].layer_type() {
+                LayerType::Dense {
+                    input_size,
+                    output_size,
+                } => {
+                    let layer = DenseLayer::new(
+                        *input_size,
+                        *output_size,
+                        network.model_directory.clone(),
+                        i,
+                    );
+                    WrappedLayer::new(Box::new(layer))
+                }
+            };
+            let activation = match sh.layers[i].activation.activation_type() {
+                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
+                ActivationType::Softmax => {
+                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
+                        as Box<dyn ActivationTrait + Send>
+                }
+            };
+
+            network.add_activation_and_layer(activation, layer);
+        }
+
+        Some(network)
+    }
+
     /// Saves the neural network to disk with the internal logic.
     fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
@@ -156,55 +203,8 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         self.forward(input.as_slice())
     }
 
-    /// Creates a new `NeuralNetwork` from the given model directory.
-    #[allow(clippy::question_mark)]
-    fn from_disk(model_directory: String) -> Option<ClassicNeuralNetwork> {
-        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
-        if shape.is_none() {
-            return None;
-        }
-        let sh = shape.unwrap();
-        let mut network = ClassicNeuralNetwork {
-            layers: Vec::new(),
-            activations: Vec::new(),
-            shape: sh.clone(),
-            model_directory: Directory::User(model_directory.clone()),
-            past_internal_directory: Vec::new(),
-        };
-
-        for i in 0..sh.layers.len() {
-            let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense {
-                    input_size,
-                    output_size,
-                } => {
-                    let layer = DenseLayer::new(
-                        *input_size,
-                        *output_size,
-                        network.model_directory.clone(),
-                        i,
-                    );
-                    WrappedLayer::new(Box::new(layer))
-                }
-            };
-            let activation = match sh.layers[i].activation.activation_type() {
-                ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
-                ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
-                ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
-                ActivationType::Softmax => {
-                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
-                        as Box<dyn ActivationTrait + Send>
-                }
-            };
-
-            network.add_activation_and_layer(activation, layer);
-        }
-
-        Some(network)
-    }
-
-    fn shape(&self) -> &NeuralNetworkShape {
-        &self.shape
+    fn shape(&self) -> NeuralNetworkShape {
+        self.shape.clone()
     }
 
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
@@ -461,16 +461,9 @@ impl TrainableClassicNeuralNetwork {
         }
     }
 
-    /// Retrieves the first free model directory.
-    fn get_first_free_model_directory(&self) -> String {
-        get_first_free_model_directory(self.model_directory.clone())
-    }
-}
-
-impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    fn from_disk(model_directory: String) -> Option<TrainableClassicNeuralNetwork> {
+    pub fn from_disk(model_directory: String) -> Option<TrainableClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
@@ -515,13 +508,20 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
         Some(network)
     }
 
+    /// Retrieves the first free model directory.
+    fn get_first_free_model_directory(&self) -> String {
+        get_first_free_model_directory(self.model_directory.clone())
+    }
+}
+
+impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Makes a prediction based on a single input by performing a forward pass.
     fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
         self.forward(input.as_slice())
     }
 
-    fn shape(&self) -> &NeuralNetworkShape {
-        &self.shape
+    fn shape(&self) -> NeuralNetworkShape {
+        self.shape.clone()
     }
 
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
