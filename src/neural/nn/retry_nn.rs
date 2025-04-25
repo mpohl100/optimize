@@ -56,16 +56,16 @@ impl RetryNeuralNetwork {
             ));
             let backup_nn = RetryNeuralNetwork::from_disk(backup_model_directory);
             let shape = backup_nn.shape();
-            return WrappedNeuralNetwork::new(Box::new(Self {
+            WrappedNeuralNetwork::new(Box::new(Self {
                 primary_nn,
                 backup_nn,
                 shape,
                 model_directory: Directory::User(model_directory),
-            }));
+            }))
         } else {
-            return WrappedNeuralNetwork::new(Box::new(
+            WrappedNeuralNetwork::new(Box::new(
                 ClassicNeuralNetwork::from_disk(model_directory).unwrap(),
-            ));
+            ))
         }
     }
 
@@ -115,7 +115,7 @@ fn add_internal_dimensions(shape: NeuralNetworkShape) -> NeuralNetworkShape {
 
 fn append_dir(model_directory: String, subdir: &str) -> String {
     let mut path = model_directory.clone();
-    path.push_str("/");
+    path.push('/');
     path.push_str(subdir);
     path
 }
@@ -190,16 +190,16 @@ impl TrainableRetryNeuralNetwork {
             ));
             let backup_nn = TrainableRetryNeuralNetwork::from_disk(backup_model_directory);
             let shape = backup_nn.shape();
-            return WrappedTrainableNeuralNetwork::new(Box::new(Self {
+            WrappedTrainableNeuralNetwork::new(Box::new(Self {
                 primary_nn,
                 backup_nn,
                 shape,
                 model_directory: Directory::User(model_directory),
-            }));
+            }))
         } else {
-            return WrappedTrainableNeuralNetwork::new(Box::new(
+            WrappedTrainableNeuralNetwork::new(Box::new(
                 TrainableClassicNeuralNetwork::from_disk(model_directory).unwrap(),
-            ));
+            ))
         }
     }
 
