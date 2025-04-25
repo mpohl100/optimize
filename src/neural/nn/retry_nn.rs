@@ -143,7 +143,7 @@ impl NeuralNetwork for RetryNeuralNetwork {
 }
 
 #[derive(Debug, Clone)]
-pub struct RetryTrainableNeuralNetwork {
+pub struct TrainableRetryNeuralNetwork {
     primary_nn: WrappedTrainableNeuralNetwork,
     backup_nn: WrappedTrainableNeuralNetwork,
     // The shape of the neural network that it should pretend to have to the outside world
@@ -151,7 +151,7 @@ pub struct RetryTrainableNeuralNetwork {
     model_directory: Directory,
 }
 
-impl RetryTrainableNeuralNetwork {
+impl TrainableRetryNeuralNetwork {
     pub fn new(shape: NeuralNetworkShape, levels: i32, internal_model_directory: String) -> Self {
         let actual_shape = add_internal_dimensions(shape.clone());
         let primary_nn =
@@ -161,7 +161,7 @@ impl RetryTrainableNeuralNetwork {
             )));
         let backup_nn = match levels {
             1..=i32::MAX => {
-                WrappedTrainableNeuralNetwork::new(Box::new(RetryTrainableNeuralNetwork::new(
+                WrappedTrainableNeuralNetwork::new(Box::new(TrainableRetryNeuralNetwork::new(
                     shape.clone(),
                     levels - 1,
                     append_dir(internal_model_directory.clone(), "backup"),
@@ -188,7 +188,7 @@ impl RetryTrainableNeuralNetwork {
             let primary_nn = WrappedTrainableNeuralNetwork::new(Box::new(
                 TrainableClassicNeuralNetwork::from_disk(primary_model_directory).unwrap(),
             ));
-            let backup_nn = RetryTrainableNeuralNetwork::from_disk(backup_model_directory);
+            let backup_nn = TrainableRetryNeuralNetwork::from_disk(backup_model_directory);
             let shape = backup_nn.shape();
             return WrappedTrainableNeuralNetwork::new(Box::new(Self {
                 primary_nn,
@@ -215,7 +215,7 @@ impl RetryTrainableNeuralNetwork {
     }
 }
 
-impl NeuralNetwork for RetryTrainableNeuralNetwork {
+impl NeuralNetwork for TrainableRetryNeuralNetwork {
     fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
         self.forward(input)
     }
@@ -237,7 +237,7 @@ impl NeuralNetwork for RetryTrainableNeuralNetwork {
     }
 }
 
-impl TrainableNeuralNetwork for RetryTrainableNeuralNetwork {
+impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
     fn train(
         &mut self,
         inputs: &[Vec<f64>],
@@ -281,8 +281,7 @@ impl TrainableNeuralNetwork for RetryTrainableNeuralNetwork {
             }
             if nb_correct_outputs == target.len() {
                 output.push(0.0);
-            }
-            else{
+            } else {
                 output.push(1.0);
             }
         }
