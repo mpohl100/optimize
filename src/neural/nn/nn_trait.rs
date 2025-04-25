@@ -11,7 +11,7 @@ pub trait NeuralNetwork: std::fmt::Debug {
     fn get_model_directory(&self) -> Directory;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WrappedNeuralNetwork {
     nn: Arc<Mutex<Box<dyn NeuralNetwork + Send>>>,
 }
@@ -71,6 +71,7 @@ pub trait TrainableNeuralNetwork: NeuralNetwork + DynClone {
 
 dyn_clone::clone_trait_object!(TrainableNeuralNetwork);
 
+#[derive(Debug, Clone)]
 pub struct WrappedTrainableNeuralNetwork {
     nn: Arc<Mutex<Box<dyn TrainableNeuralNetwork + Send>>>,
 }
