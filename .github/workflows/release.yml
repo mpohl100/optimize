@@ -27,7 +27,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: train, evaluate, predict, nn_generator
+          bin: | 
+            train
+            evaluate
+            predict 
+            nn_generator
           # (optional) Archive name (non-extension portion of filename) to be uploaded.
           # [default value: $bin-$target]
           # [possible values: the following variables and any string]
@@ -36,6 +40,6 @@ jobs:
           #     - $target - Target triple.
           #     - $tag    - Tag of this release.
           # When multiple binary names are specified, default archive name or $bin variable cannot be used.
-          archive: $bin-$tag-$target
+          archive: ml-rust-$tag-$target
           # (required) GitHub token for uploading assets to GitHub Releases.
           token: ${{ secrets.GITHUB_TOKEN }}
