@@ -27,11 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: | 
-            train
-            evaluate
-            predict 
-            nn_generator
+          bin: train, evaluate, predict, nn_generator
           # (optional) Archive name (non-extension portion of filename) to be uploaded.
           # [default value: $bin-$target]
           # [possible values: the following variables and any string]
