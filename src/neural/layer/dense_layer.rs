@@ -776,7 +776,7 @@ fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<d
         writeln!(file)?;
     }
     for bias in biases.iter() {
-        write!(file, "{} ", bias)?;
+        write!(file, "{}; ", bias)?;
     }
     writeln!(file)?;
     Ok(())
