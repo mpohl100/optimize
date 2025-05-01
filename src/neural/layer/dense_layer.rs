@@ -841,7 +841,7 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
                 for j in 0..cols {
                     let p = parts.get(j).expect("Failed to deserialize weights");
                     let figures = p.split_whitespace().collect::<Vec<_>>();
-                    if figures.len() == 1 && figures.len() == 4 {
+                    if figures.len() == 1 || figures.len() == 4 {
                         *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
                     } else {
                         return Err("Invalid weight format".into());
