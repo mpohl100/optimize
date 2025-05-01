@@ -838,24 +838,50 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
                 let parts = line.split(";").collect::<Vec<_>>();
+                // parts len must be euqal to cols
+                if parts.len() - 1 != cols {
+                    return Err(format!(
+                        "Invalid weight format cause of cols: expected {}, found {}",
+                        cols,
+                        parts.len() - 1
+                    )
+                    .into());
+                }
                 for j in 0..cols {
-                    let p = parts.get(j).expect("Failed to deserialize weights");
-                    let figures = p.split_whitespace().collect::<Vec<_>>();
-                    if figures.len() == 1 || figures.len() == 4 {
-                        *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
-                    } else {
-                        return Err("Invalid weight format".into());
+                    let part = parts.get(j);
+                    if let Some(p) = part {
+                        let figures = p.split_whitespace().collect::<Vec<_>>();
+                        if figures.len() == 1 || figures.len() == 4 {
+                            *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
+                        } else {
+                            return Err("Invalid weight format".into());
+                        };
                     }
                 }
             }
         }
     }
     if let Some(Ok(line)) = lines.next() {
-        let mut parts = line.split_whitespace();
+        let parts = line.split(";").collect::<Vec<_>>();
         biases = vec![0.0; weights.rows()];
-        for bias in &mut biases {
-            if let Some(part) = parts.next() {
-                *bias = part.parse::<f64>()?;
+        // parts len must be equal to rows
+        if parts.len() - 1 != weights.rows() {
+            return Err(format!(
+                "Invalid bias format amount of values: expected {}, found {}",
+                weights.rows(),
+                parts.len() - 1
+            )
+            .into());
+        }
+        for (i, bias) in biases.iter_mut().enumerate() {
+            let part = parts.get(i);
+            if let Some(p) = part {
+                let figures = p.split_whitespace().collect::<Vec<_>>();
+                if figures.len() == 1 || figures.len() == 4 {
+                    *bias = figures[0].parse::<f64>()?;
+                } else {
+                    return Err("Invalid bias format".into());
+                }
             }
         }
     }
@@ -932,13 +958,19 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
             let part = parts.get(i);
             if let Some(p) = part {
                 let figures = p.split_whitespace().collect::<Vec<_>>();
-                if figures.len() != 4 {
+                if figures.len() == 4 {
+                    bias.value = figures[0].parse::<f64>()?;
+                    bias.grad = figures[1].parse::<f64>()?;
+                    bias.m = figures[2].parse::<f64>()?;
+                    bias.v = figures[3].parse::<f64>()?;
+                } else if figures.len() == 1 {
+                    bias.value = figures[0].parse::<f64>()?;
+                    bias.grad = 0.0;
+                    bias.m = 0.0;
+                    bias.v = 0.0;
+                } else {
                     return Err("Invalid bias format".into());
                 }
-                bias.value = figures[0].parse::<f64>()?;
-                bias.grad = figures[1].parse::<f64>()?;
-                bias.m = figures[2].parse::<f64>()?;
-                bias.v = figures[3].parse::<f64>()?;
             }
         }
     }
