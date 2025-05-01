@@ -195,6 +195,13 @@ impl ClassicNeuralNetwork {
         }
         output
     }
+
+    /// Allocates the layers of the neural network.
+    pub fn allocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.allocate();
+        }
+    }
 }
 
 impl NeuralNetwork for ClassicNeuralNetwork {

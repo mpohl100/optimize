@@ -169,7 +169,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     );
 
     let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone()).unwrap();
-
+    ordinary_model.allocate();
     // Act
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
     ordinary_model
@@ -178,6 +178,8 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
 
     let mut trainable_ordinary_model =
         ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
+
+    trainable_ordinary_model.allocate();
 
     trainable_ordinary_model
         .save(new_model_directory.clone())
