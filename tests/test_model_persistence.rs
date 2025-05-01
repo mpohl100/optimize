@@ -1,9 +1,11 @@
 use learn::neural::nn::directory::Directory;
+use learn::neural::nn::neuralnet::ClassicNeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
+use learn::neural::nn::nn_trait::NeuralNetwork;
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
@@ -155,4 +157,42 @@ fn already_trained_model_is_loaded() {
     if std::path::Path::new(&format!("{}_backup", model_directory)).exists() {
         std::fs::remove_dir_all(&format!("{}_backup", model_directory)).unwrap();
     }
+}
+
+#[test]
+fn trained_model_is_convertible_to_ordinary_model_and_back() {
+    // Arrange
+    let model_directory = "tests/test_model_persistence_3".to_string();
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_3_internal".to_string(),
+    );
+
+    let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone()).unwrap();
+
+    // Act
+    let new_model_directory = "tests/test_model_persistence_3_new".to_string();
+    ordinary_model
+        .save(new_model_directory.clone())
+        .expect("Failed to save model");
+
+    let mut trainable_ordinary_model =
+        ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
+    
+    trainable_ordinary_model
+        .save(new_model_directory.clone())
+        .expect("Failed to save trainable model");
+
+    // Assert
+    // Check if the new model directory exists
+    assert!(std::path::Path::new(&new_model_directory).exists());
+    // Check that the original model directory still exists
+    assert!(std::path::Path::new(&model_directory).exists());
+    // Check that the backup directory is removed
+    assert!(!std::path::Path::new(&format!("{}_backup", model_directory)).exists());
+    // Check that the backup directory is removed
+    assert!(!std::path::Path::new(&format!("{}_backup", new_model_directory)).exists());
+    // Clean up
+    std::fs::remove_dir_all(&model_directory).unwrap();
+    std::fs::remove_dir_all(&new_model_directory).unwrap();
 }
