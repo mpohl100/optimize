@@ -1,11 +1,11 @@
 use learn::neural::nn::directory::Directory;
 use learn::neural::nn::neuralnet::ClassicNeuralNetwork;
+use learn::neural::nn::nn_trait::NeuralNetwork;
 use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
-use learn::neural::nn::nn_trait::NeuralNetwork;
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
@@ -178,7 +178,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
 
     let mut trainable_ordinary_model =
         ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
-    
+
     trainable_ordinary_model
         .save(new_model_directory.clone())
         .expect("Failed to save trainable model");
