@@ -771,7 +771,7 @@ fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<d
     writeln!(file, "{} {}", weights.rows(), weights.cols())?;
     for i in 0..weights.rows() {
         for j in 0..weights.cols() {
-            write!(file, "{} ", weights.get_unchecked(i, j))?;
+            write!(file, "{};", weights.get_unchecked(i, j))?;
         }
         writeln!(file)?;
     }
@@ -837,10 +837,16 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
         weights = Matrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
-                let mut parts = line.split_whitespace();
+                let parts = line.split(";").collect::<Vec<_>>();
                 for j in 0..cols {
-                    if let Some(part) = parts.next() {
-                        *weights.get_mut_unchecked(i, j) = part.parse::<f64>()?;
+                    let p = parts.get(j).expect("Failed to deserialize weights");
+                    let figures = p.split_whitespace().collect::<Vec<_>>();
+                    if figures.len() == 1 {
+                        *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
+                    } else if figures.len() == 4 {
+                        *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
+                    } else {
+                        return Err("Invalid weight format".into());
                     }
                 }
             }
@@ -890,14 +896,22 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
                     let part = parts.get(j);
                     if let Some(p) = part {
                         let figures = p.split_whitespace().collect::<Vec<_>>();
-                        if figures.len() != 4 {
+                        if figures.len() == 4 {
+                            *weights.get_mut_unchecked(i, j) = Weight {
+                                value: figures[0].parse::<f64>()?,
+                                grad: figures[1].parse::<f64>()?,
+                                m: figures[2].parse::<f64>()?,
+                                v: figures[3].parse::<f64>()?,
+                            }
+                        } else if figures.len() == 1 {
+                            *weights.get_mut_unchecked(i, j) = Weight {
+                                value: figures[0].parse::<f64>()?,
+                                grad: 0.0,
+                                m: 0.0,
+                                v: 0.0,
+                            };
+                        } else {
                             return Err("Invalid weight format".into());
-                        }
-                        *weights.get_mut_unchecked(i, j) = Weight {
-                            value: figures[0].parse::<f64>()?,
-                            grad: figures[1].parse::<f64>()?,
-                            m: figures[2].parse::<f64>()?,
-                            v: figures[3].parse::<f64>()?,
                         };
                     }
                 }
