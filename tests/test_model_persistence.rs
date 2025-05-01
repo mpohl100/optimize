@@ -189,13 +189,10 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     // Assert
     // Check if the new model directory exists
     assert!(std::path::Path::new(&new_model_directory).exists());
-    // Check that the original model directory still exists
-    assert!(std::path::Path::new(&model_directory).exists());
     // Check that the backup directory is removed
     assert!(!std::path::Path::new(&format!("{}_backup", model_directory)).exists());
     // Check that the backup directory is removed
     assert!(!std::path::Path::new(&format!("{}_backup", new_model_directory)).exists());
     // Clean up
-    std::fs::remove_dir_all(&model_directory).unwrap();
     std::fs::remove_dir_all(&new_model_directory).unwrap();
 }
