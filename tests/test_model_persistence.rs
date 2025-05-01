@@ -161,30 +161,31 @@ fn already_trained_model_is_loaded() {
 
 #[test]
 fn trained_model_is_convertible_to_ordinary_model_and_back() {
-    // Arrange
     let model_directory = "tests/test_model_persistence_3".to_string();
-    train_model(
-        model_directory.clone(),
-        "tests/test_model_persistence_3_internal".to_string(),
-    );
-
-    let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone()).unwrap();
-    ordinary_model.allocate();
-    // Act
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
-    ordinary_model
-        .save(new_model_directory.clone())
-        .expect("Failed to save model");
+    {
+        // Arrange
+        train_model(
+            model_directory.clone(),
+            "tests/test_model_persistence_3_internal".to_string(),
+        );
 
-    let mut trainable_ordinary_model =
-        ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
+        let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone()).unwrap();
+        ordinary_model.allocate();
+        // Act
+        ordinary_model
+            .save(new_model_directory.clone())
+            .expect("Failed to save model");
 
-    trainable_ordinary_model.allocate();
+        let mut trainable_ordinary_model =
+            ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
 
-    trainable_ordinary_model
-        .save(new_model_directory.clone())
-        .expect("Failed to save trainable model");
+        trainable_ordinary_model.allocate();
 
+        trainable_ordinary_model
+            .save(new_model_directory.clone())
+            .expect("Failed to save trainable model");
+    }
     // Assert
     // Check if the new model directory exists
     assert!(std::path::Path::new(&new_model_directory).exists());
