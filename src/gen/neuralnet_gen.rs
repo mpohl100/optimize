@@ -1,5 +1,7 @@
-use crate::neural::nn::directory::Directory;
-use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
+use crate::neural::nn::nn_factory::new_trainable_neural_network;
+use crate::neural::nn::nn_factory::trainable_neural_network_from_disk;
+use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
+use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
 use crate::neural::training::data_importer::DataImporter;
 
 use crate::evol::evolution::EvolutionOptions;
@@ -8,7 +10,6 @@ use crate::evol::rng::RandomNumberGenerator;
 
 use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
-use crate::neural::nn::nn_trait::NeuralNetwork;
 use crate::neural::training::training_params::TrainingParams;
 
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
@@ -17,7 +18,7 @@ pub struct NeuralNetworkGenerator {
     nb_threads: usize,
     params: TrainingParams,
     evolution_params: EvolutionOptions,
-    current_winner: TrainableClassicNeuralNetwork,
+    current_winner: WrappedTrainableNeuralNetwork,
     data_importer: Box<dyn DataImporter + Send + Sync>,
 }
 
@@ -29,10 +30,11 @@ impl NeuralNetworkGenerator {
         model_directory: String,
         nb_threads: usize,
     ) -> Self {
-        let nn = TrainableClassicNeuralNetwork::new(
+        let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             params.shape().clone(),
-            Directory::User(model_directory.clone()),
-        );
+            params.levels(),
+            model_directory,
+        ));
         Self {
             current_winner: nn,
             params,
@@ -49,20 +51,17 @@ impl NeuralNetworkGenerator {
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
         nb_threads: usize,
-    ) -> Option<Self> {
-        let nn = TrainableClassicNeuralNetwork::from_disk(model_directory.clone());
-        if nn.is_some() {
-            let mut changed_params = params.clone();
-            changed_params.set_shape(nn.as_ref().unwrap().shape().clone());
-            return Some(Self {
-                current_winner: nn.unwrap(),
-                params: changed_params,
-                evolution_params,
-                nb_threads,
-                data_importer,
-            });
+    ) -> Self {
+        let nn = trainable_neural_network_from_disk(model_directory.clone());
+        let mut changed_params = params.clone();
+        changed_params.set_shape(nn.shape().clone());
+        Self {
+            current_winner: nn,
+            params: changed_params,
+            evolution_params,
+            nb_threads,
+            data_importer,
         }
-        None
     }
 
     /// Generate a new neural network using a genetic algorithm

@@ -140,6 +140,11 @@ impl NeuralNetwork for RetryNeuralNetwork {
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
     }
+
+    fn allocate(&mut self) {
+        self.primary_nn.allocate();
+        self.backup_nn.allocate();
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -234,6 +239,11 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
+    }
+
+    fn allocate(&mut self) {
+        self.primary_nn.allocate();
+        self.backup_nn.allocate();
     }
 }
 

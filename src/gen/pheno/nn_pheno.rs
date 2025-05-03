@@ -1,18 +1,16 @@
+use super::rng_wrapper::RngWrapper;
 use super::{
     nn_mutater::fetch_activation_data, nn_mutater::NeuralNetworkMutater, rng_wrapper::RealRng,
 };
-use crate::evol::phenotype::Phenotype;
 use crate::evol::rng::RandomNumberGenerator;
 use crate::evol::strategy::Adjust;
-use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
-use crate::neural::nn::nn_trait::NeuralNetwork;
+use crate::neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
 use crate::neural::nn::shape::NeuralNetworkShape;
-
-use std::sync::{Arc, Mutex};
+use crate::{evol::phenotype::Phenotype, neural::nn::nn_trait::WrappedTrainableNeuralNetwork};
 
 #[derive(Debug)]
 pub struct NeuralNetworkPhenotype {
-    nn: Arc<Mutex<TrainableClassicNeuralNetwork>>,
+    nn: WrappedTrainableNeuralNetwork,
     left_half_shape: Option<NeuralNetworkShape>,
     right_half_shape: Option<NeuralNetworkShape>,
     nb_mutates: usize,
@@ -21,7 +19,7 @@ pub struct NeuralNetworkPhenotype {
 impl Clone for NeuralNetworkPhenotype {
     fn clone(&self) -> Self {
         Self {
-            nn: Arc::new(Mutex::new(self.get_nn())),
+            nn: self.get_nn().clone(),
             left_half_shape: self.left_half_shape.clone(),
             right_half_shape: self.right_half_shape.clone(),
             nb_mutates: self.nb_mutates,
@@ -30,21 +28,21 @@ impl Clone for NeuralNetworkPhenotype {
 }
 
 impl NeuralNetworkPhenotype {
-    pub fn new(nn: TrainableClassicNeuralNetwork) -> Self {
+    pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
         Self {
-            nn: Arc::new(Mutex::new(nn)),
+            nn: nn.clone(),
             left_half_shape: None,
             right_half_shape: None,
             nb_mutates: 0,
         }
     }
 
-    pub fn get_nn(&self) -> TrainableClassicNeuralNetwork {
-        self.nn.lock().unwrap().clone()
+    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+        self.nn.clone()
     }
 
-    pub fn set_nn(&mut self, nn: TrainableClassicNeuralNetwork) {
-        *self.nn.lock().unwrap() = nn;
+    pub fn set_nn(&mut self, nn: WrappedTrainableNeuralNetwork) {
+        self.nn = nn.clone();
     }
 
     fn set_left_half_shape(&mut self, shape: NeuralNetworkShape) {
@@ -61,7 +59,50 @@ impl NeuralNetworkPhenotype {
     }
 
     pub fn allocate(&mut self) {
-        self.nn.lock().unwrap().allocate();
+        self.nn.allocate();
+    }
+
+    fn mutate_classic_nn(&mut self, rng_wrapper: &mut RealRng) {
+        let left_half_shape = self.left_half_shape.clone();
+        let right_half_shape = self.right_half_shape.clone();
+        let previous_shape = if left_half_shape.is_some() && right_half_shape.is_some() {
+            let left_shape = left_half_shape.unwrap();
+            let right_shape = right_half_shape.unwrap();
+            left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
+        } else {
+            self.get_nn().shape().clone()
+        };
+
+        let mut mutater = NeuralNetworkMutater::new(rng_wrapper);
+
+        let mut mutated_shape = mutater.mutate_shape(previous_shape.clone());
+        let mut i = 0;
+        while mutated_shape.to_neural_network_shape() == previous_shape {
+            mutated_shape = mutater.mutate_shape(previous_shape.clone());
+            i += 1;
+            if i > 10 {
+                break;
+            }
+        }
+        let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.get_nn().shape().clone(),
+            None,
+            self.nn.get_model_directory().path(),
+        ));
+        self.set_nn(nn);
+        self.reset_half_shapes();
+    }
+
+    fn mutate_levels(&mut self, rng_wrapper: &mut RealRng) {
+        let random_number = rng_wrapper.fetch_uniform(1.0, 5.0, 1);
+        // round do to integer
+        let random_number = random_number[0].round() as i32;
+        let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.get_nn().shape().clone(),
+            Some(random_number),
+            self.nn.get_model_directory().path(),
+        ));
+        self.set_nn(nn);
     }
 }
 
@@ -93,33 +134,13 @@ impl Phenotype for NeuralNetworkPhenotype {
 
     fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
         let mut rng_wrapper = RealRng::new(rng);
-        let left_half_shape = self.left_half_shape.clone();
-        let right_half_shape = self.right_half_shape.clone();
-        let previous_shape = if left_half_shape.is_some() && right_half_shape.is_some() {
-            let left_shape = left_half_shape.unwrap();
-            let right_shape = right_half_shape.unwrap();
-            left_shape.merge(right_shape, fetch_activation_data(&mut rng_wrapper))
+        // fetch a random number between 0 and 1
+        let random_number = rng_wrapper.fetch_uniform(0.0, 10.0, 1);
+        if random_number[0] < 5.0 {
+            self.mutate_classic_nn(&mut rng_wrapper);
         } else {
-            self.get_nn().shape().clone()
-        };
-
-        let mut mutater = NeuralNetworkMutater::new(&mut rng_wrapper);
-
-        let mut mutated_shape = mutater.mutate_shape(previous_shape.clone());
-        let mut i = 0;
-        while mutated_shape.to_neural_network_shape() == previous_shape {
-            mutated_shape = mutater.mutate_shape(previous_shape.clone());
-            i += 1;
-            if i > 10 {
-                break;
-            }
+            self.mutate_levels(&mut rng_wrapper);
         }
-        let nn = TrainableClassicNeuralNetwork::new(
-            mutated_shape.to_neural_network_shape(),
-            self.nn.lock().unwrap().get_model_directory(),
-        );
-        self.set_nn(nn);
-        self.reset_half_shapes();
     }
 }
 

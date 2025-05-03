@@ -15,6 +15,8 @@ struct Args {
     model_directory: String,
     #[clap(long, default_value = "")]
     shape_file: String,
+    #[clap(long, default_value = "0")]
+    retry_levels: i32,
 
     // insert the training params here
     #[clap(long, default_value = "0.7")]
@@ -39,6 +41,11 @@ struct Args {
 
 impl Args {
     fn get_training_params(&self) -> TrainingParams {
+        let levels = if self.retry_levels > 0 {
+            Some(self.retry_levels)
+        } else {
+            None
+        };
         if self.shape_file.is_empty() {
             // deduce shape from input and target files
             let file_importer =
@@ -56,6 +63,7 @@ impl Args {
             }]);
             return TrainingParams::new(
                 shape,
+                levels,
                 self.validation_split,
                 self.learning_rate,
                 self.epochs,
@@ -78,6 +86,7 @@ impl Args {
         );
         TrainingParams::new(
             shape,
+            levels,
             self.validation_split,
             self.learning_rate,
             self.epochs,
