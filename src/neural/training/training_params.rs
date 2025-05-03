@@ -13,6 +13,7 @@ pub struct TrainingParams {
 }
 
 impl TrainingParams {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         shape: NeuralNetworkShape,
         levels: Option<i32>,
