@@ -13,11 +13,7 @@ pub struct NeuralNetworkCreationArguments {
 }
 
 impl NeuralNetworkCreationArguments {
-    pub fn new(
-        shape: NeuralNetworkShape,
-        levels: Option<i32>,
-        model_directory: String,
-    ) -> Self {
+    pub fn new(shape: NeuralNetworkShape, levels: Option<i32>, model_directory: String) -> Self {
         Self {
             shape,
             levels,
@@ -60,18 +56,14 @@ pub fn new_trainable_neural_network(
     }
 }
 
-pub fn neural_network_from_disk(
-    model_directory: String,
-) -> WrappedNeuralNetwork {
+pub fn neural_network_from_disk(model_directory: String) -> WrappedNeuralNetwork {
     // check if model directory contains a directory named primary
     if std::path::Path::new(&format!("{}/primary", model_directory)).exists() {
-        return RetryNeuralNetwork::from_disk(
-            model_directory,
-        );
+        return RetryNeuralNetwork::from_disk(model_directory);
     }
-    WrappedNeuralNetwork::new(Box::new(ClassicNeuralNetwork::from_disk(
-        model_directory,
-    ).unwrap()))
+    WrappedNeuralNetwork::new(Box::new(
+        ClassicNeuralNetwork::from_disk(model_directory).unwrap(),
+    ))
 }
 
 pub fn trainable_neural_network_from_disk(
@@ -79,12 +71,9 @@ pub fn trainable_neural_network_from_disk(
 ) -> WrappedTrainableNeuralNetwork {
     // check if model directory contains a directory named primary
     if std::path::Path::new(&format!("{}/primary", model_directory)).exists() {
-        return TrainableRetryNeuralNetwork::from_disk(
-            model_directory,
-        );
+        return TrainableRetryNeuralNetwork::from_disk(model_directory);
     }
-    WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::from_disk(
-        model_directory,
-    ).unwrap()))
+    WrappedTrainableNeuralNetwork::new(Box::new(
+        TrainableClassicNeuralNetwork::from_disk(model_directory).unwrap(),
+    ))
 }
-
