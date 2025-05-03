@@ -3,6 +3,7 @@ use crate::neural::nn::shape::NeuralNetworkShape;
 #[derive(Clone)]
 pub struct TrainingParams {
     shape: NeuralNetworkShape,
+    levels: Option<i32>,
     validation_split: f64,
     learning_rate: f64,
     epochs: usize,
@@ -14,6 +15,7 @@ pub struct TrainingParams {
 impl TrainingParams {
     pub fn new(
         shape: NeuralNetworkShape,
+        levels: Option<i32>,
         validation_split: f64,
         learning_rate: f64,
         epochs: usize,
@@ -23,6 +25,7 @@ impl TrainingParams {
     ) -> Self {
         Self {
             shape,
+            levels,
             validation_split,
             learning_rate,
             epochs,
@@ -34,6 +37,10 @@ impl TrainingParams {
 
     pub fn shape(&self) -> &NeuralNetworkShape {
         &self.shape
+    }
+
+    pub fn levels(&self) -> Option<i32> {
+        self.levels
     }
 
     pub fn validation_split(&self) -> f64 {

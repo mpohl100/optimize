@@ -1,15 +1,16 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
 use crate::neural::nn::directory::Directory;
-use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
-use crate::neural::nn::nn_trait::NeuralNetwork;
-use crate::neural::nn::nn_trait::TrainableNeuralNetwork;
+use crate::neural::nn::nn_factory::new_trainable_neural_network;
+use crate::neural::nn::nn_factory::trainable_neural_network_from_disk;
+use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
+use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
 
 use std::error::Error;
 
 pub struct TrainingSession {
     params: TrainingParams,
-    neural_network: TrainableClassicNeuralNetwork,
+    neural_network: WrappedTrainableNeuralNetwork,
     data_importer: Box<dyn DataImporter>,
 }
 
@@ -22,15 +23,20 @@ impl TrainingSession {
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
+        let levels = params.levels();
         Ok(Self {
             params,
-            neural_network: TrainableClassicNeuralNetwork::new(shape, model_directory),
+            neural_network: new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+                shape.clone(),
+                levels,
+                model_directory.path().to_string(),
+            )),
             data_importer,
         })
     }
 
     pub fn from_network(
-        nn: TrainableClassicNeuralNetwork,
+        nn: WrappedTrainableNeuralNetwork,
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
     ) -> Result<TrainingSession, Box<dyn Error>> {
@@ -54,16 +60,12 @@ impl TrainingSession {
         if std::fs::metadata(model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = TrainableClassicNeuralNetwork::from_disk(model_directory.clone());
-        if let Some(nnw) = nn {
-            Ok(TrainingSession {
-                params,
-                neural_network: nnw,
-                data_importer,
-            })
-        } else {
-            Self::new(params, data_importer, Directory::User(model_directory))
-        }
+        let nn = trainable_neural_network_from_disk(model_directory.clone());
+        Ok(TrainingSession {
+            params,
+            neural_network: nn,
+            data_importer,
+        })
     }
 
     // Train method
@@ -133,8 +135,8 @@ impl TrainingSession {
     }
 
     /// get the resulting neural network
-    pub fn get_nn(&self) -> &TrainableClassicNeuralNetwork {
-        &self.neural_network
+    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+        self.neural_network.clone()
     }
 }
 
@@ -228,7 +230,7 @@ mod tests {
         };
 
         // Define training parameters
-        let training_params = TrainingParams::new(nn_shape.clone(), 0.7, 0.01, 10, 0.1, 32, true);
+        let training_params = TrainingParams::new(nn_shape.clone(), None, 0.7, 0.01, 10, 0.1, 32, true);
 
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);

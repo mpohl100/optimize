@@ -9,6 +9,7 @@ pub trait NeuralNetwork: std::fmt::Debug {
     fn shape(&self) -> NeuralNetworkShape;
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
     fn get_model_directory(&self) -> Directory;
+    fn allocate(&mut self);
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +34,10 @@ impl WrappedNeuralNetwork {
 
     pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
         self.nn.lock().unwrap().save(user_model_directory)
+    }
+
+    pub fn allocate(&self) {
+        self.nn.lock().unwrap().allocate();
     }
 }
 
@@ -147,5 +152,9 @@ impl WrappedTrainableNeuralNetwork {
 
     pub fn get_model_directory(&self) -> Directory {
         self.nn.lock().unwrap().get_model_directory()
+    }
+
+    pub fn allocate(&self){
+        self.nn.lock().unwrap().allocate();
     }
 }

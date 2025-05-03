@@ -195,13 +195,6 @@ impl ClassicNeuralNetwork {
         }
         output
     }
-
-    /// Allocates the layers of the neural network.
-    pub fn allocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.allocate();
-        }
-    }
 }
 
 impl NeuralNetwork for ClassicNeuralNetwork {
@@ -224,6 +217,13 @@ impl NeuralNetwork for ClassicNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
+    }
+
+    /// Allocates the layers of the neural network.
+    fn allocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.allocate();
+        }
     }
 }
 
@@ -364,13 +364,6 @@ impl TrainableClassicNeuralNetwork {
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
         for layer in &mut self.layers {
             layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
-        }
-    }
-
-    /// Allocates the layers of the neural network.
-    pub fn allocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.allocate();
         }
     }
 
@@ -543,6 +536,13 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
+    }
+
+    /// Allocates the layers of the neural network.
+    fn allocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.allocate();
+        }
     }
 }
 

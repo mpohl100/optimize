@@ -12,6 +12,20 @@ pub struct NeuralNetworkCreationArguments {
     model_directory: String,
 }
 
+impl NeuralNetworkCreationArguments {
+    pub fn new(
+        shape: NeuralNetworkShape,
+        levels: Option<i32>,
+        model_directory: String,
+    ) -> Self {
+        Self {
+            shape,
+            levels,
+            model_directory,
+        }
+    }
+}
+
 pub fn new_neural_network(
     neural_network_creation_arguments: NeuralNetworkCreationArguments,
 ) -> WrappedNeuralNetwork {
