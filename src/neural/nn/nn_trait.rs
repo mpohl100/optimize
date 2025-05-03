@@ -154,7 +154,7 @@ impl WrappedTrainableNeuralNetwork {
         self.nn.lock().unwrap().get_model_directory()
     }
 
-    pub fn allocate(&self){
+    pub fn allocate(&self) {
         self.nn.lock().unwrap().allocate();
     }
 }
