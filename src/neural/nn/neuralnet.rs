@@ -23,6 +23,8 @@ static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiPro
 use std::boxed::Box;
 
 use super::directory::Directory;
+use super::nn_factory::{copy_dir_recursive, get_first_free_model_directory};
+use super::nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork};
 
 /// A neural network.
 #[derive(Debug, Default)]
@@ -208,8 +210,10 @@ impl NeuralNetwork for ClassicNeuralNetwork {
     }
 
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
-        self.past_internal_directory
-            .push(self.model_directory.path());
+        if let Directory::Internal(_) = self.model_directory {
+            self.past_internal_directory
+                .push(self.model_directory.path());
+        }
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
         self.save_internal(model_directory.clone())
@@ -225,10 +229,13 @@ impl NeuralNetwork for ClassicNeuralNetwork {
             layer.allocate();
         }
     }
-}
 
-impl Clone for ClassicNeuralNetwork {
-    fn clone(&self) -> Self {
+    fn set_internal(&mut self) {
+        // set the model directory to internal
+        self.model_directory = Directory::Internal(self.model_directory.path());
+    }
+
+    fn duplicate(&self) -> WrappedNeuralNetwork {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
@@ -239,13 +246,13 @@ impl Clone for ClassicNeuralNetwork {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        ClassicNeuralNetwork {
+        WrappedNeuralNetwork::new(Box::new(ClassicNeuralNetwork {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
             past_internal_directory: Vec::new(),
-        }
+        }))
     }
 }
 
@@ -544,6 +551,15 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
             layer.allocate();
         }
     }
+
+    fn set_internal(&mut self) {
+        // set the model directory to internal
+        self.model_directory = Directory::Internal(self.model_directory.path());
+    }
+
+    fn duplicate(&self) -> WrappedNeuralNetwork {
+        unimplemented!()
+    }
 }
 
 impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
@@ -745,31 +761,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             .last()
             .map_or(0, |layer| layer.output_size())
     }
-}
 
-fn get_first_free_model_directory(model_directory: Directory) -> String {
-    let model_directory_orig = model_directory.path();
-    // truncate _{integer} from the end of the model_directory
-    let mut model_directory = model_directory_orig.clone();
-    if let Some(pos) = model_directory.rfind('_') {
-        // check that the remainder is an integer
-        let remainder = &model_directory[pos + 1..];
-        if remainder.parse::<usize>().is_ok() {
-            model_directory = model_directory[..pos].to_string();
-        }
-    }
-    let mut i = 1;
-    while std::fs::metadata(format!("{}_{}", model_directory, i)).is_ok() {
-        i += 1;
-    }
-    model_directory = format!("{}_{}", model_directory, i);
-    // create the directory to block the name
-    std::fs::create_dir_all(&model_directory).unwrap();
-    model_directory
-}
-
-impl Clone for TrainableClassicNeuralNetwork {
-    fn clone(&self) -> Self {
+    fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
@@ -780,13 +773,13 @@ impl Clone for TrainableClassicNeuralNetwork {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        TrainableClassicNeuralNetwork {
+        WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
             past_internal_model_directory: Vec::new(),
-        }
+        }))
     }
 }
 
@@ -812,26 +805,6 @@ impl Drop for TrainableClassicNeuralNetwork {
             }
         }
     }
-}
-
-fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
-    if !dst.exists() {
-        fs::create_dir_all(dst)?;
-    }
-
-    for entry_result in fs::read_dir(src)? {
-        let entry = entry_result?;
-        let path = entry.path();
-        let dest_path = dst.join(entry.file_name());
-
-        if path.is_dir() {
-            copy_dir_recursive(&path, &dest_path)?;
-        } else {
-            fs::copy(&path, &dest_path)?;
-        }
-    }
-
-    Ok(())
 }
 
 #[cfg(test)]
