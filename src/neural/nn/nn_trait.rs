@@ -45,6 +45,10 @@ impl WrappedNeuralNetwork {
     pub fn set_internal(&mut self) {
         self.nn.lock().unwrap().set_internal();
     }
+
+    pub fn duplicate(&self) -> WrappedNeuralNetwork {
+        self.nn.lock().unwrap().duplicate()
+    }
 }
 
 pub trait TrainableNeuralNetwork: NeuralNetwork {
@@ -166,5 +170,9 @@ impl WrappedTrainableNeuralNetwork {
 
     pub fn set_internal(&mut self) {
         self.nn.lock().unwrap().set_internal();
+    }
+
+    pub fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
+        self.nn.lock().unwrap().duplicate_trainable()
     }
 }
