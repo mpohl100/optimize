@@ -30,7 +30,7 @@ impl Clone for NeuralNetworkPhenotype {
 impl NeuralNetworkPhenotype {
     pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
         Self {
-            nn: nn.clone(),
+            nn: nn.duplicate_trainable(),
             left_half_shape: None,
             right_half_shape: None,
             nb_mutates: 0,
