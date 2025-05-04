@@ -10,6 +10,8 @@ pub trait NeuralNetwork: std::fmt::Debug {
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
     fn get_model_directory(&self) -> Directory;
     fn allocate(&mut self);
+    fn set_internal(&mut self);
+    fn duplicate(&self) -> WrappedNeuralNetwork;
 }
 
 #[derive(Debug, Clone)]
@@ -39,9 +41,13 @@ impl WrappedNeuralNetwork {
     pub fn allocate(&self) {
         self.nn.lock().unwrap().allocate();
     }
+
+    pub fn set_internal(&mut self) {
+        self.nn.lock().unwrap().set_internal();
+    }
 }
 
-pub trait TrainableNeuralNetwork: NeuralNetwork + DynClone {
+pub trait TrainableNeuralNetwork: NeuralNetwork {
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_arguments)]
@@ -72,9 +78,9 @@ pub trait TrainableNeuralNetwork: NeuralNetwork + DynClone {
 
     /// Returns the output size of the last layer in the network.
     fn output_size(&self) -> usize;
-}
 
-dyn_clone::clone_trait_object!(TrainableNeuralNetwork);
+    fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork;
+}
 
 #[derive(Debug, Clone)]
 pub struct WrappedTrainableNeuralNetwork {
@@ -156,5 +162,9 @@ impl WrappedTrainableNeuralNetwork {
 
     pub fn allocate(&self) {
         self.nn.lock().unwrap().allocate();
+    }
+
+    pub fn set_internal(&mut self) {
+        self.nn.lock().unwrap().set_internal();
     }
 }
