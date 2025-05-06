@@ -1,5 +1,3 @@
-use dyn_clone::DynClone;
-
 use crate::neural::nn::directory::Directory;
 use crate::neural::nn::shape::NeuralNetworkShape;
 use std::sync::{Arc, Mutex};
@@ -10,6 +8,7 @@ pub trait NeuralNetwork: std::fmt::Debug {
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
     fn get_model_directory(&self) -> Directory;
     fn allocate(&mut self);
+    fn deallocate(&mut self);
     fn set_internal(&mut self);
     fn duplicate(&self) -> WrappedNeuralNetwork;
 }
@@ -40,6 +39,10 @@ impl WrappedNeuralNetwork {
 
     pub fn allocate(&self) {
         self.nn.lock().unwrap().allocate();
+    }
+
+    pub fn deallocate(&self) {
+        self.nn.lock().unwrap().deallocate();
     }
 
     pub fn set_internal(&mut self) {
@@ -166,6 +169,10 @@ impl WrappedTrainableNeuralNetwork {
 
     pub fn allocate(&self) {
         self.nn.lock().unwrap().allocate();
+    }
+
+    pub fn deallocate(&self) {
+        self.nn.lock().unwrap().deallocate();
     }
 
     pub fn set_internal(&mut self) {
