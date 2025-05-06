@@ -258,11 +258,13 @@ impl Drop for ClassicNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if std::fs::metadata(self.model_directory.path()).is_err() {
-            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        if let Directory::User(_) = &self.model_directory {
+            if std::fs::metadata(self.model_directory.path()).is_err() {
+                std::fs::create_dir_all(self.model_directory.path()).unwrap();
+            }
+            self.save_layout();
+            self.deallocate();
         }
-        self.save_layout();
-        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {
@@ -792,11 +794,13 @@ impl Drop for TrainableClassicNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if std::fs::metadata(self.model_directory.path()).is_err() {
-            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        if let Directory::User(_) = &self.model_directory {
+            if std::fs::metadata(self.model_directory.path()).is_err() {
+                std::fs::create_dir_all(self.model_directory.path()).unwrap();
+            }
+            self.save_layout();
+            self.deallocate();
         }
-        self.save_layout();
-        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {
