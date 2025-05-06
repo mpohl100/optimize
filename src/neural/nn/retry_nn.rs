@@ -207,7 +207,6 @@ impl Drop for RetryNeuralNetwork {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct TrainableRetryNeuralNetwork {
     primary_nn: WrappedTrainableNeuralNetwork,
@@ -484,4 +483,3 @@ impl Drop for TrainableRetryNeuralNetwork {
         }
     }
 }
-
