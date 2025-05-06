@@ -341,12 +341,16 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
         tolerance: f64,
         use_adam: bool,
         validation_split: f64,
-    ) {
+    ) -> f64 {
+        // in case one does not have enough samples, don't train and return zero accuracy
+        if inputs.len() < 100 {
+            return 0.0;
+        }
         let mut temp_neural_network = TrainableClassicNeuralNetwork::new(
             self.shape.clone(),
             Directory::Internal(append_dir(self.model_directory.path(), "temp_primary")),
         );
-        temp_neural_network.train(
+        let _ = temp_neural_network.train(
             inputs,
             targets,
             learning_rate,
@@ -381,7 +385,7 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
         }
 
         // train the primary neural network with the modified outputs
-        self.primary_nn.train(
+        let primary_accuracy = self.primary_nn.train(
             &temp_predictions,
             targets,
             learning_rate,
@@ -405,7 +409,7 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                 filtered_targets.push(prediction.clone());
             }
         }
-        self.backup_nn.train(
+        let backup_accuracy = self.backup_nn.train(
             &filtered_inputs,
             &filtered_targets,
             learning_rate,
@@ -414,6 +418,8 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             use_adam,
             validation_split,
         );
+
+        primary_accuracy + backup_accuracy
     }
 
     fn train_batch(
