@@ -574,6 +574,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         use_adam: bool,
         validation_split: f64,
     ) -> f64 {
+        // in case one does not have enough samples, don't train and return zero accuracy
         if inputs.len() < 100 {
             return 0.0;
         }
@@ -840,8 +841,11 @@ mod tests {
             Directory::Internal("internal_model".to_string()),
         );
 
-        let inputs = vec![vec![1.0, 1.0, 1.0]];
-        let targets = vec![vec![0.0, 0.0, 0.0]];
+        let input = vec![1.0, 1.0, 1.0];
+        // put input 200 times in inputs
+        let inputs = vec![input.clone(); 200];
+        let target = vec![0.0, 0.0, 0.0];
+        let targets = vec![target.clone(); 200];
 
         nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 
