@@ -12,8 +12,6 @@ use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use once_cell::sync::Lazy;
-use std::fs;
-use std::io;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -171,13 +169,6 @@ impl ClassicNeuralNetwork {
         Ok(())
     }
 
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.deallocate();
-        }
-    }
-
     /// Saves the layout of the neural network to disk.
     fn save_layout(&self) {
         let shape = self.shape();
@@ -227,6 +218,13 @@ impl NeuralNetwork for ClassicNeuralNetwork {
     fn allocate(&mut self) {
         for layer in &mut self.layers {
             layer.allocate();
+        }
+    }
+
+    /// Deallocates the layers of the neural network.
+    fn deallocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.deallocate();
         }
     }
 
@@ -386,13 +384,6 @@ impl TrainableClassicNeuralNetwork {
         Ok(())
     }
 
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.deallocate();
-        }
-    }
-
     /// Saves the layout of the neural network to disk.
     fn save_layout(&self) {
         let shape = self.shape();
@@ -549,6 +540,13 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
     fn allocate(&mut self) {
         for layer in &mut self.layers {
             layer.allocate();
+        }
+    }
+
+    /// Deallocates the layers of the neural network.
+    fn deallocate(&mut self) {
+        for layer in &mut self.layers {
+            layer.deallocate();
         }
     }
 

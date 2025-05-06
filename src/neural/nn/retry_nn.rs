@@ -2,7 +2,6 @@ use std::path::Path;
 
 use super::nn_factory::copy_dir_recursive;
 use super::nn_factory::neural_network_from_disk;
-use super::nn_factory::new_neural_network;
 use super::nn_factory::trainable_neural_network_from_disk;
 use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
@@ -144,6 +143,7 @@ impl NeuralNetwork for RetryNeuralNetwork {
             self.past_internal_model_directories
                 .push(self.model_directory.path());
         }
+        self.model_directory = Directory::User(user_model_directory.clone());
         let primary_user_model_directory = append_dir(user_model_directory.clone(), "primary");
         self.primary_nn.save(primary_user_model_directory)?;
         let backup_user_model_directory = append_dir(user_model_directory, "backup");
@@ -158,6 +158,11 @@ impl NeuralNetwork for RetryNeuralNetwork {
     fn allocate(&mut self) {
         self.primary_nn.allocate();
         self.backup_nn.allocate();
+    }
+
+    fn deallocate(&mut self) {
+        self.primary_nn.deallocate();
+        self.backup_nn.deallocate();
     }
 
     fn set_internal(&mut self) {
@@ -179,6 +184,30 @@ impl NeuralNetwork for RetryNeuralNetwork {
     }
 }
 
+impl Drop for RetryNeuralNetwork {
+    fn drop(&mut self) {
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        // ensure that the model_directory exists
+        if std::fs::metadata(self.model_directory.path()).is_err() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
+        self.deallocate();
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+        // Remove all past internal model directories
+        for dir in &self.past_internal_model_directories {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+    }
+}
+
+
 #[derive(Debug, Clone)]
 pub struct TrainableRetryNeuralNetwork {
     primary_nn: WrappedTrainableNeuralNetwork,
@@ -186,6 +215,7 @@ pub struct TrainableRetryNeuralNetwork {
     // The shape of the neural network that it should pretend to have to the outside world
     shape: NeuralNetworkShape,
     model_directory: Directory,
+    past_internal_model_directories: Vec<String>,
 }
 
 impl TrainableRetryNeuralNetwork {
@@ -215,6 +245,7 @@ impl TrainableRetryNeuralNetwork {
             backup_nn,
             shape,
             model_directory: Directory::Internal(internal_model_directory),
+            past_internal_model_directories: vec![],
         }
     }
 
@@ -232,6 +263,7 @@ impl TrainableRetryNeuralNetwork {
                 backup_nn,
                 shape,
                 model_directory: Directory::User(model_directory),
+                past_internal_model_directories: vec![],
             }))
         } else {
             WrappedTrainableNeuralNetwork::new(Box::new(
@@ -262,6 +294,11 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
     }
 
     fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+        if let Directory::Internal(_) = self.model_directory {
+            self.past_internal_model_directories
+                .push(self.model_directory.path());
+        }
+        self.model_directory = Directory::User(user_model_directory.clone());
         let primary_user_model_directory = append_dir(user_model_directory.clone(), "primary");
         self.primary_nn.save(primary_user_model_directory)?;
         let backup_user_model_directory = append_dir(user_model_directory, "backup");
@@ -276,6 +313,11 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
     fn allocate(&mut self) {
         self.primary_nn.allocate();
         self.backup_nn.allocate();
+    }
+
+    fn deallocate(&mut self) {
+        self.primary_nn.deallocate();
+        self.backup_nn.deallocate();
     }
 
     fn set_internal(&mut self) {
@@ -413,3 +455,27 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
         cloned_retry_nn
     }
 }
+
+impl Drop for TrainableRetryNeuralNetwork {
+    fn drop(&mut self) {
+        // Save the model to ensure that everything is on disk if it is a user_model_directory
+        // ensure that the model_directory exists
+        if std::fs::metadata(self.model_directory.path()).is_err() {
+            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        }
+        self.deallocate();
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.model_directory {
+            if std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+        // Remove all past internal model directories
+        for dir in &self.past_internal_model_directories {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
+            }
+        }
+    }
+}
+
