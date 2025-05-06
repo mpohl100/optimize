@@ -573,7 +573,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         tolerance: f64,
         use_adam: bool,
         validation_split: f64,
-    ) {
+    ) -> f64 {
+        if inputs.len() < 100 {
+            return 0.0;
+        }
         assert!(
             (0.0..=1.0).contains(&validation_split),
             "validation_split must be between 0 and 1"
@@ -584,6 +587,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         let (train_targets, validation_targets) = targets.split_at(split_index);
 
         let multi_progress = Arc::clone(&MULTI_PROGRESS);
+
+        let mut accuracy = 0.0;
 
         for epoch in 0..epochs {
             // Initialize progress bar
@@ -676,7 +681,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             validation_loss /= validation_inputs.len() as f64;
             let validation_accuracy =
                 validation_success_count / validation_inputs.len() as f64 * 100.0;
-
+            accuracy = validation_accuracy;
             // Finish the progress bar
             loss /= train_inputs.len() as f64;
             let accuracy = success_count / train_inputs.len() as f64 * 100.0;
@@ -686,6 +691,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             pb.finish_with_message(message);
             multi_progress.remove(&pb);
         }
+        accuracy
     }
 
     /// Trains the neural network doing batch back propagation.
