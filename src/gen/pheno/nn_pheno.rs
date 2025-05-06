@@ -94,15 +94,26 @@ impl NeuralNetworkPhenotype {
     }
 
     fn mutate_levels(&mut self, rng_wrapper: &mut RealRng) {
+        let left_half_shape = self.left_half_shape.clone();
+        let right_half_shape = self.right_half_shape.clone();
+        let previous_shape = if left_half_shape.is_some() && right_half_shape.is_some() {
+            let left_shape = left_half_shape.unwrap();
+            let right_shape = right_half_shape.unwrap();
+            left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
+        } else {
+            self.get_nn().shape().clone()
+        };
+
         let random_number = rng_wrapper.fetch_uniform(1.0, 5.0, 1);
         // round do to integer
         let random_number = random_number[0].round() as i32;
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
-            self.get_nn().shape().clone(),
+            previous_shape.clone(),
             Some(random_number),
             self.nn.get_model_directory().path(),
         ));
         self.set_nn(nn);
+        self.reset_half_shapes();
     }
 }
 

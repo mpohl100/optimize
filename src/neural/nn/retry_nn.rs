@@ -255,7 +255,7 @@ impl TrainableRetryNeuralNetwork {
             let primary_nn = WrappedTrainableNeuralNetwork::new(Box::new(
                 TrainableClassicNeuralNetwork::from_disk(primary_model_directory).unwrap(),
             ));
-            let backup_nn = TrainableRetryNeuralNetwork::from_disk(backup_model_directory);
+            let backup_nn = TrainableRetryNeuralNetwork::from_disk(backup_model_directory.clone());
             let shape = backup_nn.shape();
             WrappedTrainableNeuralNetwork::new(Box::new(Self {
                 primary_nn,
