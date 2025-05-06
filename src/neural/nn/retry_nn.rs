@@ -188,10 +188,12 @@ impl Drop for RetryNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if std::fs::metadata(self.model_directory.path()).is_err() {
-            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        if let Directory::User(_) = &self.model_directory {
+            if std::fs::metadata(self.model_directory.path()).is_err() {
+                std::fs::create_dir_all(self.model_directory.path()).unwrap();
+            }
+            self.deallocate();
         }
-        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {
@@ -465,10 +467,12 @@ impl Drop for TrainableRetryNeuralNetwork {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
-        if std::fs::metadata(self.model_directory.path()).is_err() {
-            std::fs::create_dir_all(self.model_directory.path()).unwrap();
+        if let Directory::User(_) = &self.model_directory {
+            if std::fs::metadata(self.model_directory.path()).is_err() {
+                std::fs::create_dir_all(self.model_directory.path()).unwrap();
+            }
+            self.deallocate();
         }
-        self.deallocate();
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
             if std::fs::metadata(dir).is_ok() {
