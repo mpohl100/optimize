@@ -81,7 +81,7 @@ impl RetryNeuralNetwork {
     fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
         let primary_output = self.primary_nn.predict(input.clone());
         // if the last value in primary output is as close to zero as some tolerance, then we need to use the backup neural network
-        if primary_output[primary_output.len() - 1].abs() < 0.05 {
+        if (primary_output[primary_output.len() - 1] - 1.0).abs() < 0.2 {
             self.backup_nn.predict(input)
         } else {
             // return the primary output despite the last internal value
@@ -117,7 +117,7 @@ fn add_internal_dimensions(shape: NeuralNetworkShape) -> NeuralNetworkShape {
             },
             activation: internal_layer.activation.clone(),
         };
-        annotated_shape.change_layer(i, new_dense_layer_type);
+        annotated_shape.change_layer(i + 1, new_dense_layer_type);
     }
     annotated_shape.to_neural_network_shape()
 }
@@ -376,15 +376,13 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                         nb_correct_outputs += 1;
                     }
                 }
+                let mut t = target.clone();
                 if nb_correct_outputs == target.len() {
-                    let mut t = target.clone();
-                    t.push(1.0);
-                    (input.clone(), t)
-                } else {
-                    let mut t = target.clone();
                     t.push(0.0);
-                    (input.clone(), t)
+                } else {
+                    t.push(1.0);
                 }
+                (input.clone(), t)
             })
             .unzip();
 
@@ -517,7 +515,7 @@ mod tests {
                             input_size: 3,
                             output_size: 3,
                         },
-                        activation: ActivationData::new(ActivationType::Sigmoid),
+                        activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
                         layer_type: LayerType::Dense {
@@ -528,15 +526,15 @@ mod tests {
                     },
                 ],
             },
-            2,
+            1,
             "internal_model".to_string(),
         );
 
         let input = vec![1.0, 1.0, 1.0];
         // put input 200 times in inputs
-        let inputs = vec![input.clone(); 200];
+        let inputs = vec![input.clone(); 500];
         let target = vec![0.0, 0.0, 0.0];
-        let targets = vec![target.clone(); 200];
+        let targets = vec![target.clone(); 500];
 
         nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 
