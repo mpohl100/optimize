@@ -75,5 +75,5 @@ fn test_neural_network_breeding() {
     }
 
     // Remove model directory
-    std::fs::remove_dir_all(model_directory).expect("Failed to remove model directory");
+    // std::fs::remove_dir_all(model_directory).expect("Failed to remove model directory");
 }

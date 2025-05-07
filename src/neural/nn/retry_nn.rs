@@ -361,34 +361,37 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             validation_split,
         );
 
-        // evaluate all the samples with the temp neural network
-        let mut temp_predictions = Vec::new();
-        for input in inputs {
-            let prediction = temp_neural_network.predict(input.clone());
-            temp_predictions.push(prediction);
-        }
-
-        // modify the outputs to contain the information whether they matched or not
-        for (output, target) in temp_predictions.iter_mut().zip(targets.iter()) {
-            // if the temp_prediction is true, then append a zero to the end of the target
-            // Check if the output matches the target
-            let mut nb_correct_outputs = 0;
-            for (o, t) in output.iter().zip(target.iter()) {
-                if (o - t).abs() < tolerance {
-                    nb_correct_outputs += 1;
+        let (primary_inputs, primary_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = inputs
+            .iter()
+            .zip(targets.iter())
+            .map(|(input, target)| {
+                let prediction = temp_neural_network.predict(input.clone());
+                (input, target, prediction)
+            })
+            .map(|(input, target, prediction)| {
+                // Check if the output matches the target
+                let mut nb_correct_outputs = 0;
+                for (o, t) in prediction.iter().zip(target.iter()) {
+                    if (o - t).abs() < tolerance {
+                        nb_correct_outputs += 1;
+                    }
                 }
-            }
-            if nb_correct_outputs == target.len() {
-                output.push(0.0);
-            } else {
-                output.push(1.0);
-            }
-        }
+                if nb_correct_outputs == target.len() {
+                    let mut t = target.clone();
+                    t.push(1.0);
+                    (input.clone(), t)
+                } else {
+                    let mut t = target.clone();
+                    t.push(0.0);
+                    (input.clone(), t)
+                }
+            })
+            .unzip();
 
         // train the primary neural network with the modified outputs
         let primary_accuracy = self.primary_nn.train(
-            &temp_predictions,
-            targets,
+            &primary_inputs,
+            &primary_targets,
             learning_rate,
             epochs,
             tolerance,
@@ -396,23 +399,34 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             validation_split,
         );
 
-        let mut checked_predictions = Vec::new();
-        for input in inputs {
-            let prediction = self.primary_nn.predict(input.clone());
-            checked_predictions.push(prediction);
-        }
-        let mut filtered_inputs = Vec::new();
-        let mut filtered_targets = Vec::new();
-        for (input, prediction) in inputs.iter().zip(checked_predictions.iter()) {
-            // if the last value in primary output is as close to zero as some tolerance, then we need to use the backup neural network
-            if prediction[prediction.len() - 1].abs() > tolerance {
-                filtered_inputs.push(input.clone());
-                filtered_targets.push(prediction.clone());
-            }
-        }
+        let (backup_inputs, backup_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = primary_inputs
+            .iter()
+            .zip(primary_targets.iter())
+            .map(|(input, target)| {
+                let prediction = self.primary_nn.predict(input.clone());
+                (input, target, prediction)
+            })
+            .filter(|(_, target, prediction)| {
+                // Check if the output matches the target
+                let mut nb_correct_outputs = 0;
+                for (o, t) in prediction.iter().zip(target.iter()) {
+                    if (o - t).abs() < tolerance {
+                        nb_correct_outputs += 1;
+                    }
+                }
+
+                nb_correct_outputs == target.len()
+            })
+            .map(|(input, target, _)| {
+                let mut t = target.clone();
+                t.remove(t.len() - 1);
+                (input.clone(), t)
+            })
+            .unzip();
+
         let backup_accuracy = self.backup_nn.train(
-            &filtered_inputs,
-            &filtered_targets,
+            &backup_inputs,
+            &backup_targets,
             learning_rate,
             epochs,
             tolerance,
@@ -484,6 +498,57 @@ impl Drop for TrainableRetryNeuralNetwork {
             if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::neural::nn::shape::{ActivationData, ActivationType, LayerShape};
+
+    #[test]
+    fn test_retry_neural_network_train() {
+        let mut nn = TrainableRetryNeuralNetwork::new(
+            NeuralNetworkShape {
+                layers: vec![
+                    LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                        },
+                        activation: ActivationData::new(ActivationType::Sigmoid),
+                    },
+                    LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                        },
+                        activation: ActivationData::new(ActivationType::ReLU),
+                    },
+                ],
+            },
+            2,
+            "internal_model".to_string(),
+        );
+
+        let input = vec![1.0, 1.0, 1.0];
+        // put input 200 times in inputs
+        let inputs = vec![input.clone(); 200];
+        let target = vec![0.0, 0.0, 0.0];
+        let targets = vec![target.clone(); 200];
+
+        nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
+
+        let prediction = nn.predict(inputs[0].clone());
+        // print targets[0]
+        println!("{:?}", targets[0]);
+        // print prediction
+        println!("{:?}", prediction);
+        assert_eq!(prediction.len(), 3);
+        // assert that the prediction is close to the target
+        for (p, t) in prediction.iter().zip(&targets[0]) {
+            assert!((p - t).abs() < 1e-4);
         }
     }
 }
