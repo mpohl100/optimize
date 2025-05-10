@@ -6,6 +6,7 @@ use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, Layer
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
+use learn::neural::utilities::util::{Utils, WrappedUtils};
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
@@ -74,10 +75,13 @@ fn train_model(model_directory: String, internal_model_directory: String) {
     // Create a training session using the mock data importer
     let data_importer = MockDataImporter::new(nn_shape);
 
+    let utils = WrappedUtils::new(Utils::new(1000000000));
+
     let training_session = TrainingSession::from_disk(
         model_directory.clone(),
         training_params.clone(),
         Box::new(data_importer.clone()),
+        utils.clone(),
     );
     match training_session {
         Ok(mut training_session) => {
@@ -99,6 +103,7 @@ fn train_model(model_directory: String, internal_model_directory: String) {
         training_params,
         Box::new(data_importer),
         Directory::Internal(internal_model_directory),
+        utils.clone(),
     )
     .expect("Failed to create TrainingSession");
 
@@ -165,12 +170,14 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
     {
         // Arrange
+        let utils = WrappedUtils::new(Utils::new(1000000000));
+
         train_model(
             model_directory.clone(),
             "tests/test_model_persistence_3_internal".to_string(),
         );
 
-        let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone()).unwrap();
+        let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone(), utils.clone()).unwrap();
         ordinary_model.allocate();
         // Act
         ordinary_model
@@ -178,7 +185,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
             .expect("Failed to save model");
 
         let mut trainable_ordinary_model =
-            ClassicNeuralNetwork::from_disk(new_model_directory.clone()).unwrap();
+            ClassicNeuralNetwork::from_disk(new_model_directory.clone(), utils).unwrap();
 
         trainable_ordinary_model.allocate();
 

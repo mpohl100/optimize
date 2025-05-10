@@ -11,6 +11,7 @@ use crate::evol::rng::RandomNumberGenerator;
 use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
 use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
 use crate::neural::training::training_params::TrainingParams;
+use crate::neural::utilities::util::WrappedUtils;
 
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
 
@@ -29,11 +30,13 @@ impl NeuralNetworkGenerator {
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
         nb_threads: usize,
+        utils: WrappedUtils,
     ) -> Self {
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             params.shape().clone(),
             params.levels(),
             model_directory,
+            utils.clone(),
         ));
         Self {
             current_winner: nn,
@@ -51,8 +54,9 @@ impl NeuralNetworkGenerator {
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
         nb_threads: usize,
+        utils: WrappedUtils,
     ) -> Self {
-        let nn = trainable_neural_network_from_disk(model_directory.clone());
+        let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
         let mut changed_params = params.clone();
         changed_params.set_shape(nn.shape().clone());
         Self {

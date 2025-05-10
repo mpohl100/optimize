@@ -6,6 +6,7 @@ use learn::neural::training::training_params::TrainingParams;
 use learn::neural::training::training_session::TrainingSession;
 
 use clap::Parser;
+use learn::neural::utilities::util::{Utils, WrappedUtils};
 
 /// Command line arguments
 #[derive(Parser)]
@@ -17,6 +18,10 @@ struct Args {
     shape_file: String,
     #[clap(long, default_value = "0")]
     retry_levels: i32,
+    #[clap(long, default_value = "4")]
+    nb_threads: usize,
+    #[clap(long, default_value = "1000000000")]
+    cpu_memory: usize,
 
     // insert the training params here
     #[clap(long, default_value = "0.7")]
@@ -148,6 +153,8 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
+    let utils = WrappedUtils::new(Utils::new(args.cpu_memory));
+
     // if the model_directory exists load the model from disk
     let mut training_session = if std::fs::metadata(model_directory.clone()).is_ok() {
         if args.shape_file.is_empty() {
@@ -155,6 +162,7 @@ fn main() {
                 model_directory.clone(),
                 training_params,
                 Box::new(data_importer),
+                utils.clone(),
             )
             .expect("Failed to load model from disk")
         } else {
@@ -162,6 +170,7 @@ fn main() {
                 training_params,
                 Box::new(data_importer),
                 Directory::User("internal_model".to_string()),
+                utils.clone(),
             )
             .expect("Failed to create TrainingSession")
         }
@@ -170,6 +179,7 @@ fn main() {
             training_params,
             Box::new(data_importer),
             Directory::Internal("internal_model".to_string()),
+            utils.clone(),
         )
         .expect("Failed to create TrainingSession")
     };

@@ -2,6 +2,7 @@ use learn::neural::nn::nn_factory::neural_network_from_disk;
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 
 use clap::Parser;
+use learn::neural::utilities::util::{Utils, WrappedUtils};
 
 /// Command line arguments
 #[derive(Parser)]
@@ -19,6 +20,8 @@ struct Args {
     input_file: String,
     #[clap(long)]
     target_file: String,
+    #[clap(long, default_value = "1000000000")]
+    cpu_memory: usize,
 }
 
 // Mock DataImporter implementation for testing
@@ -70,7 +73,9 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    let mut nn = neural_network_from_disk(model_directory.clone());
+    let utils = WrappedUtils::new(Utils::new(args.cpu_memory));
+
+    let mut nn = neural_network_from_disk(model_directory.clone(), utils.clone());
 
     let data = data_importer.get_data();
     let inputs = data.data;

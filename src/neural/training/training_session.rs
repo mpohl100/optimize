@@ -5,6 +5,7 @@ use crate::neural::nn::nn_factory::new_trainable_neural_network;
 use crate::neural::nn::nn_factory::trainable_neural_network_from_disk;
 use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
 use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
+use crate::neural::utilities::util::WrappedUtils;
 
 use std::error::Error;
 
@@ -20,6 +21,7 @@ impl TrainingSession {
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
         model_directory: Directory,
+        utils: WrappedUtils, 
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
@@ -30,6 +32,7 @@ impl TrainingSession {
                 shape.clone(),
                 levels,
                 model_directory.path().to_string(),
+                utils,
             )),
             data_importer,
         })
@@ -55,12 +58,13 @@ impl TrainingSession {
         model_directory: String,
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
+        utils: WrappedUtils,
     ) -> Result<TrainingSession, Box<dyn Error>> {
         // if the directory does not esist, return an error
         if std::fs::metadata(model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = trainable_neural_network_from_disk(model_directory.clone());
+        let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
         Ok(TrainingSession {
             params,
             neural_network: nn,
@@ -166,6 +170,7 @@ mod tests {
     use crate::neural::nn::shape::NeuralNetworkShape;
     use crate::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
     use crate::neural::training::data_importer::{DataImporter, SessionData};
+    use crate::neural::utilities::util::Utils;
 
     // Mock DataImporter implementation for testing
     #[derive(Clone)]
@@ -236,10 +241,13 @@ mod tests {
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
+        let utils = WrappedUtils::new(Utils::new(1000000000));
+
         let mut training_session = TrainingSession::new(
             training_params,
             Box::new(data_importer),
             Directory::Internal("test_session_model".to_string()),
+            utils.clone(),
         )
         .expect("Failed to create TrainingSession");
 

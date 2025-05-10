@@ -1,4 +1,4 @@
-use crate::neural::nn::directory::Directory;
+use crate::neural::{nn::directory::Directory, utilities::util::WrappedUtils};
 use crate::neural::nn::shape::NeuralNetworkShape;
 use std::sync::{Arc, Mutex};
 
@@ -11,6 +11,7 @@ pub trait NeuralNetwork: std::fmt::Debug {
     fn deallocate(&mut self);
     fn set_internal(&mut self);
     fn duplicate(&self) -> WrappedNeuralNetwork;
+    fn get_utils(&self) -> WrappedUtils;
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,10 @@ impl WrappedNeuralNetwork {
 
     pub fn duplicate(&self) -> WrappedNeuralNetwork {
         self.nn.lock().unwrap().duplicate()
+    }
+
+    pub fn get_utils(&self) -> WrappedUtils {
+        self.nn.lock().unwrap().get_utils()
     }
 }
 
@@ -181,5 +186,9 @@ impl WrappedTrainableNeuralNetwork {
 
     pub fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
         self.nn.lock().unwrap().duplicate_trainable()
+    }
+
+    pub fn get_utils(&self) -> WrappedUtils {
+        self.nn.lock().unwrap().get_utils()
     }
 }
