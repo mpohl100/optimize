@@ -50,7 +50,7 @@ impl ClassicNeuralNetwork {
             shape,
             model_directory: Directory::Internal(internal_model_directory),
             past_internal_directory: Vec::new(),
-            utils: utils,
+            utils,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -93,7 +93,7 @@ impl ClassicNeuralNetwork {
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
             past_internal_directory: Vec::new(),
-            utils: utils,
+            utils,
         };
 
         for i in 0..sh.layers.len() {
@@ -314,7 +314,7 @@ impl TrainableClassicNeuralNetwork {
             shape,
             model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
-            utils: utils,
+            utils,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -351,7 +351,7 @@ impl TrainableClassicNeuralNetwork {
             shape: NeuralNetworkShape::default(),
             model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
-            utils: utils,
+            utils,
         };
 
         network.save_layout();
@@ -494,7 +494,7 @@ impl TrainableClassicNeuralNetwork {
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
             past_internal_model_directory: Vec::new(),
-            utils: utils,
+            utils,
         };
 
         for i in 0..sh.layers.len() {
