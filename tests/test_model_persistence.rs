@@ -177,7 +177,8 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
             "tests/test_model_persistence_3_internal".to_string(),
         );
 
-        let mut ordinary_model = ClassicNeuralNetwork::from_disk(model_directory.clone(), utils.clone()).unwrap();
+        let mut ordinary_model =
+            ClassicNeuralNetwork::from_disk(model_directory.clone(), utils.clone()).unwrap();
         ordinary_model.allocate();
         // Act
         ordinary_model

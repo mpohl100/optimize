@@ -4,9 +4,8 @@ use crate::neural::layer::layer_trait::WrappedLayer;
 
 use super::layer_alloc::{LayerAllocManager, WrappedLayerAllocManager};
 
-
 #[derive(Default, Debug, Clone)]
-pub struct Utils{
+pub struct Utils {
     pub layer_alloc_manager: WrappedLayerAllocManager,
 }
 
@@ -41,7 +40,7 @@ impl WrappedUtils {
     pub fn allocate(&mut self, allocatable: &mut WrappedLayer) -> bool {
         self.utils.lock().unwrap().allocate(allocatable)
     }
-    
+
     pub fn get_max_allocated_size(&self) -> usize {
         self.utils.lock().unwrap().get_max_allocated_size()
     }

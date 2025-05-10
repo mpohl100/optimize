@@ -21,7 +21,7 @@ impl TrainingSession {
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
         model_directory: Directory,
-        utils: WrappedUtils, 
+        utils: WrappedUtils,
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
