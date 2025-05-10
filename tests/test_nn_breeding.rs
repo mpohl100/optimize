@@ -9,6 +9,7 @@ use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
 use learn::evol::evolution::EvolutionOptions;
 use learn::evol::evolution::LogLevel;
 use learn::evol::strategy::BreedStrategy;
+use learn::neural::utilities::util::{Utils, WrappedUtils};
 
 #[test]
 fn test_neural_network_breeding() {
@@ -41,11 +42,14 @@ fn test_neural_network_breeding() {
 
     let input_data = vec![0.0; 128]; // Example input data
 
+    let utils = WrappedUtils::new(Utils::new(1000000000));
+
     // Create a neural network phenotype
     let mut nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
         nn_shape,
         None,
         "breeding_test_model".to_string(),
+        utils.clone(),
     ));
     let _ = nn.predict(input_data);
     let nn_phenotype = NeuralNetworkPhenotype::new(nn);

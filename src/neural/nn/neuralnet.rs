@@ -7,6 +7,7 @@ use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 use crate::neural::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 use crate::neural::nn::shape::*;
+use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -32,11 +33,12 @@ pub struct ClassicNeuralNetwork {
     shape: NeuralNetworkShape,
     model_directory: Directory,
     past_internal_directory: Vec<String>,
+    utils: WrappedUtils,
 }
 
 impl ClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(shape: NeuralNetworkShape, internal_model_directory: String) -> Self {
+    pub fn new(shape: NeuralNetworkShape, internal_model_directory: String, utils: WrappedUtils) -> Self {
         let shape_clone = shape.clone();
         let mut network = ClassicNeuralNetwork {
             layers: Vec::new(),
@@ -44,6 +46,7 @@ impl ClassicNeuralNetwork {
             shape,
             model_directory: Directory::Internal(internal_model_directory),
             past_internal_directory: Vec::new(),
+            utils: utils,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -74,7 +77,7 @@ impl ClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: String) -> Option<ClassicNeuralNetwork> {
+    pub fn from_disk(model_directory: String, utils: WrappedUtils) -> Option<ClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
@@ -86,6 +89,7 @@ impl ClassicNeuralNetwork {
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
             past_internal_directory: Vec::new(),
+            utils: utils,
         };
 
         for i in 0..sh.layers.len() {
@@ -250,7 +254,12 @@ impl NeuralNetwork for ClassicNeuralNetwork {
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
             past_internal_directory: Vec::new(),
+            utils: self.utils.clone(),
         }))
+    }
+
+    fn get_utils(&self) -> WrappedUtils {
+        self.utils.clone()
     }
 }
 
@@ -288,11 +297,12 @@ pub struct TrainableClassicNeuralNetwork {
     shape: NeuralNetworkShape,
     model_directory: Directory,
     past_internal_model_directory: Vec<String>,
+    utils: WrappedUtils,
 }
 
 impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(shape: NeuralNetworkShape, model_directory: Directory) -> Self {
+    pub fn new(shape: NeuralNetworkShape, model_directory: Directory, utils: WrappedUtils) -> Self {
         let shape_clone = shape.clone();
         let mut network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
@@ -300,6 +310,7 @@ impl TrainableClassicNeuralNetwork {
             shape,
             model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
+            utils: utils,
         };
 
         // Initialize layers and activations based on the provided shape.
@@ -329,13 +340,14 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
-    pub fn new_dir(model_directory: Directory) -> Self {
+    pub fn new_dir(model_directory: Directory, utils: WrappedUtils) -> Self {
         let network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
             model_directory: Directory::Internal(get_first_free_model_directory(model_directory)),
             past_internal_model_directory: Vec::new(),
+            utils: utils,
         };
 
         network.save_layout();
@@ -463,7 +475,7 @@ impl TrainableClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: String) -> Option<TrainableClassicNeuralNetwork> {
+    pub fn from_disk(model_directory: String, utils: WrappedUtils) -> Option<TrainableClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
@@ -475,6 +487,7 @@ impl TrainableClassicNeuralNetwork {
             shape: sh.clone(),
             model_directory: Directory::User(model_directory.clone()),
             past_internal_model_directory: Vec::new(),
+            utils: utils,
         };
 
         for i in 0..sh.layers.len() {
@@ -559,6 +572,10 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 
     fn duplicate(&self) -> WrappedNeuralNetwork {
         unimplemented!()
+    }
+
+    fn get_utils(&self) -> WrappedUtils {
+        self.utils.clone()
     }
 }
 
@@ -786,6 +803,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             shape: self.shape.clone(),
             model_directory: Directory::Internal(model_directory),
             past_internal_model_directory: Vec::new(),
+            utils: self.utils.clone(),
         }))
     }
 }
@@ -819,10 +837,11 @@ impl Drop for TrainableClassicNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::neural::nn::shape::{ActivationType, LayerShape};
+    use crate::neural::{nn::shape::{ActivationType, LayerShape}, utilities::util::Utils};
 
     #[test]
     fn test_neural_network_train() {
+        let utils = WrappedUtils::new(Utils::new(1000000000));
         let mut nn = TrainableClassicNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![
@@ -843,6 +862,7 @@ mod tests {
                 ],
             },
             Directory::Internal("internal_model".to_string()),
+            utils.clone(),
         );
 
         let input = vec![1.0, 1.0, 1.0];

@@ -10,6 +10,8 @@ use learn::neural::training::data_importer::{DataImporter, SessionData};
 
 use clap::Parser;
 use learn::neural::training::training_params::TrainingParams;
+use learn::neural::utilities::util::Utils;
+use learn::neural::utilities::util::WrappedUtils;
 
 /// Command line arguments
 #[derive(Parser)]
@@ -23,6 +25,8 @@ struct Args {
     retry_levels: i32,
     #[clap(long, default_value = "4")]
     nb_threads: usize,
+    #[clap(long, default_value = "1000000000")]
+    cpu_memory: usize,
 
     // insert the training params here
     #[clap(long, default_value = "0.7")]
@@ -181,6 +185,8 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
+    let utils = WrappedUtils::new(Utils::new(args.cpu_memory));
+
     // generate from disk if the model_directory exists
     let mut nn_generator = if std::path::Path::new(model_directory).exists() {
         if args.shape_file.is_empty() {
@@ -190,6 +196,7 @@ fn main() {
                 Box::new(data_importer),
                 model_directory.clone(),
                 nb_threads,
+                utils.clone(),
             )
         } else {
             NeuralNetworkGenerator::new(
@@ -198,6 +205,7 @@ fn main() {
                 Box::new(data_importer),
                 model_directory.clone(),
                 nb_threads,
+                utils.clone(),
             )
         }
     } else {
@@ -207,6 +215,7 @@ fn main() {
             Box::new(data_importer),
             model_directory.clone(),
             nb_threads,
+            utils.clone(),
         )
     };
     nn_generator.generate();

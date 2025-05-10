@@ -88,6 +88,7 @@ impl NeuralNetworkPhenotype {
             self.get_nn().shape().clone(),
             None,
             self.nn.get_model_directory().path(),
+            self.nn.get_utils(),
         ));
         self.set_nn(nn);
         self.reset_half_shapes();
@@ -111,6 +112,7 @@ impl NeuralNetworkPhenotype {
             previous_shape.clone(),
             Some(random_number),
             self.nn.get_model_directory().path(),
+            self.nn.get_utils(),
         ));
         self.set_nn(nn);
         self.reset_half_shapes();

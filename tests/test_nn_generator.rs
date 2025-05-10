@@ -4,6 +4,7 @@ use learn::neural::nn::shape::NeuralNetworkShape;
 use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use learn::neural::training::data_importer::{DataImporter, SessionData};
 use learn::neural::training::training_params::TrainingParams;
+use learn::neural::utilities::util::{self, Utils, WrappedUtils};
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
@@ -68,12 +69,15 @@ fn test_neural_network_generator() {
 
     let evolution_params = EvolutionOptions::new(2, LogLevel::Verbose, 3, 4);
 
+    let utils = WrappedUtils::new(Utils::new(1000000000));
+
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
         evolution_params,
         Box::new(data_importer),
         model_directory.clone(),
         4,
+        utils.clone(),
     );
     nn_generator.generate();
     nn_generator.save();
