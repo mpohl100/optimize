@@ -1,3 +1,4 @@
+use crate::alloc::allocatable::WrappedAllocatableTrait;
 use crate::neural::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
@@ -26,7 +27,7 @@ use super::nn_factory::{copy_dir_recursive, get_first_free_model_directory};
 use super::nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork};
 
 /// A neural network.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ClassicNeuralNetwork {
     layers: Vec<WrappedLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
@@ -294,7 +295,7 @@ impl Drop for ClassicNeuralNetwork {
 }
 
 /// A neural network.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TrainableClassicNeuralNetwork {
     layers: Vec<WrappedTrainableLayer>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,

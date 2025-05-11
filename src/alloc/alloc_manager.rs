@@ -1,17 +1,18 @@
-use super::allocatable::WrappedAllocatable;
+use super::allocatable::WrappedAllocatableTrait;
 
 use std::{
     ptr,
     sync::{Arc, Mutex},
 };
 
-pub struct AllocManager {
-    currently_allocated: Vec<WrappedAllocatable>,
+#[derive(Default, Debug, Clone)]
+pub struct AllocManager<WrappedType: WrappedAllocatableTrait> {
+    currently_allocated: Vec<WrappedType>,
     max_allocated_size: usize,
     currently_allocated_size: usize,
 }
 
-impl AllocManager {
+impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
     pub fn new(max_allocated_size: usize) -> Self {
         Self {
             currently_allocated: Vec::new(),
@@ -20,7 +21,7 @@ impl AllocManager {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedAllocatable) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedType) -> bool {
         if allocatable.is_allocated() {
             return false;
         }
@@ -46,7 +47,7 @@ impl AllocManager {
         false
     }
 
-    fn deallocate(&mut self, allocatable: WrappedAllocatable) {
+    fn deallocate(&mut self, allocatable: WrappedType) {
         if !allocatable.is_allocated() {
             return;
         }
@@ -74,22 +75,23 @@ impl AllocManager {
     }
 }
 
-pub struct WrappedAllocManager {
-    alloc_manager: Arc<Mutex<AllocManager>>,
+#[derive(Default, Debug, Clone)]
+pub struct WrappedAllocManager<WrappedType: WrappedAllocatableTrait> {
+    alloc_manager: Arc<Mutex<AllocManager<WrappedType>>>,
 }
 
-impl WrappedAllocManager {
-    pub fn new(alloc_manager: AllocManager) -> Self {
+impl<WrappedType: WrappedAllocatableTrait> WrappedAllocManager<WrappedType> {
+    pub fn new(alloc_manager: AllocManager<WrappedType>) -> Self {
         Self {
             alloc_manager: Arc::new(Mutex::new(alloc_manager)),
         }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedAllocatable) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedType) -> bool {
         self.alloc_manager.lock().unwrap().allocate(allocatable)
     }
 
-    pub fn deallocate(&mut self, allocatable: WrappedAllocatable) {
+    pub fn deallocate(&mut self, allocatable: WrappedType) {
         self.alloc_manager.lock().unwrap().deallocate(allocatable);
     }
 
@@ -100,9 +102,12 @@ impl WrappedAllocManager {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+    use std::sync::Mutex;
+
     use crate::alloc::alloc_manager::AllocManager;
     use crate::alloc::allocatable::Allocatable;
-    use crate::alloc::allocatable::WrappedAllocatable;
+    use crate::alloc::allocatable::WrappedAllocatableTrait;
 
     struct TestAllocatable {
         size: usize,
@@ -150,10 +155,53 @@ mod tests {
         }
     }
 
+    #[derive(Clone)]
+    struct WrappedTestAllocatable {
+        allocatable: Arc<Mutex<TestAllocatable>>,
+    }
+
+    impl WrappedTestAllocatable {
+        pub fn new(allocatable: Box<TestAllocatable>) -> Self {
+            Self {
+                allocatable: Arc::new(Mutex::new(*allocatable)),
+            }
+        }
+    }
+
+    impl WrappedAllocatableTrait for WrappedTestAllocatable {
+        fn allocate(&self) {
+            self.allocatable.lock().unwrap().allocate();
+        }
+
+        fn deallocate(&self) {
+            self.allocatable.lock().unwrap().deallocate();
+        }
+
+        fn is_allocated(&self) -> bool {
+            self.allocatable.lock().unwrap().is_allocated()
+        }
+
+        fn get_size(&self) -> usize {
+            self.allocatable.lock().unwrap().get_size()
+        }
+
+        fn mark_for_use(&mut self) {
+            self.allocatable.lock().unwrap().mark_for_use();
+        }
+
+        fn free_from_use(&mut self) {
+            self.allocatable.lock().unwrap().free_from_use();
+        }
+
+        fn is_in_use(&self) -> bool {
+            self.allocatable.lock().unwrap().is_in_use()
+        }
+    }
+
     #[test]
     fn test_alloc_manager_only_allocates_once() {
         let mut alloc_manager = AllocManager::new(100);
-        let allocatable = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
+        let allocatable = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         assert_eq!(alloc_manager.allocate(allocatable.clone()), true);
         assert_eq!(alloc_manager.allocate(allocatable.clone()), false);
     }
@@ -161,10 +209,10 @@ mod tests {
     #[test]
     fn test_alloc_manager_gets_through_loop_with_not_much_memory() {
         let mut alloc_manager = AllocManager::new(60);
-        let mut allocatable1 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let mut allocatable2 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let mut allocatable3 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let allocatable4 = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
+        let mut allocatable1 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
+        let mut allocatable2 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
+        let mut allocatable3 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
+        let allocatable4 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         let mut allocatables = vec![
             allocatable1.clone(),
             allocatable2.clone(),

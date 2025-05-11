@@ -1,24 +1,19 @@
 use std::sync::{Arc, Mutex};
 
-use crate::neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer};
+use crate::{alloc::alloc_manager::{AllocManager, WrappedAllocManager}, neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer}};
 
-use super::{
-    layer_alloc::{LayerAllocManager, WrappedLayerAllocManager},
-    trainable_layer_alloc::{TrainableLayerAllocManager, WrappedTrainableLayerAllocManager},
-};
-
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Utils {
-    layer_alloc_manager: WrappedLayerAllocManager,
-    trainable_layer_alloc_manager: WrappedTrainableLayerAllocManager,
+    layer_alloc_manager: WrappedAllocManager<WrappedLayer>,
+    trainable_layer_alloc_manager: WrappedAllocManager<WrappedTrainableLayer>,
 }
 
 impl Utils {
     pub fn new(cpu_memory: usize) -> Self {
         Self {
-            layer_alloc_manager: WrappedLayerAllocManager::new(LayerAllocManager::new(cpu_memory)),
-            trainable_layer_alloc_manager: WrappedTrainableLayerAllocManager::new(
-                TrainableLayerAllocManager::new(cpu_memory),
+            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<WrappedLayer>::new(cpu_memory)),
+            trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
+                AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
             ),
         }
     }
@@ -44,7 +39,7 @@ impl Utils {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedUtils {
     utils: Arc<Mutex<Utils>>,
 }

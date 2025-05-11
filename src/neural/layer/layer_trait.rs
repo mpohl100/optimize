@@ -1,4 +1,4 @@
-use crate::alloc::allocatable::Allocatable;
+use crate::alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
 use crate::neural::mat::matrix::Matrix;
 
 use dyn_clone::DynClone;
@@ -89,34 +89,6 @@ impl WrappedLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn allocate(&self) {
-        self.layer.lock().unwrap().allocate();
-    }
-
-    pub fn deallocate(&self) {
-        self.layer.lock().unwrap().deallocate();
-    }
-
-    pub fn is_allocated(&self) -> bool {
-        self.layer.lock().unwrap().is_allocated()
-    }
-
-    pub fn get_size(&self) -> usize {
-        self.layer.lock().unwrap().get_size()
-    }
-
-    pub fn mark_for_use(&mut self) {
-        self.layer.lock().unwrap().mark_for_use();
-    }
-
-    pub fn free_from_use(&mut self) {
-        self.layer.lock().unwrap().free_from_use();
-    }
-
-    pub fn is_in_use(&self) -> bool {
-        self.layer.lock().unwrap().is_in_use()
-    }
-
     pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.layer.lock().unwrap().forward(input)
     }
@@ -147,6 +119,36 @@ impl WrappedLayer {
 
     pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
+    }
+}
+
+impl WrappedAllocatableTrait for WrappedLayer {
+    fn allocate(&self) {
+        self.layer.lock().unwrap().allocate();
+    }
+
+    fn deallocate(&self) {
+        self.layer.lock().unwrap().deallocate();
+    }
+
+    fn is_allocated(&self) -> bool {
+        self.layer.lock().unwrap().is_allocated()
+    }
+
+    fn get_size(&self) -> usize {
+        self.layer.lock().unwrap().get_size()
+    }
+
+    fn mark_for_use(&mut self) {
+        self.layer.lock().unwrap().mark_for_use();
+    }
+
+    fn free_from_use(&mut self) {
+        self.layer.lock().unwrap().free_from_use();
+    }
+
+    fn is_in_use(&self) -> bool {
+        self.layer.lock().unwrap().is_in_use()
     }
 }
 
@@ -224,34 +226,6 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn allocate(&self) {
-        self.layer.lock().unwrap().allocate();
-    }
-
-    pub fn deallocate(&self) {
-        self.layer.lock().unwrap().deallocate();
-    }
-
-    pub fn is_allocated(&self) -> bool {
-        self.layer.lock().unwrap().is_allocated()
-    }
-
-    pub fn get_size(&self) -> usize {
-        self.layer.lock().unwrap().get_size()
-    }
-
-    pub fn mark_for_use(&mut self) {
-        self.layer.lock().unwrap().mark_for_use();
-    }
-
-    pub fn free_from_use(&mut self) {
-        self.layer.lock().unwrap().free_from_use();
-    }
-
-    pub fn is_in_use(&self) -> bool {
-        self.layer.lock().unwrap().is_in_use()
-    }
-
     pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         self.layer.lock().unwrap().forward(input)
     }
@@ -319,5 +293,35 @@ impl WrappedTrainableLayer {
     }
     pub fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read_weight(path)
+    }
+}
+
+impl WrappedAllocatableTrait for WrappedTrainableLayer {
+    fn allocate(&self) {
+        self.layer.lock().unwrap().allocate();
+    }
+
+    fn deallocate(&self) {
+        self.layer.lock().unwrap().deallocate();
+    }
+
+    fn is_allocated(&self) -> bool {
+        self.layer.lock().unwrap().is_allocated()
+    }
+
+    fn get_size(&self) -> usize {
+        self.layer.lock().unwrap().get_size()
+    }
+
+    fn mark_for_use(&mut self) {
+        self.layer.lock().unwrap().mark_for_use();
+    }
+
+    fn free_from_use(&mut self) {
+        self.layer.lock().unwrap().free_from_use();
+    }
+
+    fn is_in_use(&self) -> bool {
+        self.layer.lock().unwrap().is_in_use()
     }
 }
