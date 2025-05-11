@@ -89,11 +89,11 @@ impl WrappedLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn allocate(&mut self) {
+    pub fn allocate(&self) {
         self.layer.lock().unwrap().allocate();
     }
 
-    pub fn deallocate(&mut self) {
+    pub fn deallocate(&self) {
         self.layer.lock().unwrap().deallocate();
     }
 
@@ -224,11 +224,11 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn allocate(&mut self) {
+    pub fn allocate(&self) {
         self.layer.lock().unwrap().allocate();
     }
 
-    pub fn deallocate(&mut self) {
+    pub fn deallocate(&self) {
         self.layer.lock().unwrap().deallocate();
     }
 
