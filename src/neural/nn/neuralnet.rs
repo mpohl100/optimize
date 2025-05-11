@@ -187,8 +187,8 @@ impl ClassicNeuralNetwork {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.allocate();
             layer.mark_for_use();
+            self.utils.allocate(layer.clone());
             output = layer.forward(&output);
             layer.free_from_use();
             // this operation should not change the dimension of output
@@ -224,15 +224,15 @@ impl NeuralNetwork for ClassicNeuralNetwork {
 
     /// Allocates the layers of the neural network.
     fn allocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.allocate();
+        for layer in &self.layers {
+            self.utils.allocate(layer.clone());
         }
     }
 
     /// Deallocates the layers of the neural network.
     fn deallocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.deallocate();
+        for layer in &self.layers {
+            self.utils.deallocate(layer.clone());
         }
     }
 
@@ -426,8 +426,8 @@ impl TrainableClassicNeuralNetwork {
     fn forward(&mut self, input: &[f64]) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.allocate();
             layer.mark_for_use();
+            self.utils.allocate_trainable(layer.clone());
             output = layer.forward(&output);
             layer.free_from_use();
             // this operation should not change the dimension of output
@@ -456,8 +456,8 @@ impl TrainableClassicNeuralNetwork {
             .zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
-            layer.allocate();
             layer.mark_for_use();
+            self.utils.allocate_trainable(layer.clone());
             grad = layer.backward(&grad);
             layer.free_from_use();
         }
@@ -560,15 +560,15 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 
     /// Allocates the layers of the neural network.
     fn allocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.allocate();
+        for layer in &self.layers {
+            self.utils.allocate_trainable(layer.clone());
         }
     }
 
     /// Deallocates the layers of the neural network.
     fn deallocate(&mut self) {
-        for layer in &mut self.layers {
-            layer.deallocate();
+        for layer in &self.layers {
+            self.utils.deallocate_trainable(layer.clone());
         }
     }
 
