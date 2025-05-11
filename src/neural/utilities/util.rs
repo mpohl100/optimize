@@ -5,10 +5,13 @@ use crate::{
     neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer},
 };
 
+use indicatif::MultiProgress;
+
 #[derive(Debug, Clone)]
 pub struct Utils {
     layer_alloc_manager: WrappedAllocManager<WrappedLayer>,
     trainable_layer_alloc_manager: WrappedAllocManager<WrappedTrainableLayer>,
+    mutli_progress: Arc<MultiProgress>,
 }
 
 impl Utils {
@@ -22,6 +25,7 @@ impl Utils {
             trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
                 AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
             ),
+            mutli_progress: Arc::new(MultiProgress::new()),
         }
     }
 
@@ -43,6 +47,10 @@ impl Utils {
 
     pub fn get_max_allocated_size(&self) -> usize {
         self.layer_alloc_manager.get_max_allocated_size()
+    }
+
+    pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
+        self.mutli_progress.clone()
     }
 }
 
@@ -76,5 +84,9 @@ impl WrappedUtils {
 
     pub fn get_max_allocated_size(&self) -> usize {
         self.utils.lock().unwrap().get_max_allocated_size()
+    }
+
+    pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
+        self.utils.lock().unwrap().get_multi_progress().clone()
     }
 }

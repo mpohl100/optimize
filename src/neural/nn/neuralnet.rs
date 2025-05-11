@@ -11,14 +11,9 @@ use crate::neural::nn::shape::*;
 use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 
-use once_cell::sync::Lazy;
 use std::path::Path;
-use std::sync::Arc;
-
-// Create a static MultiProgress instance
-static MULTI_PROGRESS: Lazy<Arc<MultiProgress>> = Lazy::new(|| Arc::new(MultiProgress::new()));
 
 use std::boxed::Box;
 
@@ -614,9 +609,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         let (train_inputs, validation_inputs) = inputs.split_at(split_index);
         let (train_targets, validation_targets) = targets.split_at(split_index);
 
-        let multi_progress = Arc::clone(&MULTI_PROGRESS);
-
         let mut accuracy = 0.0;
+
+        let multi_progress = self.utils.get_multi_progress();
 
         for epoch in 0..epochs {
             // Initialize progress bar
