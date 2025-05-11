@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{alloc::alloc_manager::{AllocManager, WrappedAllocManager}, neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer}};
+use crate::{
+    alloc::alloc_manager::{AllocManager, WrappedAllocManager},
+    neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer},
+};
 
 #[derive(Debug, Clone)]
 pub struct Utils {
@@ -11,7 +14,11 @@ pub struct Utils {
 impl Utils {
     pub fn new(cpu_memory: usize) -> Self {
         Self {
-            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<WrappedLayer>::new(cpu_memory)),
+            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
+                WrappedLayer,
+            >::new(
+                cpu_memory
+            )),
             trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
                 AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
             ),
