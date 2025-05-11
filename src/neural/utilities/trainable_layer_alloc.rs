@@ -1,15 +1,15 @@
 use std::{ptr, sync::{Arc, Mutex}};
 
-use crate::neural::layer::layer_trait::WrappedLayer;
+use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 
 #[derive(Default, Debug, Clone)]
-pub struct LayerAllocManager {
-    currently_allocated: Vec<WrappedLayer>,
+pub struct TrainableLayerAllocManager {
+    currently_allocated: Vec<WrappedTrainableLayer>,
     max_allocated_size: usize,
     currently_allocated_size: usize,
 }
 
-impl LayerAllocManager {
+impl TrainableLayerAllocManager {
     pub fn new(max_allocated_size: usize) -> Self {
         Self {
             currently_allocated: Vec::new(),
@@ -18,7 +18,7 @@ impl LayerAllocManager {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedLayer) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedTrainableLayer) -> bool {
         if allocatable.is_allocated() {
             return false;
         }
@@ -44,7 +44,7 @@ impl LayerAllocManager {
         false
     }
 
-    fn deallocate(&mut self, allocatable: WrappedLayer) {
+    fn deallocate(&mut self, allocatable: WrappedTrainableLayer) {
         if !allocatable.is_allocated() {
             return;
         }
@@ -73,22 +73,22 @@ impl LayerAllocManager {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct WrappedLayerAllocManager {
-    alloc_manager: Arc<Mutex<LayerAllocManager>>,
+pub struct WrappedTrainableLayerAllocManager {
+    alloc_manager: Arc<Mutex<TrainableLayerAllocManager>>,
 }
 
-impl WrappedLayerAllocManager {
-    pub fn new(alloc_manager: LayerAllocManager) -> Self {
+impl WrappedTrainableLayerAllocManager {
+    pub fn new(alloc_manager: TrainableLayerAllocManager) -> Self {
         Self {
             alloc_manager: Arc::new(Mutex::new(alloc_manager)),
         }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedLayer) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedTrainableLayer) -> bool {
         self.alloc_manager.lock().unwrap().allocate(allocatable)
     }
 
-    pub fn deallocate(&mut self, allocatable: WrappedLayer) {
+    pub fn deallocate(&mut self, allocatable: WrappedTrainableLayer) {
         self.alloc_manager.lock().unwrap().deallocate(allocatable);
     }
 

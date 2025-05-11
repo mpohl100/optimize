@@ -22,11 +22,11 @@ impl WrappedAllocatable {
         }
     }
 
-    pub fn allocate(&mut self) {
+    pub fn allocate(&self) {
         self.allocatable.lock().unwrap().allocate();
     }
 
-    pub fn deallocate(&mut self) {
+    pub fn deallocate(&self) {
         self.allocatable.lock().unwrap().deallocate();
     }
 

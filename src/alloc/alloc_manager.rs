@@ -1,6 +1,6 @@
 use super::allocatable::WrappedAllocatable;
 
-use std::sync::{Arc, Mutex};
+use std::{ptr, sync::{Arc, Mutex}};
 
 pub struct AllocManager {
     currently_allocated: Vec<WrappedAllocatable>,
@@ -17,7 +17,7 @@ impl AllocManager {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: &mut WrappedAllocatable) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedAllocatable) -> bool {
         if allocatable.is_allocated() {
             return false;
         }
@@ -43,6 +43,15 @@ impl AllocManager {
         false
     }
 
+    fn deallocate(&mut self, allocatable: WrappedAllocatable) {
+        if !allocatable.is_allocated() {
+            return;
+        }
+        allocatable.deallocate();
+        self.currently_allocated_size -= allocatable.get_size();
+        self.currently_allocated.retain(|x| !ptr::eq(x, &allocatable));
+    }
+
     fn cleanup(&mut self) {
         // cleans up everything that is not longer in use
         let mut indexes_to_clear = Vec::new();
@@ -52,9 +61,8 @@ impl AllocManager {
             }
         }
         for index in indexes_to_clear {
-            self.currently_allocated[index].deallocate();
-            self.currently_allocated_size -= self.currently_allocated[index].get_size();
-            self.currently_allocated.remove(index);
+            self.deallocate(self.currently_allocated[index].clone());
+        
         }
     }
 
@@ -74,8 +82,12 @@ impl WrappedAllocManager {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: &mut WrappedAllocatable) -> bool {
+    pub fn allocate(&mut self, allocatable: WrappedAllocatable) -> bool {
         self.alloc_manager.lock().unwrap().allocate(allocatable)
+    }
+
+    pub fn deallocate(&mut self, allocatable: WrappedAllocatable) {
+        self.alloc_manager.lock().unwrap().deallocate(allocatable);
     }
 
     pub fn get_max_allocated_size(&self) -> usize {
@@ -139,8 +151,8 @@ mod tests {
     fn test_alloc_manager_only_allocates_once() {
         let mut alloc_manager = AllocManager::new(100);
         let allocatable = WrappedAllocatable::new(Box::new(TestAllocatable::new(50)));
-        assert_eq!(alloc_manager.allocate(&mut allocatable.clone()), true);
-        assert_eq!(alloc_manager.allocate(&mut allocatable.clone()), false);
+        assert_eq!(alloc_manager.allocate(allocatable.clone()), true);
+        assert_eq!(alloc_manager.allocate(allocatable.clone()), false);
     }
 
     #[test]
@@ -164,7 +176,7 @@ mod tests {
             } else if index == 3 {
                 allocatable3.free_from_use();
             }
-            let result = alloc_manager.allocate(&mut this_allocatable.clone());
+            let result = alloc_manager.allocate(this_allocatable.clone());
             assert_eq!(result, true);
             this_allocatable.mark_for_use();
         }
