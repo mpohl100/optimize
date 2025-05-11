@@ -6,12 +6,38 @@ use crate::{
 };
 
 use indicatif::MultiProgress;
+use rayon::ThreadPoolBuilder;
+
+#[derive(Debug, Clone)]
+pub struct WrappedThreadPool {
+    thread_pool: Arc<Mutex<rayon::ThreadPool>>,
+}
+
+impl WrappedThreadPool {
+    pub fn new(num_threads: usize) -> Self {
+        let thread_pool = ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+        Self {
+            thread_pool: Arc::new(Mutex::new(thread_pool)),
+        }
+    }
+
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.thread_pool.lock().unwrap().install(f);
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Utils {
     layer_alloc_manager: WrappedAllocManager<WrappedLayer>,
     trainable_layer_alloc_manager: WrappedAllocManager<WrappedTrainableLayer>,
     mutli_progress: Arc<MultiProgress>,
+    thread_pool: WrappedThreadPool,
 }
 
 impl Utils {
@@ -26,6 +52,7 @@ impl Utils {
                 AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
             ),
             mutli_progress: Arc::new(MultiProgress::new()),
+            thread_pool: WrappedThreadPool::new(4),
         }
     }
 
@@ -51,6 +78,13 @@ impl Utils {
 
     pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
         self.mutli_progress.clone()
+    }
+
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.thread_pool.execute(f);
     }
 }
 
@@ -88,5 +122,12 @@ impl WrappedUtils {
 
     pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
         self.utils.lock().unwrap().get_multi_progress().clone()
+    }
+
+    pub fn execute<F>(&self, f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        self.utils.lock().unwrap().execute(f);
     }
 }
