@@ -55,6 +55,18 @@ impl WrappedUtils {
         self.utils.lock().unwrap().allocate(allocatable)
     }
 
+    pub fn deallocate(&mut self, allocatable: WrappedLayer) {
+        self.utils.lock().unwrap().deallocate(allocatable);
+    }
+
+    pub fn allocate_trainable(&mut self, allocatable: WrappedTrainableLayer) -> bool {
+        self.utils.lock().unwrap().allocate_trainable(allocatable)
+    }
+
+    pub fn deallocate_trainable(&mut self, allocatable: WrappedTrainableLayer) {
+        self.utils.lock().unwrap().deallocate_trainable(allocatable);
+    }
+
     pub fn get_max_allocated_size(&self) -> usize {
         self.utils.lock().unwrap().get_max_allocated_size()
     }
