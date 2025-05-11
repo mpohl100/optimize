@@ -1,4 +1,7 @@
-use std::{ptr, sync::{Arc, Mutex}};
+use std::{
+    ptr,
+    sync::{Arc, Mutex},
+};
 
 use crate::neural::layer::layer_trait::WrappedLayer;
 
@@ -50,7 +53,8 @@ impl LayerAllocManager {
         }
         allocatable.deallocate();
         self.currently_allocated_size -= allocatable.get_size();
-        self.currently_allocated.retain(|x| !ptr::eq(x, &allocatable));
+        self.currently_allocated
+            .retain(|x| !ptr::eq(x, &allocatable));
     }
 
     fn cleanup(&mut self) {
@@ -63,7 +67,6 @@ impl LayerAllocManager {
         }
         for index in indexes_to_clear {
             self.deallocate(self.currently_allocated[index].clone());
-        
         }
     }
 

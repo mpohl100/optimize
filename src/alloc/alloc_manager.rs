@@ -1,6 +1,9 @@
 use super::allocatable::WrappedAllocatable;
 
-use std::{ptr, sync::{Arc, Mutex}};
+use std::{
+    ptr,
+    sync::{Arc, Mutex},
+};
 
 pub struct AllocManager {
     currently_allocated: Vec<WrappedAllocatable>,
@@ -49,7 +52,8 @@ impl AllocManager {
         }
         allocatable.deallocate();
         self.currently_allocated_size -= allocatable.get_size();
-        self.currently_allocated.retain(|x| !ptr::eq(x, &allocatable));
+        self.currently_allocated
+            .retain(|x| !ptr::eq(x, &allocatable));
     }
 
     fn cleanup(&mut self) {
@@ -62,7 +66,6 @@ impl AllocManager {
         }
         for index in indexes_to_clear {
             self.deallocate(self.currently_allocated[index].clone());
-        
         }
     }
 
