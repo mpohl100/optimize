@@ -69,7 +69,7 @@ fn test_neural_network_generator() {
 
     let evolution_params = EvolutionOptions::new(2, LogLevel::Verbose, 3, 4);
 
-    let utils = WrappedUtils::new(Utils::new(1000000000));
+    let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,

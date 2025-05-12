@@ -24,7 +24,7 @@ struct Args {
     #[clap(long, default_value = "0")]
     retry_levels: i32,
     #[clap(long, default_value = "4")]
-    nb_threads: usize,
+    num_threads: usize,
     #[clap(long, default_value = "1000000000")]
     cpu_memory: usize,
 
@@ -177,7 +177,7 @@ impl FileDataImporter {
 fn main() {
     let args = Args::parse();
     let model_directory = &args.model_directory;
-    let nb_threads = args.nb_threads;
+    let num_threads = args.num_threads;
 
     let training_params = args.get_training_params();
 
@@ -185,7 +185,7 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    let utils = WrappedUtils::new(Utils::new(args.cpu_memory));
+    let utils = WrappedUtils::new(Utils::new(args.cpu_memory, args.num_threads));
 
     // generate from disk if the model_directory exists
     let mut nn_generator = if std::path::Path::new(model_directory).exists() {
@@ -195,7 +195,7 @@ fn main() {
                 evolution_options,
                 Box::new(data_importer),
                 model_directory.clone(),
-                nb_threads,
+                num_threads,
                 utils.clone(),
             )
         } else {
@@ -204,7 +204,7 @@ fn main() {
                 evolution_options,
                 Box::new(data_importer),
                 model_directory.clone(),
-                nb_threads,
+                num_threads,
                 utils.clone(),
             )
         }
@@ -214,7 +214,7 @@ fn main() {
             evolution_options,
             Box::new(data_importer),
             model_directory.clone(),
-            nb_threads,
+            num_threads,
             utils.clone(),
         )
     };

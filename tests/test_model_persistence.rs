@@ -75,7 +75,7 @@ fn train_model(model_directory: String, internal_model_directory: String) {
     // Create a training session using the mock data importer
     let data_importer = MockDataImporter::new(nn_shape);
 
-    let utils = WrappedUtils::new(Utils::new(1000000000));
+    let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
     let training_session = TrainingSession::from_disk(
         model_directory.clone(),
@@ -170,7 +170,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
     {
         // Arrange
-        let utils = WrappedUtils::new(Utils::new(1000000000));
+        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
         train_model(
             model_directory.clone(),

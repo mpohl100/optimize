@@ -16,7 +16,7 @@ use crate::neural::utilities::util::WrappedUtils;
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
 
 pub struct NeuralNetworkGenerator {
-    nb_threads: usize,
+    num_threads: usize,
     params: TrainingParams,
     evolution_params: EvolutionOptions,
     current_winner: WrappedTrainableNeuralNetwork,
@@ -29,7 +29,7 @@ impl NeuralNetworkGenerator {
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
-        nb_threads: usize,
+        num_threads: usize,
         utils: WrappedUtils,
     ) -> Self {
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
@@ -43,7 +43,7 @@ impl NeuralNetworkGenerator {
             params,
             evolution_params,
 
-            nb_threads,
+            num_threads,
             data_importer,
         }
     }
@@ -53,7 +53,7 @@ impl NeuralNetworkGenerator {
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
         model_directory: String,
-        nb_threads: usize,
+        num_threads: usize,
         utils: WrappedUtils,
     ) -> Self {
         let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
@@ -63,7 +63,7 @@ impl NeuralNetworkGenerator {
             current_winner: nn,
             params: changed_params,
             evolution_params,
-            nb_threads,
+            num_threads,
             data_importer,
         }
     }
@@ -87,7 +87,7 @@ impl NeuralNetworkGenerator {
             NeuralNetworkPhenotype,
             NeuralNetworkStrategy,
             NeuralNetworkChallenge,
-        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), self.nb_threads);
+        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), self.num_threads);
         let result = launcher.evolve(&options, starting_value, &mut rng);
         self.current_winner = result.unwrap().pheno.get_nn().clone();
     }

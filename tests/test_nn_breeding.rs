@@ -42,7 +42,7 @@ fn test_neural_network_breeding() {
 
     let input_data = vec![0.0; 128]; // Example input data
 
-    let utils = WrappedUtils::new(Utils::new(1000000000));
+    let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
     // Create a neural network phenotype
     let mut nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
