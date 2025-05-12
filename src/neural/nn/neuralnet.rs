@@ -382,7 +382,7 @@ impl TrainableClassicNeuralNetwork {
     /// Adjusts the weights of the neural network using the Adam optimizer.
     fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
         for layer in &mut self.layers {
-            layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon);
+            layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon, self.utils.clone());
         }
     }
 
@@ -660,9 +660,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     if use_adam {
                         self.adjust_adam(j + 1, learning_rate, 0.9, 0.999, 1e-8);
                     } else {
-                        self.layers
-                            .iter_mut()
-                            .for_each(|layer| layer.update_weights(learning_rate));
+                        self.layers.iter_mut().for_each(|layer| {
+                            layer.update_weights(learning_rate, self.utils.clone())
+                        });
                     }
 
                     // Update the progress bar
@@ -757,7 +757,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     self.backward_batch(grad_output);
                 }
                 for layer in &mut self.layers {
-                    layer.update_weights(learning_rate);
+                    layer.update_weights(learning_rate, self.utils.clone());
                 }
             }
             let accuracy = success_count / inputs.len() as f64 * 100.0;

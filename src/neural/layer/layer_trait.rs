@@ -174,13 +174,21 @@ pub trait TrainableLayer: Layer {
     /// # Arguments
     ///
     /// * `learning_rate` - A `f64` value representing the learning rate for weight updates.
-    fn update_weights(&mut self, learning_rate: f64);
+    fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils);
 
     /// Assigns the weight of the input other layer
     fn assign_weights(&mut self, other: WrappedTrainableLayer);
 
     /// Adjusts the weights according to the Adam optimizer.
-    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64);
+    fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        utils: WrappedUtils,
+    );
 
     /// Saves the layer to a file at the specified path.
     fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>>;
@@ -267,8 +275,11 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().backward_batch(grad_output)
     }
 
-    pub fn update_weights(&mut self, learning_rate: f64) {
-        self.layer.lock().unwrap().update_weights(learning_rate)
+    pub fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils) {
+        self.layer
+            .lock()
+            .unwrap()
+            .update_weights(learning_rate, utils)
     }
 
     pub fn assign_weights(&mut self, other: WrappedTrainableLayer) {
@@ -282,11 +293,12 @@ impl WrappedTrainableLayer {
         beta1: f64,
         beta2: f64,
         epsilon: f64,
+        utils: WrappedUtils,
     ) {
         self.layer
             .lock()
             .unwrap()
-            .adjust_adam(t, learning_rate, beta1, beta2, epsilon)
+            .adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils)
     }
 
     pub fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
