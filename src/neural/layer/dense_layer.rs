@@ -9,6 +9,7 @@ use crate::neural::mat::matrix::WrappedMatrix;
 use crate::neural::nn::directory::Directory;
 use crate::neural::utilities::util::WrappedUtils;
 
+use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
 use fs2::FileExt;
@@ -580,41 +581,44 @@ impl TrainableLayer for TrainableDenseLayer {
     ///
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
     /// - Returns: Gradient of the loss with respect to the input of this layer
-    fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
+    fn backward(&mut self, d_out: &[f64], utils: WrappedUtils) -> Vec<f64> {
+        let weights = self.weights.as_ref().unwrap().clone();
+        let input_cache = self.input_cache.as_ref().unwrap().clone();
+        let d_out_vec = d_out.to_vec();
         // Calculate weight gradients
-        for (i, row_grad) in self
-            .weights
-            .as_mut()
-            .unwrap()
-            .mat()
-            .lock()
-            .unwrap()
-            .iter_mut()
-            .enumerate()
-        {
-            for (j, grad) in row_grad.iter_mut().enumerate() {
-                grad.grad = d_out[i] * self.input_cache.as_ref().unwrap()[j];
-            }
-        }
+        let _ = utils.execute(move || {
+            weights
+                .mat()
+                .lock()
+                .unwrap()
+                .par_indexed_iter_mut()
+                .for_each(|(i, row_grad)| {
+                    row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
+                        grad.grad = d_out_vec[i] * input_cache[j];
+                    });
+                });
+            0
+        });
 
+        let weights_sec = self.weights.as_ref().unwrap().clone();
+        let input_cache_sec = self.input_cache.as_ref().unwrap().clone();
+        let d_out_vec_sec = d_out.to_vec();
         // Calculate input gradients
-        let mut d_input = vec![0.0; self.input_cache.as_ref().unwrap().len()];
-        for (i, weights_row) in self
-            .weights
-            .as_ref()
-            .unwrap()
-            .mat()
-            .lock()
-            .unwrap()
-            .iter()
-            .enumerate()
-        {
-            for (j, &weight) in weights_row.iter().enumerate() {
-                d_input[j] += weight.value * d_out[i];
-            }
-        }
-
-        d_input
+        utils.execute(move || {
+            (0..input_cache_sec.len())
+                .into_par_iter()
+                .map(|j| {
+                    weights_sec
+                        .mat()
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .enumerate()
+                        .map(|(i, row)| row[j].value * d_out_vec_sec[i])
+                        .sum::<f64>()
+                })
+                .collect::<Vec<f64>>()
+        })
     }
 
     /// Update weights and biases using their respective gradients
@@ -1073,7 +1077,7 @@ mod tests {
         assert_eq!(output.len(), 2);
 
         let grad_output = vec![0.1, 0.2];
-        let grad_input = layer.backward(&grad_output);
+        let grad_input = layer.backward(&grad_output, utils.clone());
 
         assert_eq!(grad_input.len(), 3);
 
