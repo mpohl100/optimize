@@ -624,24 +624,25 @@ impl TrainableLayer for TrainableDenseLayer {
     /// Update weights and biases using their respective gradients
     ///
     /// - `learning_rate`: The step size for gradient descent
-    fn update_weights(&mut self, learning_rate: f64) {
+    fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils) {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
+        let weights = self.weights.as_ref().unwrap().clone();
         // Update weight
-        for weights_row in self
-            .weights
-            .as_mut()
-            .unwrap()
-            .mat()
-            .lock()
-            .unwrap()
-            .iter_mut()
-        {
-            for weight in weights_row.iter_mut() {
-                weight.value -= learning_rate * weight.grad;
-            }
-        }
+        let _ = utils.execute(move || {
+            weights
+                .mat()
+                .lock()
+                .unwrap()
+                .par_iter_mut()
+                .for_each(|weights_row| {
+                    weights_row.iter_mut().for_each(|weight| {
+                        weight.value -= learning_rate * weight.grad;
+                    });
+                });
+            0
+        });
 
         // Update biases
         for bias in self.biases.as_mut().unwrap().iter_mut() {
@@ -678,37 +679,45 @@ impl TrainableLayer for TrainableDenseLayer {
         }
     }
 
-    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
+    fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        utils: WrappedUtils,
+    ) {
+        let t_f = t as f64; // convert time step once
+        let beta1_pow_t = beta1.powf(t_f);
+        let beta2_pow_t = beta2.powf(t_f);
+        let weights = self.weights.as_ref().unwrap().clone();
         // Update weights
-        for i in 0..self.weights.as_ref().unwrap().rows() {
-            for j in 0..self.weights.as_ref().unwrap().cols() {
-                let grad = self.weights.as_ref().unwrap().get_unchecked(i, j).grad;
+        let _ = utils.execute(move || {
+            weights
+                .mat()
+                .lock()
+                .unwrap()
+                .par_iter_mut()
+                .for_each(|weight_row| {
+                    weight_row.iter_mut().for_each(|weight| {
+                        let grad = weight.grad;
 
-                // Update first and second moments
-                let mut w = self.weights.as_ref().unwrap().get_unchecked(i, j);
-                w.v = self.weights.as_ref().unwrap().get_unchecked(i, j).value;
-                w.m = beta1 * self.weights.as_ref().unwrap().get_unchecked(i, j).m
-                    + (1.0 - beta1) * grad;
-                w.v = beta2 * self.weights.as_ref().unwrap().get_unchecked(i, j).v
-                    + (1.0 - beta2) * grad.powi(2);
-                self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
+                        // Update first and second moments
+                        weight.m = beta1 * weight.m + (1.0 - beta1) * grad;
+                        weight.v = beta2 * weight.v + (1.0 - beta2) * grad.powi(2);
 
-                // Bias correction
-                let m_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).m
-                    / (1.0 - beta1.powi(t as i32));
-                let v_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).v
-                    / (1.0 - beta2.powi(t as i32));
+                        // Bias correction
+                        let m_hat = weight.m / (1.0 - beta1_pow_t);
+                        let v_hat = weight.v / (1.0 - beta2_pow_t);
 
-                // Adjusted learning rate
-                let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-
-                // Update weights
-                let adj = adjusted_learning_rate * m_hat;
-                let mut w = self.weights.as_mut().unwrap().get_unchecked(i, j);
-                w.value -= adj;
-                self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
-            }
-        }
+                        // Adjusted learning rate and update
+                        let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
+                        weight.value -= adjusted_learning_rate * m_hat;
+                    });
+                });
+            0
+        });
 
         // Update biases
         for i in 0..self.biases.as_ref().unwrap().len() {
@@ -1081,7 +1090,7 @@ mod tests {
 
         assert_eq!(grad_input.len(), 3);
 
-        layer.update_weights(0.01);
+        layer.update_weights(0.01, utils.clone());
 
         std::fs::remove_dir_all("test_model_unit").unwrap();
     }
