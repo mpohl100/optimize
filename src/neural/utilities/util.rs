@@ -24,11 +24,12 @@ impl WrappedThreadPool {
         }
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<F, R>(&self, f: F) -> R
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
     {
-        self.thread_pool.lock().unwrap().install(f);
+        self.thread_pool.lock().unwrap().install(f)
     }
 }
 
@@ -80,11 +81,12 @@ impl Utils {
         self.mutli_progress.clone()
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<F, R>(&self, f: F) -> R
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
     {
-        self.thread_pool.execute(f);
+        self.thread_pool.execute(f)
     }
 }
 
@@ -124,10 +126,11 @@ impl WrappedUtils {
         self.utils.lock().unwrap().get_multi_progress().clone()
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<F, R>(&self, f: F) -> R
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
     {
-        self.utils.lock().unwrap().execute(f);
+        self.utils.lock().unwrap().execute(f)
     }
 }

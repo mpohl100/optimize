@@ -1,5 +1,6 @@
 use crate::alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
 use crate::neural::mat::matrix::Matrix;
+use crate::neural::utilities::util::{self, WrappedUtils};
 
 use dyn_clone::DynClone;
 use std::error::Error;
@@ -16,7 +17,7 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     /// # Returns
     ///
     /// * A vector of `f64` values representing the output of the layer.
-    fn forward(&mut self, input: &[f64]) -> Vec<f64>;
+    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64>;
 
     /// Performs the forward pass of the layer for inputs doing batch caching.
     fn forward_batch(&mut self, input: &[f64]) -> Vec<f64>;
@@ -89,8 +90,8 @@ impl WrappedLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-        self.layer.lock().unwrap().forward(input)
+    pub fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+        self.layer.lock().unwrap().forward(input, utils)
     }
 
     pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
@@ -226,8 +227,8 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn forward(&mut self, input: &[f64]) -> Vec<f64> {
-        self.layer.lock().unwrap().forward(input)
+    pub fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+        self.layer.lock().unwrap().forward(input, utils)
     }
 
     pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
