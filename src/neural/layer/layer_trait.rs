@@ -1,6 +1,6 @@
 use crate::alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
-use crate::neural::mat::matrix::Matrix;
-use crate::neural::utilities::util::{self, WrappedUtils};
+use crate::neural::mat::matrix::WrappedMatrix;
+use crate::neural::utilities::util::WrappedUtils;
 
 use dyn_clone::DynClone;
 use std::error::Error;
@@ -43,7 +43,7 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     fn read(&mut self, path: String) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
-    fn get_weights(&self) -> Matrix<f64>;
+    fn get_weights(&self) -> WrappedMatrix<f64>;
 
     /// Returns the biases of the layer.
     fn get_biases(&self) -> Vec<f64>;
@@ -114,7 +114,7 @@ impl WrappedLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    pub fn get_weights(&self) -> Matrix<f64> {
+    pub fn get_weights(&self) -> WrappedMatrix<f64> {
         self.layer.lock().unwrap().get_weights()
     }
 
@@ -251,8 +251,8 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    pub fn get_weights(&self) -> Matrix<f64> {
-        self.layer.lock().unwrap().get_weights()
+    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+        self.layer.lock().unwrap().get_weights().clone()
     }
 
     pub fn get_biases(&self) -> Vec<f64> {
