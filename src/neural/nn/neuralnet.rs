@@ -454,7 +454,7 @@ impl TrainableClassicNeuralNetwork {
             grad = activation.backward(&grad);
             layer.mark_for_use();
             self.utils.allocate_trainable(layer.clone());
-            grad = layer.backward(&grad);
+            grad = layer.backward(&grad, self.utils.clone());
             layer.free_from_use();
         }
     }

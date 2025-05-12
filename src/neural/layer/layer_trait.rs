@@ -164,7 +164,7 @@ pub trait TrainableLayer: Layer {
     /// # Returns
     ///
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64>;
+    fn backward(&mut self, grad_output: &[f64], utils: WrappedUtils) -> Vec<f64>;
 
     /// Performs the backward pass of the layer for inputs doing batch caching.
     fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64>;
@@ -259,8 +259,8 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().get_biases()
     }
 
-    pub fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
-        self.layer.lock().unwrap().backward(grad_output)
+    pub fn backward(&mut self, grad_output: &[f64], utils: WrappedUtils) -> Vec<f64> {
+        self.layer.lock().unwrap().backward(grad_output, utils)
     }
 
     pub fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
