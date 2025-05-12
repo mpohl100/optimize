@@ -6,6 +6,9 @@ use super::TrainableAllocatableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
 use crate::neural::nn::directory::Directory;
+use crate::neural::utilities::util::WrappedUtils;
+
+use rayon::iter::ParallelIterator;
 
 use fs2::FileExt;
 use rand::Rng;
@@ -146,24 +149,27 @@ impl Allocatable for DenseLayer {
 }
 
 impl Layer for DenseLayer {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
         let weights = self.weights.as_ref().unwrap();
         let biases = self.biases.as_ref().unwrap();
-        weights
-            .iter()
-            .enumerate() // Include the row index in the iteration
-            .map(|(row_idx, weights_row)| {
-                weights_row
-                    .iter()
-                    .zip(input.iter())
-                    .map(|(&w, &x)| w * x)
-                    .sum::<f64>()
-                    + biases[row_idx] // Use the bias corresponding to the row index
-            })
-            .collect()
+        let inputs = input.to_vec();
+        utils.execute(move || {
+            let vec = weights
+                .par_indexed_iter()
+                .map(|(row_idx, weights_row)| {
+                    weights_row
+                        .iter()
+                        .zip(inputs.iter())
+                        .map(|(&w, &x)| w * x)
+                        .sum::<f64>()
+                        + biases[row_idx] // Use the bias corresponding to the row index
+                })
+                .collect::<Vec<f64>>();
+            vec
+        })
     }
 
     fn forward_batch(&mut self, _input: &[f64]) -> Vec<f64> {

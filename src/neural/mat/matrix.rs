@@ -2,6 +2,8 @@ use std::error::Error;
 use std::fmt;
 use std::slice;
 
+use rayon::prelude::*;
+
 #[derive(Debug, Clone)]
 pub struct Matrix<T> {
     rows: usize,
@@ -147,5 +149,29 @@ impl<'a, T> Iterator for RowIterMut<'a, T> {
         } else {
             None
         }
+    }
+}
+
+impl<T: Sync> Matrix<T> {
+    pub fn par_iter(&self) -> rayon::slice::Chunks<'_, T> {
+        self.data.par_chunks(self.cols)
+    }
+
+    pub fn par_indexed_iter(&self) -> impl ParallelIterator<Item = (usize, &[T])> {
+        self.data
+            .par_chunks(self.cols)
+            .enumerate()
+    }
+}
+
+impl<T: Send> Matrix<T> {
+    pub fn par_iter_mut(&mut self) -> rayon::slice::ChunksMut<'_, T> {
+        self.data.par_chunks_mut(self.cols)
+    }
+
+    pub fn par_indexed_iter_mut(&mut self) -> impl ParallelIterator<Item = (usize, &mut [T])> {
+        self.data
+            .par_chunks_mut(self.cols)
+            .enumerate()
     }
 }
