@@ -5,6 +5,7 @@ use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
 use crate::alloc::allocatable::Allocatable;
 pub use crate::neural::mat::matrix::Matrix;
+use crate::neural::mat::matrix::WrappedMatrix;
 use crate::neural::nn::directory::Directory;
 use crate::neural::utilities::util::WrappedUtils;
 
@@ -23,7 +24,7 @@ use std::path::Path;
 pub struct DenseLayer {
     rows: usize,
     cols: usize,
-    weights: Option<Matrix<f64>>,
+    weights: Option<WrappedMatrix<f64>>,
     biases: Option<Vec<f64>>,
     in_use: bool,
     layer_path: Directory,
@@ -84,11 +85,11 @@ impl Allocatable for DenseLayer {
         }
         // if the layer_path does not exist, create a new matrix and store it
         if !self.layer_path.exists() {
-            self.weights = Some(Matrix::new(self.rows, self.cols));
+            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
             self.biases = Some(vec![0.0; self.rows]);
             save(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
+                self.weights.as_ref().unwrap().clone(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -102,11 +103,11 @@ impl Allocatable for DenseLayer {
                 self.weights = Some(weights);
                 self.biases = Some(biases);
             } else {
-                self.weights = Some(Matrix::new(self.rows, self.cols));
+                self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
                 self.biases = Some(vec![0.0; self.rows]);
                 save(
                     self.layer_path.path(),
-                    self.weights.as_ref().unwrap(),
+                    self.weights.as_ref().unwrap().clone(),
                     self.biases.as_ref().unwrap(),
                 )
                 .expect("Failed to save layer weights and biases");
@@ -118,7 +119,7 @@ impl Allocatable for DenseLayer {
         if self.is_allocated() {
             save(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
+                self.weights.as_ref().unwrap().clone(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -153,11 +154,14 @@ impl Layer for DenseLayer {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
-        let weights = self.weights.as_ref().unwrap();
-        let biases = self.biases.as_ref().unwrap();
+        let weights = self.weights.as_ref().unwrap().clone();
+        let biases = self.biases.as_ref().unwrap().clone();
         let inputs = input.to_vec();
         utils.execute(move || {
             let vec = weights
+                .mat()
+                .lock()
+                .unwrap()
                 .par_indexed_iter()
                 .map(|(row_idx, weights_row)| {
                     weights_row
@@ -187,7 +191,7 @@ impl Layer for DenseLayer {
     fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
         save(
             path,
-            self.weights.as_ref().unwrap(),
+            self.weights.as_ref().unwrap().clone(),
             self.biases.as_ref().unwrap(),
         )
     }
@@ -202,7 +206,7 @@ impl Layer for DenseLayer {
         Ok(())
     }
 
-    fn get_weights(&self) -> Matrix<f64> {
+    fn get_weights(&self) -> WrappedMatrix<f64> {
         self.weights.as_ref().unwrap().clone()
     }
 
@@ -284,9 +288,9 @@ struct Bias {
 pub struct TrainableDenseLayer {
     rows: usize,
     cols: usize,
-    weights: Option<Matrix<Weight>>, // Weight matrix (output_size x input_size)
-    biases: Option<Vec<Bias>>,       // Bias vector (output_size)
-    input_cache: Option<Vec<f64>>,   // Cache input for use in backward pass
+    weights: Option<WrappedMatrix<Weight>>, // Weight matrix (output_size x input_size)
+    biases: Option<Vec<Bias>>,              // Bias vector (output_size)
+    input_cache: Option<Vec<f64>>,          // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
     in_use: bool,
     layer_path: Directory,
@@ -327,8 +331,14 @@ impl TrainableDenseLayer {
         // initialize weights from -0.5 to 0.5
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
-                    rng.gen_range(-0.5..0.5);
+                let value = rng.gen_range(-0.5..0.5);
+                let w = Weight {
+                    value,
+                    grad: 0.0,
+                    m: 0.0,
+                    v: 0.0,
+                };
+                self.weights.as_ref().unwrap().set_mut_unchecked(i, j, w);
             }
         }
     }
@@ -353,12 +363,12 @@ impl Allocatable for TrainableDenseLayer {
         }
         // if the layer_path does not exist, create a new matrix and store it
         if !self.layer_path.exists() {
-            self.weights = Some(Matrix::new(self.rows, self.cols));
+            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
             self.biases = Some(vec![Bias::default(); self.rows]);
             self.initialize_weights();
             save_weight(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
+                self.weights.as_ref().unwrap().clone(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -372,12 +382,12 @@ impl Allocatable for TrainableDenseLayer {
                 self.weights = Some(weights);
                 self.biases = Some(biases);
             } else {
-                self.weights = Some(Matrix::new(self.rows, self.cols));
+                self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
                 self.biases = Some(vec![Bias::default(); self.rows]);
                 self.initialize_weights();
                 save_weight(
                     self.layer_path.path(),
-                    self.weights.as_ref().unwrap(),
+                    self.weights.as_ref().unwrap().clone(),
                     self.biases.as_ref().unwrap(),
                 )
                 .expect("Failed to save layer weights and biases");
@@ -391,7 +401,7 @@ impl Allocatable for TrainableDenseLayer {
         if self.is_allocated() {
             save_weight(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
+                self.weights.as_ref().unwrap().clone(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -424,25 +434,30 @@ impl Allocatable for TrainableDenseLayer {
 }
 
 impl Layer for TrainableDenseLayer {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
-        let weights = self.weights.as_ref().unwrap();
-        let biases = self.biases.as_ref().unwrap();
-        weights
-            .iter()
-            .enumerate() // Include the row index in the iteration
-            .map(|(row_idx, weights_row)| {
-                weights_row
-                    .iter()
-                    .zip(input.iter())
-                    .map(|(&w, &x)| w.value * x)
-                    .sum::<f64>()
-                    + biases[row_idx].value // Use the bias corresponding to the row index
-            })
-            .collect()
+        let weights = self.weights.as_ref().unwrap().clone();
+        let biases = self.biases.as_ref().unwrap().clone();
+        let inputs = input.to_vec();
+        utils.execute(move || {
+            weights
+                .mat()
+                .lock()
+                .unwrap()
+                .par_indexed_iter()
+                .map(|(row_idx, weights_row)| {
+                    weights_row
+                        .iter()
+                        .zip(inputs.iter())
+                        .map(|(&w, &x)| w.value * x)
+                        .sum::<f64>()
+                        + biases[row_idx].value // Use the bias corresponding to the row index
+                })
+                .collect()
+        })
     }
 
     #[allow(clippy::needless_range_loop)]
@@ -474,21 +489,24 @@ impl Layer for TrainableDenseLayer {
             return Ok(());
         }
         // assign weights and biases to a matrix and vector
-        let mut weights = Matrix::new(
+        let weights = WrappedMatrix::new(
             self.weights.as_ref().unwrap().rows(),
             self.weights.as_ref().unwrap().cols(),
         );
         let mut biases = vec![0.0; self.biases.as_ref().unwrap().len()];
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                *weights.get_mut_unchecked(i, j) =
-                    self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                weights.set_mut_unchecked(
+                    i,
+                    j,
+                    self.weights.as_ref().unwrap().get_unchecked(i, j).value,
+                );
             }
         }
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
             biases[i] = bias.value;
         }
-        save(path, &weights, &biases)
+        save(path, weights, &biases)
     }
 
     fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
@@ -501,8 +519,14 @@ impl Layer for TrainableDenseLayer {
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
-                        *weights.get_unchecked(i, j);
+                    let v = weights.get_unchecked(i, j);
+                    let w = Weight {
+                        value: v,
+                        grad: 0.0,
+                        m: 0.0,
+                        v: 0.0,
+                    };
+                    self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
                 }
             }
             if i < biases.len() {
@@ -512,15 +536,15 @@ impl Layer for TrainableDenseLayer {
         Ok(())
     }
 
-    fn get_weights(&self) -> Matrix<f64> {
-        let mut weights = Matrix::new(
+    fn get_weights(&self) -> WrappedMatrix<f64> {
+        let weights = WrappedMatrix::new(
             self.weights.as_ref().unwrap().rows(),
             self.weights.as_ref().unwrap().cols(),
         );
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                *weights.get_mut_unchecked(i, j) =
-                    self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                let v = self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                weights.set_mut_unchecked(i, j, v);
             }
         }
         weights
@@ -558,7 +582,16 @@ impl TrainableLayer for TrainableDenseLayer {
     /// - Returns: Gradient of the loss with respect to the input of this layer
     fn backward(&mut self, d_out: &[f64]) -> Vec<f64> {
         // Calculate weight gradients
-        for (i, row_grad) in self.weights.as_mut().unwrap().iter_mut().enumerate() {
+        for (i, row_grad) in self
+            .weights
+            .as_mut()
+            .unwrap()
+            .mat()
+            .lock()
+            .unwrap()
+            .iter_mut()
+            .enumerate()
+        {
             for (j, grad) in row_grad.iter_mut().enumerate() {
                 grad.grad = d_out[i] * self.input_cache.as_ref().unwrap()[j];
             }
@@ -566,7 +599,16 @@ impl TrainableLayer for TrainableDenseLayer {
 
         // Calculate input gradients
         let mut d_input = vec![0.0; self.input_cache.as_ref().unwrap().len()];
-        for (i, weights_row) in self.weights.as_ref().unwrap().iter().enumerate() {
+        for (i, weights_row) in self
+            .weights
+            .as_ref()
+            .unwrap()
+            .mat()
+            .lock()
+            .unwrap()
+            .iter()
+            .enumerate()
+        {
             for (j, &weight) in weights_row.iter().enumerate() {
                 d_input[j] += weight.value * d_out[i];
             }
@@ -583,7 +625,15 @@ impl TrainableLayer for TrainableDenseLayer {
             panic!("Layer not allocated");
         }
         // Update weight
-        for weights_row in self.weights.as_mut().unwrap().iter_mut() {
+        for weights_row in self
+            .weights
+            .as_mut()
+            .unwrap()
+            .mat()
+            .lock()
+            .unwrap()
+            .iter_mut()
+        {
             for weight in weights_row.iter_mut() {
                 weight.value -= learning_rate * weight.grad;
             }
@@ -608,8 +658,14 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value =
-                        *weights.get_unchecked(i, j);
+                    let v = weights.get_unchecked(i, j);
+                    let w = Weight {
+                        value: v,
+                        grad: 0.0,
+                        m: 0.0,
+                        v: 0.0,
+                    };
+                    self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
                 }
             }
             if i < biases.len() {
@@ -625,12 +681,13 @@ impl TrainableLayer for TrainableDenseLayer {
                 let grad = self.weights.as_ref().unwrap().get_unchecked(i, j).grad;
 
                 // Update first and second moments
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).m = beta1
-                    * self.weights.as_ref().unwrap().get_unchecked(i, j).m
+                let mut w = self.weights.as_ref().unwrap().get_unchecked(i, j);
+                w.v = self.weights.as_ref().unwrap().get_unchecked(i, j).value;
+                w.m = beta1 * self.weights.as_ref().unwrap().get_unchecked(i, j).m
                     + (1.0 - beta1) * grad;
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).v = beta2
-                    * self.weights.as_ref().unwrap().get_unchecked(i, j).v
+                w.v = beta2 * self.weights.as_ref().unwrap().get_unchecked(i, j).v
                     + (1.0 - beta2) * grad.powi(2);
+                self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
 
                 // Bias correction
                 let m_hat = self.weights.as_ref().unwrap().get_unchecked(i, j).m
@@ -642,8 +699,10 @@ impl TrainableLayer for TrainableDenseLayer {
                 let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
 
                 // Update weights
-                self.weights.as_mut().unwrap().get_mut_unchecked(i, j).value -=
-                    adjusted_learning_rate * m_hat;
+                let adj = adjusted_learning_rate * m_hat;
+                let mut w = self.weights.as_mut().unwrap().get_unchecked(i, j);
+                w.value -= adj;
+                self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
             }
         }
 
@@ -685,21 +744,20 @@ impl TrainableLayer for TrainableDenseLayer {
             return Ok(());
         }
         // assign weights and biases to a matrix and vector
-        let mut weights = Matrix::new(
+        let weights = WrappedMatrix::new(
             self.weights.as_ref().unwrap().rows(),
             self.weights.as_ref().unwrap().cols(),
         );
         let mut biases = vec![Bias::default(); self.biases.as_ref().unwrap().len()];
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
-                *weights.get_mut_unchecked(i, j) =
-                    *self.weights.as_ref().unwrap().get_unchecked(i, j);
+                weights.set_mut_unchecked(i, j, self.weights.as_ref().unwrap().get_unchecked(i, j));
             }
         }
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
             biases[i] = *bias;
         }
-        save_weight(path, &weights, &biases)
+        save_weight(path, weights, &biases)
     }
 
     fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
@@ -712,8 +770,11 @@ impl TrainableLayer for TrainableDenseLayer {
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
-                    *self.weights.as_mut().unwrap().get_mut_unchecked(i, j) =
-                        *weights.get_unchecked(i, j);
+                    self.weights.as_mut().unwrap().set_mut_unchecked(
+                        i,
+                        j,
+                        weights.get_unchecked(i, j),
+                    );
                 }
             }
             if i < biases.len() {
@@ -762,7 +823,7 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
     }
 }
 
-fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
+fn save(path: String, weights: WrappedMatrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
     // Ensure the directory exists
     let p = Path::new(&path);
     if let Some(dir) = p.parent() {
@@ -790,7 +851,7 @@ fn save(path: String, weights: &Matrix<f64>, biases: &[f64]) -> Result<(), Box<d
 
 fn save_weight(
     path: String,
-    weights: &Matrix<Weight>,
+    weights: WrappedMatrix<Weight>,
     biases: &[Bias],
 ) -> Result<(), Box<dyn Error>> {
     // Ensure the directory exists
@@ -825,7 +886,7 @@ fn save_weight(
     Ok(())
 }
 
-fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
+fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> {
     // create a lock file which acts as a lock
     let lock_file_path = format!("{}.lock", path);
     let lock_file = File::create(&lock_file_path)?;
@@ -834,13 +895,13 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    let mut weights = Matrix::new(1, 1);
+    let mut weights = WrappedMatrix::new(1, 1);
     let mut biases = vec![0.0; 1];
     if let Some(Ok(line)) = lines.next() {
         let mut parts = line.split_whitespace();
         let rows = parts.next().unwrap().parse::<usize>()?;
         let cols = parts.next().unwrap().parse::<usize>()?;
-        weights = Matrix::new(rows, cols);
+        weights = WrappedMatrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
                 let parts = line.split(";").collect::<Vec<_>>();
@@ -858,7 +919,7 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
                     if let Some(p) = part {
                         let figures = p.split_whitespace().collect::<Vec<_>>();
                         if figures.len() == 1 || figures.len() == 4 {
-                            *weights.get_mut_unchecked(i, j) = figures[0].parse::<f64>()?;
+                            weights.set_mut_unchecked(i, j, figures[0].parse::<f64>()?);
                         } else {
                             return Err("Invalid weight format".into());
                         };
@@ -894,7 +955,7 @@ fn read(path: String) -> Result<(Matrix<f64>, Vec<f64>), Box<dyn Error>> {
     Ok((weights, biases))
 }
 
-fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Error>> {
+fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<dyn Error>> {
     // create a lock file which acts as a lock
     let lock_file_path = format!("{}.lock", path);
     let lock_file = File::create(&lock_file_path)?;
@@ -903,13 +964,13 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = reader.lines();
-    let mut weights = Matrix::new(1, 1);
+    let mut weights = WrappedMatrix::new(1, 1);
     let mut biases = vec![Bias::default(); 1];
     if let Some(Ok(line)) = lines.next() {
         let mut dim_parts = line.split_whitespace();
         let rows = dim_parts.next().unwrap().parse::<usize>()?;
         let cols = dim_parts.next().unwrap().parse::<usize>()?;
-        weights = Matrix::new(rows, cols);
+        weights = WrappedMatrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
                 let parts = line.split(";").collect::<Vec<_>>();
@@ -927,19 +988,27 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
                     if let Some(p) = part {
                         let figures = p.split_whitespace().collect::<Vec<_>>();
                         if figures.len() == 4 {
-                            *weights.get_mut_unchecked(i, j) = Weight {
-                                value: figures[0].parse::<f64>()?,
-                                grad: figures[1].parse::<f64>()?,
-                                m: figures[2].parse::<f64>()?,
-                                v: figures[3].parse::<f64>()?,
-                            }
+                            weights.set_mut_unchecked(
+                                i,
+                                j,
+                                Weight {
+                                    value: figures[0].parse::<f64>()?,
+                                    grad: figures[1].parse::<f64>()?,
+                                    m: figures[2].parse::<f64>()?,
+                                    v: figures[3].parse::<f64>()?,
+                                },
+                            );
                         } else if figures.len() == 1 {
-                            *weights.get_mut_unchecked(i, j) = Weight {
-                                value: figures[0].parse::<f64>()?,
-                                grad: 0.0,
-                                m: 0.0,
-                                v: 0.0,
-                            };
+                            weights.set_mut_unchecked(
+                                i,
+                                j,
+                                Weight {
+                                    value: figures[0].parse::<f64>()?,
+                                    grad: 0.0,
+                                    m: 0.0,
+                                    v: 0.0,
+                                },
+                            );
                         } else {
                             return Err("Invalid weight format".into());
                         };
@@ -985,17 +1054,20 @@ fn read_weight(path: String) -> Result<(Matrix<Weight>, Vec<Bias>), Box<dyn Erro
 
 #[cfg(test)]
 mod tests {
+    use crate::neural::utilities::util::Utils;
+
     use super::*;
 
     #[test]
     fn test_dense_layer() {
+        let utils = WrappedUtils::new(Utils::new(1000000000));
         let mut layer =
             TrainableDenseLayer::new(3, 2, Directory::Internal("test_model_unit".to_string()), 0);
 
         let input = vec![1.0, 2.0, 3.0];
         layer.allocate();
         layer.mark_for_use();
-        let output = layer.forward(&input);
+        let output = layer.forward(&input, utils.clone());
         layer.free_from_use();
 
         assert_eq!(output.len(), 2);

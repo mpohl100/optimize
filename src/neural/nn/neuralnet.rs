@@ -185,7 +185,7 @@ impl ClassicNeuralNetwork {
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
             self.utils.allocate(layer.clone());
-            output = layer.forward(&output);
+            output = layer.forward(&output, self.utils.clone());
             layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
@@ -424,7 +424,7 @@ impl TrainableClassicNeuralNetwork {
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
             self.utils.allocate_trainable(layer.clone());
-            output = layer.forward(&output);
+            output = layer.forward(&output, self.utils.clone());
             layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);

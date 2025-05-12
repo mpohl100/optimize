@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::fmt;
 use std::slice;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use rayon::prelude::*;
 
@@ -71,6 +73,10 @@ where
 
     pub fn get_unchecked(&self, x: usize, y: usize) -> &T {
         &self.data[x * self.cols + y]
+    }
+
+    pub fn set_mut_unchecked(&mut self, x: usize, y: usize, value: T) {
+        self.data[x * self.cols + y] = value;
     }
 
     // Return the number of rows
@@ -158,9 +164,7 @@ impl<T: Sync> Matrix<T> {
     }
 
     pub fn par_indexed_iter(&self) -> impl ParallelIterator<Item = (usize, &[T])> {
-        self.data
-            .par_chunks(self.cols)
-            .enumerate()
+        self.data.par_chunks(self.cols).enumerate()
     }
 }
 
@@ -170,8 +174,56 @@ impl<T: Send> Matrix<T> {
     }
 
     pub fn par_indexed_iter_mut(&mut self) -> impl ParallelIterator<Item = (usize, &mut [T])> {
-        self.data
-            .par_chunks_mut(self.cols)
-            .enumerate()
+        self.data.par_chunks_mut(self.cols).enumerate()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WrappedMatrix<T: Default + Clone> {
+    mat: Arc<Mutex<Matrix<T>>>,
+}
+
+impl<T> WrappedMatrix<T>
+where
+    T: Default + Clone,
+{
+    pub fn new(rows: usize, cols: usize) -> Self {
+        WrappedMatrix {
+            mat: Arc::new(Mutex::new(Matrix::<T>::new(rows, cols))),
+        }
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> Result<T, OutOfRangeError> {
+        let mat = self.mat.lock().unwrap();
+        mat.get(x, y).cloned()
+    }
+
+    pub fn get_mut(&self, x: usize, y: usize) -> Result<T, OutOfRangeError> {
+        let mut mat = self.mat.lock().unwrap();
+        mat.get_mut(x, y).cloned()
+    }
+
+    pub fn rows(&self) -> usize {
+        let mat = self.mat.lock().unwrap();
+        mat.rows()
+    }
+
+    pub fn cols(&self) -> usize {
+        let mat = self.mat.lock().unwrap();
+        mat.cols()
+    }
+
+    pub fn mat(&self) -> Arc<Mutex<Matrix<T>>> {
+        self.mat.clone()
+    }
+
+    pub fn set_mut_unchecked(&self, x: usize, y: usize, value: T) {
+        let mut mat = self.mat.lock().unwrap();
+        mat.set_mut_unchecked(x, y, value);
+    }
+
+    pub fn get_unchecked(&self, x: usize, y: usize) -> T {
+        let mat = self.mat.lock().unwrap();
+        mat.get_unchecked(x, y).clone()
     }
 }
