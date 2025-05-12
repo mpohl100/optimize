@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_retry_neural_network_train() {
-        let utils = WrappedUtils::new(Utils::new(1000000000));
+        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
         let mut nn = TrainableRetryNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![

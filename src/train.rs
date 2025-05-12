@@ -19,7 +19,7 @@ struct Args {
     #[clap(long, default_value = "0")]
     retry_levels: i32,
     #[clap(long, default_value = "4")]
-    nb_threads: usize,
+    num_threads: usize,
     #[clap(long, default_value = "1000000000")]
     cpu_memory: usize,
 
@@ -153,7 +153,7 @@ fn main() {
 
     let data_importer = FileDataImporter::new(args.input_file, args.target_file);
 
-    let utils = WrappedUtils::new(Utils::new(args.cpu_memory));
+    let utils = WrappedUtils::new(Utils::new(args.cpu_memory, args.num_threads));
 
     // if the model_directory exists load the model from disk
     let mut training_session = if std::fs::metadata(model_directory.clone()).is_ok() {

@@ -1060,7 +1060,7 @@ mod tests {
 
     #[test]
     fn test_dense_layer() {
-        let utils = WrappedUtils::new(Utils::new(1000000000));
+        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
         let mut layer =
             TrainableDenseLayer::new(3, 2, Directory::Internal("test_model_unit".to_string()), 0);
 

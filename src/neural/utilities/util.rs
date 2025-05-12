@@ -42,7 +42,7 @@ pub struct Utils {
 }
 
 impl Utils {
-    pub fn new(cpu_memory: usize) -> Self {
+    pub fn new(cpu_memory: usize, num_threads: usize) -> Self {
         Self {
             layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
                 WrappedLayer,
@@ -53,7 +53,7 @@ impl Utils {
                 AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
             ),
             mutli_progress: Arc::new(MultiProgress::new()),
-            thread_pool: WrappedThreadPool::new(4),
+            thread_pool: WrappedThreadPool::new(num_threads),
         }
     }
 

@@ -241,7 +241,7 @@ mod tests {
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
-        let utils = WrappedUtils::new(Utils::new(1000000000));
+        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
         let mut training_session = TrainingSession::new(
             training_params,
