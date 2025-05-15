@@ -35,7 +35,7 @@ All notable changes to this project will be documented in this file.
 ### Notes
 - This release is intended for testing and experimental purposes.
 
-## [0.1.4] - 2025-04-26
+## [0.1.4] - 2025-05-15
 
 ### Added
 - implemented retry neural network
