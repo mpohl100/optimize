@@ -3,11 +3,7 @@ use std::{fs, io, path::Path};
 use crate::neural::utilities::util::WrappedUtils;
 
 use super::{
-    directory::Directory,
-    neuralnet::{ClassicNeuralNetwork, TrainableClassicNeuralNetwork},
-    nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork},
-    retry_nn::{RetryNeuralNetwork, TrainableRetryNeuralNetwork},
-    shape::NeuralNetworkShape,
+    directory::Directory, either_nn::EitherNeuralNetwork, neuralnet::{ClassicNeuralNetwork, TrainableClassicNeuralNetwork}, nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork}, retry_nn::{RetryNeuralNetwork, TrainableRetryNeuralNetwork}, shape::NeuralNetworkShape
 };
 
 pub struct NeuralNetworkCreationArguments {
@@ -78,6 +74,10 @@ pub fn neural_network_from_disk(
     // check if model directory contains a directory named primary
     if std::path::Path::new(&format!("{}/primary", model_directory)).exists() {
         return RetryNeuralNetwork::from_disk(model_directory, utils);
+    }
+    // check if model directory contains a directory named pre
+    if std::path::Path::new(&format!("{}/pre", model_directory)).exists() {
+        return EitherNeuralNetwork::from_disk(model_directory, utils);
     }
     WrappedNeuralNetwork::new(Box::new(
         ClassicNeuralNetwork::from_disk(model_directory, utils).unwrap(),
