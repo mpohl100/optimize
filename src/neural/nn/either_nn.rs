@@ -9,15 +9,12 @@ use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
 use super::shape::NeuralNetworkShape;
 
-use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
 use crate::neural::nn::directory::Directory;
 use crate::neural::nn::neuralnet::ClassicNeuralNetwork;
 use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::neural::nn::nn_factory::get_first_free_model_directory;
 use crate::neural::nn::nn_trait::NeuralNetwork;
 use crate::neural::nn::nn_trait::TrainableNeuralNetwork;
-use crate::neural::nn::shape::LayerShape;
-use crate::neural::nn::shape::LayerType;
 use crate::neural::utilities::util::WrappedUtils;
 
 #[derive(Debug)]
@@ -462,7 +459,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
                 let prediction = temp_neural_network.predict(input.clone());
                 (input, target, prediction)
             })
-            .filter(|(input, target, prediction)| {
+            .filter(|(_, target, prediction)| {
                 // Check if the output matches the target
                 let mut nb_correct_outputs = 0;
                 for (o, t) in prediction.iter().zip(target.iter()) {
@@ -482,7 +479,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
                 let prediction = temp_neural_network.predict(input.clone());
                 (input, target, prediction)
             })
-            .filter(|(input, target, prediction)| {
+            .filter(|(_, target, prediction)| {
                 // Check if the output matches the target
                 let mut nb_correct_outputs = 0;
                 for (o, t) in prediction.iter().zip(target.iter()) {
@@ -670,7 +667,7 @@ impl Drop for TrainableEitherNeuralNetwork {
 mod tests {
     use super::*;
     use crate::neural::{
-        nn::shape::{ActivationData, ActivationType, LayerShape},
+        nn::shape::{ActivationData, ActivationType, LayerShape, LayerType},
         utilities::util::Utils,
     };
 
