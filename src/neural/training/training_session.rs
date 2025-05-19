@@ -31,6 +31,7 @@ impl TrainingSession {
             neural_network: new_trainable_neural_network(NeuralNetworkCreationArguments::new(
                 shape.clone(),
                 levels,
+                None,
                 model_directory.path().to_string(),
                 utils,
             )),
@@ -236,7 +237,7 @@ mod tests {
 
         // Define training parameters
         let training_params =
-            TrainingParams::new(nn_shape.clone(), None, 0.7, 0.01, 10, 0.1, 32, true);
+            TrainingParams::new(nn_shape.clone(), None, None, 0.7, 0.01, 10, 0.1, 32, true);
 
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);

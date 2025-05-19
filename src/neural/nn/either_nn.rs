@@ -2,7 +2,9 @@ use std::path::Path;
 
 use super::nn_factory::copy_dir_recursive;
 use super::nn_factory::neural_network_from_disk;
+use super::nn_factory::new_trainable_neural_network;
 use super::nn_factory::trainable_neural_network_from_disk;
+use super::nn_factory::NeuralNetworkCreationArguments;
 use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
 use super::shape::NeuralNetworkShape;
@@ -35,7 +37,7 @@ impl EitherNeuralNetwork {
         let left_model_directory = append_dir(model_directory.clone(), "left");
         let right_model_directory = append_dir(model_directory.clone(), "right");
         if std::path::Path::new(&pre_model_directory).exists() {
-            let pre_nn = neural_network_from_disk(pre_model_directory, utils);
+            let pre_nn = neural_network_from_disk(pre_model_directory, utils.clone());
 
             let left_nn = if std::path::Path::new(&left_model_directory).exists() {
                 Some(neural_network_from_disk(
@@ -233,6 +235,7 @@ pub struct TrainableEitherNeuralNetwork {
     right_nn: Option<WrappedTrainableNeuralNetwork>,
     // The shape of the neural network that it should pretend to have to the outside world
     shape: NeuralNetworkShape,
+    pre_shape: NeuralNetworkShape,
     model_directory: Directory,
     past_internal_model_directories: Vec<String>,
     utils: WrappedUtils,
@@ -241,6 +244,7 @@ pub struct TrainableEitherNeuralNetwork {
 impl TrainableEitherNeuralNetwork {
     pub fn new(
         shape: NeuralNetworkShape,
+        pre_shape: NeuralNetworkShape,
         internal_model_directory: String,
         utils: WrappedUtils,
     ) -> Self {
@@ -255,6 +259,7 @@ impl TrainableEitherNeuralNetwork {
             left_nn: None,
             right_nn: None,
             shape,
+            pre_shape,
             model_directory: Directory::Internal(internal_model_directory),
             past_internal_model_directories: vec![],
             utils,
@@ -290,11 +295,13 @@ impl TrainableEitherNeuralNetwork {
             };
 
             let shape = pre_nn.shape();
+            let pre_shape = pre_nn.shape();
             WrappedTrainableNeuralNetwork::new(Box::new(Self {
                 pre_nn,
                 left_nn,
                 right_nn,
                 shape,
+                pre_shape,
                 model_directory: Directory::User(model_directory),
                 past_internal_model_directories: vec![],
                 utils,
@@ -430,12 +437,14 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         if inputs.len() < 100 {
             return 0.0;
         }
-        let mut temp_neural_network = TrainableClassicNeuralNetwork::new(
+        let mut temp_neural_network = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             self.shape.clone(),
-            Directory::Internal(append_dir(self.model_directory.path(), "temp_primary")),
-            self.utils.clone(),
+            None,
+            None,
+            append_dir(self.model_directory.path(), "temp"),
+            self.utils.clone())
         );
-        let _ = temp_neural_network.train(
+        let temp_accuracy = temp_neural_network.train(
             inputs,
             targets,
             learning_rate,
@@ -485,6 +494,15 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             .map(|(input, target, _)| (input.clone(), target.clone()))
             .unzip();
 
+        // The number of failed predictions is below 100, so this instance is a leaf network
+        let pre_model_directory = append_dir(self.model_directory.path(), "pre");
+        if right_inputs.len() < 100 {
+            self.pre_nn = temp_neural_network.clone();
+            self.pre_nn.save(pre_model_directory.clone())
+                .expect("Failed to save pre neural network");
+            return temp_accuracy;
+        }
+
         let (left_inputs_pre, left_targets_pre): (Vec<Vec<f64>>, Vec<Vec<f64>>) = left_inputs
             .iter()
             .map(|input| {
@@ -499,12 +517,85 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
                 (input.clone(), target.clone())
             })
             .collect();
+
+        
+
         // conactenate all pre inputs
         let pre_inputs = [left_inputs_pre, right_inputs_pre].concat();
         // conactenate all pre targets
         let pre_targets = [left_targets_pre, right_targets_pre].concat();
 
-        0.0
+        // Create the pre neural network
+        let mut pre_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.pre_shape.clone(),
+            None,
+            None,
+            pre_model_directory,
+            self.utils.clone(),
+        ));
+
+        // Train the pre neural network
+        pre_nn.train(
+            &pre_inputs,
+            &pre_targets,
+            learning_rate,
+            epochs,
+            tolerance,
+            use_adam,
+            validation_split,
+        );
+
+        self.pre_nn = pre_nn.clone();
+
+        let left_model_directory = append_dir(self.model_directory.path(), "left");
+        let mut left_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.shape.clone(),
+            None,
+            Some(self.pre_shape.clone()),
+            left_model_directory.clone(),
+            self.utils.clone(),
+        ));
+
+        // Train the left neural network
+        let left_accuracy = left_nn.train(
+            &left_inputs,
+            &left_targets,
+            learning_rate,
+            epochs,
+            tolerance,
+            use_adam,
+            validation_split,
+        );
+
+        self.left_nn = Some(left_nn.clone());
+        left_nn.save(left_model_directory.clone())
+            .expect("Failed to save left neural network");
+
+        // Train the right neural network
+        let right_model_directory = append_dir(self.model_directory.path(), "right");
+        let mut right_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.shape.clone(),
+            None,
+            Some(self.pre_shape.clone()),
+            right_model_directory.clone(),
+            self.utils.clone(),
+        ));
+
+        // Train the right neural network
+        let right_accuracy = right_nn.train(
+            &right_inputs,
+            &right_targets,
+            learning_rate,
+            epochs,
+            tolerance,
+            use_adam,
+            validation_split,
+        );
+        self.right_nn = Some(right_nn.clone());
+        right_nn.save(right_model_directory.clone())
+            .expect("Failed to save right neural network");
+
+        left_accuracy + right_accuracy
     }
 
     fn train_batch(
@@ -600,6 +691,17 @@ mod tests {
                             output_size: 3,
                         },
                         activation: ActivationData::new(ActivationType::ReLU),
+                    },
+                ],
+            },
+            NeuralNetworkShape {
+                layers: vec![
+                    LayerShape {
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                        },
+                        activation: ActivationData::new_softmax(1.0),
                     },
                 ],
             },
