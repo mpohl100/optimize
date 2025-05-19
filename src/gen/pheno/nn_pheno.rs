@@ -87,6 +87,7 @@ impl NeuralNetworkPhenotype {
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             self.get_nn().shape().clone(),
             None,
+            None,
             self.nn.get_model_directory().path(),
             self.nn.get_utils(),
         ));
@@ -111,6 +112,7 @@ impl NeuralNetworkPhenotype {
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             previous_shape.clone(),
             Some(random_number),
+            None,
             self.nn.get_model_directory().path(),
             self.nn.get_utils(),
         ));

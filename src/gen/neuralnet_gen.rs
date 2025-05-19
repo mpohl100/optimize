@@ -35,6 +35,7 @@ impl NeuralNetworkGenerator {
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             params.shape().clone(),
             params.levels(),
+            params.pre_shape(),
             model_directory,
             utils.clone(),
         ));

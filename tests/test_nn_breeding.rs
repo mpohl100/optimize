@@ -48,6 +48,7 @@ fn test_neural_network_breeding() {
     let mut nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
         nn_shape,
         None,
+        None,
         "breeding_test_model".to_string(),
         utils.clone(),
     ));

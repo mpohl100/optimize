@@ -4,6 +4,7 @@ use crate::neural::nn::shape::NeuralNetworkShape;
 pub struct TrainingParams {
     shape: NeuralNetworkShape,
     levels: Option<i32>,
+    pre_shape: Option<NeuralNetworkShape>,
     validation_split: f64,
     learning_rate: f64,
     epochs: usize,
@@ -17,6 +18,7 @@ impl TrainingParams {
     pub fn new(
         shape: NeuralNetworkShape,
         levels: Option<i32>,
+        pre_shape: Option<NeuralNetworkShape>,
         validation_split: f64,
         learning_rate: f64,
         epochs: usize,
@@ -27,6 +29,7 @@ impl TrainingParams {
         Self {
             shape,
             levels,
+            pre_shape,
             validation_split,
             learning_rate,
             epochs,
@@ -42,6 +45,10 @@ impl TrainingParams {
 
     pub fn levels(&self) -> Option<i32> {
         self.levels
+    }
+
+    pub fn pre_shape(&self) -> Option<NeuralNetworkShape> {
+        self.pre_shape.clone()
     }
 
     pub fn validation_split(&self) -> f64 {

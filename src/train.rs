@@ -18,6 +18,8 @@ struct Args {
     shape_file: String,
     #[clap(long, default_value = "0")]
     retry_levels: i32,
+    #[clap(long, default_value = "")]
+    pre_shape: String,
     #[clap(long, default_value = "4")]
     num_threads: usize,
     #[clap(long, default_value = "1000000000")]
@@ -51,6 +53,11 @@ impl Args {
         } else {
             None
         };
+        let pre_shape = if self.pre_shape.is_empty() {
+            None
+        } else {
+            Some(NeuralNetworkShape::from_file(self.pre_shape.clone()))
+        };
         if self.shape_file.is_empty() {
             // deduce shape from input and target files
             let file_importer =
@@ -69,6 +76,7 @@ impl Args {
             return TrainingParams::new(
                 shape,
                 levels,
+                pre_shape,
                 self.validation_split,
                 self.learning_rate,
                 self.epochs,
@@ -92,6 +100,7 @@ impl Args {
         TrainingParams::new(
             shape,
             levels,
+            pre_shape,
             self.validation_split,
             self.learning_rate,
             self.epochs,
