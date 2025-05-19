@@ -202,8 +202,8 @@ mod tests {
     fn test_alloc_manager_only_allocates_once() {
         let mut alloc_manager = AllocManager::new(100);
         let allocatable = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
-        assert_eq!(alloc_manager.allocate(allocatable.clone()), true);
-        assert_eq!(alloc_manager.allocate(allocatable.clone()), false);
+        assert!(alloc_manager.allocate(allocatable.clone()));
+        assert!(!alloc_manager.allocate(allocatable.clone()));
     }
 
     #[test]
@@ -213,12 +213,10 @@ mod tests {
         let mut allocatable2 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         let mut allocatable3 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         let allocatable4 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let mut allocatables = vec![
-            allocatable1.clone(),
+        let mut allocatables = [allocatable1.clone(),
             allocatable2.clone(),
             allocatable3.clone(),
-            allocatable4.clone(),
-        ];
+            allocatable4.clone()];
         for (index, this_allocatable) in allocatables.iter_mut().enumerate() {
             if index == 1 {
                 allocatable1.free_from_use();
@@ -228,7 +226,7 @@ mod tests {
                 allocatable3.free_from_use();
             }
             let result = alloc_manager.allocate(this_allocatable.clone());
-            assert_eq!(result, true);
+            assert!(result);
             this_allocatable.mark_for_use();
         }
     }

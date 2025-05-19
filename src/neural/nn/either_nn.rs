@@ -83,13 +83,13 @@ impl EitherNeuralNetwork {
             }
             let mut left_nn = self.left_nn.as_ref().unwrap().clone();
 
-            return left_nn.predict(input.clone());
+            left_nn.predict(input.clone())
         } else {
             if self.right_nn.is_none() {
                 return pre_output;
             }
             let mut right_nn = self.right_nn.as_ref().unwrap().clone();
-            return right_nn.predict(input.clone());
+            right_nn.predict(input.clone())
         }
     }
 }
@@ -125,19 +125,13 @@ impl NeuralNetwork for EitherNeuralNetwork {
         let pre_user_model_directory = append_dir(user_model_directory.clone(), "pre");
         self.pre_nn.save(pre_user_model_directory)?;
 
-        match self.left_nn {
-            Some(ref mut left_nn) => {
-                let left_user_model_directory = append_dir(user_model_directory.clone(), "left");
-                left_nn.save(left_user_model_directory)?;
-            }
-            None => {}
+        if let Some(ref mut left_nn) = self.left_nn {
+            let left_user_model_directory = append_dir(user_model_directory.clone(), "left");
+            left_nn.save(left_user_model_directory)?;
         }
-        match self.right_nn {
-            Some(ref mut right_nn) => {
-                let right_user_model_directory = append_dir(user_model_directory, "right");
-                right_nn.save(right_user_model_directory)?;
-            }
-            None => {}
+        if let Some(ref mut right_nn) = self.right_nn {
+            let right_user_model_directory = append_dir(user_model_directory, "right");
+            right_nn.save(right_user_model_directory)?;
         }
         Ok(())
     }
@@ -148,39 +142,21 @@ impl NeuralNetwork for EitherNeuralNetwork {
 
     fn allocate(&mut self) {
         self.pre_nn.allocate();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.allocate(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.allocate(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.allocate() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.allocate() }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.deallocate(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.deallocate(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.deallocate() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.deallocate() }
     }
 
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.set_internal(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.set_internal(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.set_internal() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.set_internal() }
     }
 
     fn duplicate(&self) -> WrappedNeuralNetwork {
@@ -322,13 +298,13 @@ impl TrainableEitherNeuralNetwork {
             }
             let mut left_nn = self.left_nn.as_ref().unwrap().clone();
 
-            return left_nn.predict(input.clone());
+            left_nn.predict(input.clone())
         } else {
             if self.right_nn.is_none() {
                 return pre_output;
             }
             let mut right_nn = self.right_nn.as_ref().unwrap().clone();
-            return right_nn.predict(input.clone());
+            right_nn.predict(input.clone())
         }
     }
 }
@@ -351,19 +327,13 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
 
         let pre_user_model_directory = append_dir(user_model_directory.clone(), "pre");
         self.pre_nn.save(pre_user_model_directory)?;
-        match self.left_nn {
-            Some(ref mut left_nn) => {
-                let left_user_model_directory = append_dir(user_model_directory.clone(), "left");
-                left_nn.save(left_user_model_directory)?;
-            }
-            None => {}
+        if let Some(ref mut left_nn) = self.left_nn {
+            let left_user_model_directory = append_dir(user_model_directory.clone(), "left");
+            left_nn.save(left_user_model_directory)?;
         }
-        match self.right_nn {
-            Some(ref mut right_nn) => {
-                let right_user_model_directory = append_dir(user_model_directory, "right");
-                right_nn.save(right_user_model_directory)?;
-            }
-            None => {}
+        if let Some(ref mut right_nn) = self.right_nn {
+            let right_user_model_directory = append_dir(user_model_directory, "right");
+            right_nn.save(right_user_model_directory)?;
         }
 
         Ok(())
@@ -375,39 +345,21 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
 
     fn allocate(&mut self) {
         self.pre_nn.allocate();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.allocate(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.allocate(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.allocate() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.allocate() }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.deallocate(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.deallocate(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.deallocate() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.deallocate() }
     }
 
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
-        match self.left_nn {
-            Some(ref mut left_nn) => left_nn.set_internal(),
-            None => {}
-        }
-        match self.right_nn {
-            Some(ref mut right_nn) => right_nn.set_internal(),
-            None => {}
-        }
+        if let Some(ref mut left_nn) = self.left_nn { left_nn.set_internal() }
+        if let Some(ref mut right_nn) = self.right_nn { right_nn.set_internal() }
     }
 
     fn duplicate(&self) -> WrappedNeuralNetwork {

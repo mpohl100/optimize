@@ -161,7 +161,7 @@ fn already_trained_model_is_loaded() {
     std::fs::remove_dir_all(&model_directory).unwrap();
     // Remove the backup directory if it exists
     if std::path::Path::new(&format!("{}_backup", model_directory)).exists() {
-        std::fs::remove_dir_all(&format!("{}_backup", model_directory)).unwrap();
+        std::fs::remove_dir_all(format!("{}_backup", model_directory)).unwrap();
     }
 }
 
