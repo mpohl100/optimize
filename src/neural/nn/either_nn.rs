@@ -142,21 +142,33 @@ impl NeuralNetwork for EitherNeuralNetwork {
 
     fn allocate(&mut self) {
         self.pre_nn.allocate();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.allocate() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.allocate() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.allocate()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.allocate()
+        }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.deallocate() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.deallocate() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.deallocate()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.deallocate()
+        }
     }
 
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.set_internal() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.set_internal() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.set_internal()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.set_internal()
+        }
     }
 
     fn duplicate(&self) -> WrappedNeuralNetwork {
@@ -345,21 +357,33 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
 
     fn allocate(&mut self) {
         self.pre_nn.allocate();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.allocate() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.allocate() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.allocate()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.allocate()
+        }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.deallocate() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.deallocate() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.deallocate()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.deallocate()
+        }
     }
 
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
-        if let Some(ref mut left_nn) = self.left_nn { left_nn.set_internal() }
-        if let Some(ref mut right_nn) = self.right_nn { right_nn.set_internal() }
+        if let Some(ref mut left_nn) = self.left_nn {
+            left_nn.set_internal()
+        }
+        if let Some(ref mut right_nn) = self.right_nn {
+            right_nn.set_internal()
+        }
     }
 
     fn duplicate(&self) -> WrappedNeuralNetwork {

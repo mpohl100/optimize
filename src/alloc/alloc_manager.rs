@@ -213,10 +213,12 @@ mod tests {
         let mut allocatable2 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         let mut allocatable3 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
         let allocatable4 = WrappedTestAllocatable::new(Box::new(TestAllocatable::new(50)));
-        let mut allocatables = [allocatable1.clone(),
+        let mut allocatables = [
+            allocatable1.clone(),
             allocatable2.clone(),
             allocatable3.clone(),
-            allocatable4.clone()];
+            allocatable4.clone(),
+        ];
         for (index, this_allocatable) in allocatables.iter_mut().enumerate() {
             if index == 1 {
                 allocatable1.free_from_use();
