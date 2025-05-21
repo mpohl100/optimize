@@ -8,6 +8,7 @@ use crate::{
 use indicatif::MultiProgress;
 use rayon::ThreadPoolBuilder;
 
+
 #[derive(Debug, Clone)]
 pub struct WrappedThreadPool {
     thread_pool: Arc<Mutex<rayon::ThreadPool>>,
