@@ -12,6 +12,7 @@ use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
+use rand::prelude::SliceRandom;
 
 use std::path::Path;
 
@@ -528,6 +529,59 @@ impl TrainableClassicNeuralNetwork {
     fn get_first_free_model_directory(&self) -> String {
         get_first_free_model_directory(self.model_directory.clone())
     }
+
+    fn transform(
+        &self,
+        inputs: &[Vec<f64>],
+        targets: &[Vec<f64>],
+    ) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+        let repeat_n_times = 1000 / inputs.len();
+        // if factor is greater than 1, then repeat the inputs and targets
+        let (transformed_inputs, transformed_targets) = if repeat_n_times > 1 {
+            let mut transformed_inputs = Vec::new();
+            let mut transformed_targets = Vec::new();
+            for (i, input) in inputs.iter().cycle().enumerate() {
+                if i >= repeat_n_times * inputs.len() {
+                    break;
+                }
+                // repeat the input n times
+                transformed_inputs.push(input.clone());
+            }
+            for (i, target) in targets.iter().cycle().enumerate() {
+                if i >= repeat_n_times * targets.len() {
+                    break;
+                }
+                // repeat the target n times
+                transformed_targets.push(target.clone());
+            }
+            (transformed_inputs, transformed_targets)
+        } else {
+            // if factor is 1, then just return the inputs and targets
+            let transformed_inputs = inputs.to_vec();
+            let transformed_targets = targets.to_vec();
+            (transformed_inputs, transformed_targets)
+        };
+
+        // zip the transformed inputs and targets
+        let mut zipped = transformed_inputs
+            .iter()
+            .zip(transformed_targets.iter())
+            .map(|(input, target)| {
+                let new_input = input.clone();
+                let new_target = target.clone();
+                (new_input, new_target)
+            })
+            .collect::<Vec<_>>();
+
+        // shuffle the zipped inputs and targets
+        let mut thread_rng = rand::thread_rng();
+        zipped.shuffle(&mut thread_rng);
+
+        // unzip the zipped inputs and targets
+        let (transformed_inputs, transformed_targets): (Vec<_>, Vec<_>) =
+            zipped.into_iter().unzip();
+        (transformed_inputs, transformed_targets)
+    }
 }
 
 impl NeuralNetwork for TrainableClassicNeuralNetwork {
@@ -597,17 +651,15 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         validation_split: f64,
     ) -> f64 {
         // in case one does not have enough samples, don't train and return zero accuracy
-        if inputs.len() < 100 {
-            return 0.0;
-        }
+        let (transformed_inputs, transformed_targets) = self.transform(inputs, targets);
         assert!(
             (0.0..=1.0).contains(&validation_split),
             "validation_split must be between 0 and 1"
         );
 
         let split_index = (inputs.len() as f64 * validation_split).round() as usize;
-        let (train_inputs, validation_inputs) = inputs.split_at(split_index);
-        let (train_targets, validation_targets) = targets.split_at(split_index);
+        let (train_inputs, validation_inputs) = transformed_inputs.split_at(split_index);
+        let (train_targets, validation_targets) = transformed_targets.split_at(split_index);
 
         let mut accuracy = 0.0;
 
