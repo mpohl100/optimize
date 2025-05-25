@@ -221,6 +221,7 @@ pub struct TrainableEitherNeuralNetwork {
     // The shape of the neural network that it should pretend to have to the outside world
     shape: NeuralNetworkShape,
     pre_shape: NeuralNetworkShape,
+    max_levels: i32,
     model_directory: Directory,
     past_internal_model_directories: Vec<String>,
     utils: WrappedUtils,
@@ -230,6 +231,7 @@ impl TrainableEitherNeuralNetwork {
     pub fn new(
         shape: NeuralNetworkShape,
         pre_shape: NeuralNetworkShape,
+        max_levels: i32,
         internal_model_directory: String,
         utils: WrappedUtils,
     ) -> Self {
@@ -245,6 +247,7 @@ impl TrainableEitherNeuralNetwork {
             right_nn: None,
             shape,
             pre_shape,
+            max_levels,
             model_directory: Directory::Internal(internal_model_directory),
             past_internal_model_directories: vec![],
             utils,
@@ -287,6 +290,7 @@ impl TrainableEitherNeuralNetwork {
                 right_nn,
                 shape,
                 pre_shape,
+                max_levels: 2, // allow extension of maximum two levels when retraining
                 model_directory: Directory::User(model_directory),
                 past_internal_model_directories: vec![],
                 utils,
@@ -428,6 +432,16 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             validation_split,
         );
 
+        // early return when no more levels are allowed
+        if self.max_levels <= 0 {
+            // If the maximum levels is zero, we don't need to split further
+            self.pre_nn = temp_neural_network.clone();
+            self.pre_nn
+                .save(append_dir(self.model_directory.path(), "pre"))
+                .expect("Failed to save pre neural network");
+            return temp_accuracy;
+        }
+
         let (left_inputs, left_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = inputs
             .iter()
             .zip(targets.iter())
@@ -523,7 +537,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         let left_model_directory = append_dir(self.model_directory.path(), "left");
         let mut left_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             self.shape.clone(),
-            None,
+            Some(self.max_levels - 1),
             Some(self.pre_shape.clone()),
             left_model_directory.clone(),
             self.utils.clone(),
@@ -549,7 +563,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         let right_model_directory = append_dir(self.model_directory.path(), "right");
         let mut right_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             self.shape.clone(),
-            None,
+            Some(self.max_levels - 1),
             Some(self.pre_shape.clone()),
             right_model_directory.clone(),
             self.utils.clone(),
@@ -678,6 +692,7 @@ mod tests {
                     activation: ActivationData::new_softmax(1.0),
                 }],
             },
+            2,
             "internal_model".to_string(),
             utils.clone(),
         );

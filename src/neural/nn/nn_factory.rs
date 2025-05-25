@@ -58,8 +58,11 @@ pub fn new_neural_network(
 pub fn new_trainable_neural_network(
     neural_network_creation_arguments: NeuralNetworkCreationArguments,
 ) -> WrappedTrainableNeuralNetwork {
-    match neural_network_creation_arguments.levels {
-        Some(levels) => {
+    match (
+        neural_network_creation_arguments.pre_shape,
+        neural_network_creation_arguments.levels,
+    ) {
+        (None, Some(levels)) => {
             WrappedTrainableNeuralNetwork::new(Box::new(TrainableRetryNeuralNetwork::new(
                 neural_network_creation_arguments.shape,
                 levels,
@@ -67,23 +70,20 @@ pub fn new_trainable_neural_network(
                 neural_network_creation_arguments.utils,
             )))
         }
-        None => match neural_network_creation_arguments.pre_shape {
-            Some(pre_shape) => {
-                WrappedTrainableNeuralNetwork::new(Box::new(TrainableEitherNeuralNetwork::new(
-                    neural_network_creation_arguments.shape,
-                    pre_shape,
-                    neural_network_creation_arguments.model_directory,
-                    neural_network_creation_arguments.utils,
-                )))
-            }
-            None => {
-                WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
-                    neural_network_creation_arguments.shape,
-                    Directory::Internal(neural_network_creation_arguments.model_directory),
-                    neural_network_creation_arguments.utils,
-                )))
-            }
-        },
+        (Some(pre_shape), Some(levels)) => {
+            WrappedTrainableNeuralNetwork::new(Box::new(TrainableEitherNeuralNetwork::new(
+                neural_network_creation_arguments.shape,
+                pre_shape,
+                levels,
+                neural_network_creation_arguments.model_directory,
+                neural_network_creation_arguments.utils,
+            )))
+        }
+        _ => WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
+            neural_network_creation_arguments.shape,
+            Directory::Internal(neural_network_creation_arguments.model_directory),
+            neural_network_creation_arguments.utils,
+        ))),
     }
 }
 
