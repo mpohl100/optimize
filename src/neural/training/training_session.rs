@@ -25,13 +25,14 @@ impl TrainingSession {
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
+        let pre_shape = params.pre_shape().clone();
         let levels = params.levels();
         Ok(Self {
             params,
             neural_network: new_trainable_neural_network(NeuralNetworkCreationArguments::new(
                 shape.clone(),
                 levels,
-                None,
+                pre_shape,
                 model_directory.path().to_string(),
                 utils,
             )),
