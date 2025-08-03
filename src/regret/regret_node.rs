@@ -7,6 +7,13 @@ pub struct RegretNode {
     current_expected_value: f64,
     parent: Option<WrappedRegretNode>,
     children: Vec<WrappedRegretNode>,
+    regret: f64,
+    sum_probabilities: f64,
+    num_probabilities: f64,
+    average_probability: f64,
+    sum_expected_values: f64,
+    num_expected_values: f64,
+    average_expected_value: f64,
 }
 
 impl RegretNode {
@@ -17,6 +24,13 @@ impl RegretNode {
             current_expected_value: 0.0,
             parent,
             children: Vec::new(),
+            regret: 0.0,
+            sum_probabilities: 0.0,
+            num_probabilities: 0.0,
+            average_probability: 0.0,
+            sum_expected_values: 0.0,
+            num_expected_values: 0.0,
+            average_expected_value: 0.0,
         }
     }
 
@@ -25,11 +39,75 @@ impl RegretNode {
             // Implement the regret minimization algorithm here
             self.calculate_expected_value();
             self.calculate_regrets(self.current_expected_value);
-            let sumRegrets = self.get_sum_regrets();
-            self.calculate_probabilities(sumRegrets);
-            self.calculate_normalized_probabilities();
+            let sum_regrets = self.get_sum_regrets();
+            self.calculate_probabilities(sum_regrets, self.children.len());
+            self.calculate_normalized_probabilities(1.0);
             self.update_average_values();
         }
+    }
+
+    fn update_average_values(&mut self) {
+        // Update the average values based on the current probabilities and expected values
+        // check if probability is less than epsilon or nan and the nset to zero
+        if self.probability < f64::EPSILON || self.probability.is_nan() {
+            self.probability = 0.0;
+        }
+        let prob = self.get_probability();
+        self.sum_probabilities += prob;
+        self.num_probabilities += 1.0;
+        self.average_probability = self.sum_probabilities / self.num_probabilities;
+
+        if self.current_expected_value.is_nan() ||  self.current_expected_value < f64::EPSILON {
+            self.current_expected_value = 0.0;
+        }
+        self.sum_expected_values += self.current_expected_value;
+        self.num_expected_values += 1.0;
+        self.average_expected_value = self.sum_expected_values / self.num_expected_values;
+    }
+
+    fn calculate_normalized_probabilities(&mut self, total_probability: f64) {
+        if total_probability > 0.0 {
+            self.probability /= total_probability;
+        } else {
+            self.probability = 0.0;
+        }
+        let total_probability_sum = self.children.iter().map(|child| child.get_probability()).sum::<f64>();
+        for child in &mut self.children {
+            child.calculate_normalized_probabilities(total_probability_sum);
+        }
+    }
+
+    fn calculate_probabilities(&mut self, sum_regrets: f64, total_siblings: usize) {
+        if self.regret < 0.0 {
+            self.add_probability(0.0);
+        } else if sum_regrets <= 0.0 {
+            if total_siblings == 0 {
+                self.add_probability(1.0);
+            } else {
+                self.add_probability(1.0 / total_siblings as f64);
+            }
+        } else {
+            let probability = self.regret / sum_regrets;
+            self.add_probability(probability);
+        }
+        let new_sum_regrets = self.get_sum_regrets();
+        let total_siblings = self.children.len();
+        self.children.iter_mut().for_each(|child| {
+            child.calculate_probabilities(new_sum_regrets, total_siblings);
+        });
+    }
+
+    fn add_probability(&mut self, probability: f64) {
+        self.probability += probability;
+    }
+
+    pub fn calculate_regrets(&mut self, outer_expected_value: f64) {
+        // Calculate regrets based on the expected value
+        self.regret = outer_expected_value - self.current_expected_value;
+        self.probability = 0.0; // Reset probability for next iteration
+        self.children.iter_mut().for_each(|child| {
+            child.node.lock().unwrap().calculate_regrets(self.current_expected_value);
+        });
     }
 
     fn calculate_expected_value(&mut self) -> f64 {
@@ -48,6 +126,10 @@ impl RegretNode {
         self.current_expected_value
     }
 
+    fn get_sum_regrets(&self) -> f64 {
+        self.children.iter().map(|child| child.node.lock().unwrap().regret).sum()
+    }
+
     fn get_total_probability(&self) -> f64 {
         let parent_probability = self.parent.as_ref().map_or(1.0, |p| p.get_total_probability());
         parent_probability * self.probability
@@ -63,6 +145,18 @@ impl RegretNode {
 
     fn get_expected_value(&self) -> f64 {
         self.current_expected_value
+    }
+
+    pub fn get_probability(&self) -> f64 {
+        self.probability
+    }
+
+    pub fn get_average_probability(&self) -> f64 {
+        self.average_probability
+    }
+
+    pub fn get_average_expected_value(&self) -> f64 {
+        self.average_expected_value
     }
 }
 
@@ -84,5 +178,29 @@ impl WrappedRegretNode {
 
     pub fn get_expected_value(&self) -> f64 {
         self.node.lock().unwrap().get_expected_value()
+    }
+
+    pub fn calculate_regrets(&self, outer_expected_value: f64) {
+        self.node.lock().unwrap().calculate_regrets(outer_expected_value);
+    }
+
+    pub fn calculate_probabilities(&self, sum_regrets: f64, total_siblings: usize) {
+        self.node.lock().unwrap().calculate_probabilities(sum_regrets, total_siblings);
+    }
+
+    pub fn get_probability(&self) -> f64 {
+        self.node.lock().unwrap().get_probability()
+    }
+
+    pub fn calculate_normalized_probabilities(&self, total_probability: f64) {
+        self.node.lock().unwrap().calculate_normalized_probabilities(total_probability);
+    }
+
+    pub fn get_average_probability(&self) -> f64 {
+        self.node.lock().unwrap().get_average_probability()
+    }
+
+    pub fn get_average_expected_value(&self) -> f64 {
+        self.node.lock().unwrap().get_average_expected_value()
     }
 }
