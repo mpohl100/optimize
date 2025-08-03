@@ -106,7 +106,7 @@ impl RegretNode {
         self.regret = outer_expected_value - self.current_expected_value;
         self.probability = 0.0; // Reset probability for next iteration
         self.children.iter_mut().for_each(|child| {
-            child.node.lock().unwrap().calculate_regrets(self.current_expected_value);
+            child.calculate_regrets(self.current_expected_value);
         });
     }
 
