@@ -58,7 +58,7 @@ pub struct RegretNode {
     sum_expected_values: f64,
     num_expected_values: f64,
     average_expected_value: f64,
-    is_fixed_node: bool,
+    fixed_probability: Option<f64>,
 }
 
 impl RegretNode {
@@ -68,7 +68,7 @@ impl RegretNode {
         parent: Option<WrappedRegretNode>,
         children_provider: Option<WrappedChildrenProvider>,
         expected_value_provider: Option<WrappedExpectedValueProvider>,
-        is_fixed_node: bool,
+        fixed_probability: Option<f64>,
     ) -> Self {
         RegretNode {
             probability,
@@ -85,7 +85,7 @@ impl RegretNode {
             sum_expected_values: 0.0,
             num_expected_values: 0.0,
             average_expected_value: 0.0,
-            is_fixed_node,
+            fixed_probability,
         }
     }
 
@@ -137,7 +137,7 @@ impl RegretNode {
     }
 
     fn calculate_probabilities(&mut self, sum_regrets: f64, total_siblings: usize) {
-        if !self.is_fixed_node {
+        if !self.fixed_probability.is_some() {
             if self.regret < 0.0 {
                 self.add_probability(0.0);
             } else if sum_regrets <= 0.0 {
@@ -150,6 +150,9 @@ impl RegretNode {
                 let probability = self.regret / sum_regrets;
                 self.add_probability(probability);
             }
+        } else {
+            // If it's a fixed node, we do not calculate probabilities
+            self.add_probability(self.fixed_probability.unwrap_or(0.0));
         }
 
         let new_sum_regrets = self.get_sum_regrets();
