@@ -1,11 +1,51 @@
 use std::sync::{Arc, Mutex};
 
+pub trait ChildrenProvider {
+    fn get_children(&self) -> Vec<WrappedRegretNode>;
+}
+
+#[derive(Clone)]
+pub struct WrappedChildrenProvider {
+    provider: Arc<Mutex<Box<dyn ChildrenProvider>>>,
+}
+
+impl WrappedChildrenProvider {
+    pub fn new(provider: Box<dyn ChildrenProvider>) -> Self {
+        WrappedChildrenProvider { provider: Arc::new(Mutex::new(provider)) }
+    }
+
+    pub fn get_children(&self) -> Vec<WrappedRegretNode> {
+        self.provider.lock().unwrap().get_children()
+    }
+}
+
+pub trait ExpectedValueProvider {
+    fn get_expected_value(&self) -> f64;
+}
+
+#[derive(Clone)]
+pub struct WrappedExpectedValueProvider {
+    provider: Arc<Mutex<Box<dyn ExpectedValueProvider>>>,
+}
+
+impl WrappedExpectedValueProvider {
+    pub fn new(provider: Box<dyn ExpectedValueProvider>) -> Self {
+        WrappedExpectedValueProvider { provider: Arc::new(Mutex::new(provider)) }
+    }
+
+    pub fn get_expected_value(&self) -> f64 {
+        self.provider.lock().unwrap().get_expected_value()
+    }
+}
+
 #[derive(Clone)]
 pub struct RegretNode {
     probability: f64,
     min_probability: f64,
     current_expected_value: f64,
     parent: Option<WrappedRegretNode>,
+    children_provider: Option<WrappedChildrenProvider>,
+    expected_value_provider: Option<WrappedExpectedValueProvider>,
     children: Vec<WrappedRegretNode>,
     regret: f64,
     sum_probabilities: f64,
@@ -17,13 +57,15 @@ pub struct RegretNode {
 }
 
 impl RegretNode {
-    pub fn new(probability: f64, min_probability: f64, parent: Option<WrappedRegretNode>) -> Self {
+    pub fn new(probability: f64, min_probability: f64, parent: Option<WrappedRegretNode>, children_provider: Option<WrappedChildrenProvider>, expected_value_provider: Option<WrappedExpectedValueProvider>) -> Self {
         RegretNode {
             probability,
             min_probability,
             current_expected_value: 0.0,
             parent,
             children: Vec::new(),
+            children_provider,
+            expected_value_provider,
             regret: 0.0,
             sum_probabilities: 0.0,
             num_probabilities: 0.0,
@@ -117,6 +159,11 @@ impl RegretNode {
             return 0.0;
         }
 
+        if self.expected_value_provider.is_some() {
+            self.current_expected_value = self.expected_value_provider.as_ref().unwrap().get_expected_value();
+            return self.current_expected_value;
+        }
+
         self.populate_children();
 
         self.current_expected_value = 0.0;
@@ -140,7 +187,11 @@ impl RegretNode {
     }
 
     fn populate_children(&mut self){
-        unimplemented!();
+        self.children = if let Some(provider) = &self.children_provider {
+            provider.get_children()
+        } else {
+            Vec::new()
+        };
     }
 
     fn get_expected_value(&self) -> f64 {
@@ -161,7 +212,7 @@ impl RegretNode {
 }
 
 #[derive(Clone)]
-struct WrappedRegretNode {
+pub struct WrappedRegretNode {
     node: Arc<Mutex<RegretNode>>,
 }   
 
