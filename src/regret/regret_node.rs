@@ -1,22 +1,22 @@
 use std::sync::{Arc, Mutex};
 
-pub trait ChildrenProvider {
-    fn get_children(&self) -> Vec<WrappedRegretNode>;
+pub trait ChildrenProvider<UserData: Clone> {
+    fn get_children(&self) -> Vec<WrappedRegretNode<UserData>>;
 }
 
 #[derive(Clone)]
-pub struct WrappedChildrenProvider {
-    provider: Arc<Mutex<Box<dyn ChildrenProvider>>>,
+pub struct WrappedChildrenProvider<UserData> {
+    provider: Arc<Mutex<Box<dyn ChildrenProvider<UserData>>>>,
 }
 
-impl WrappedChildrenProvider {
-    pub fn new(provider: Box<dyn ChildrenProvider>) -> Self {
+impl<UserData: Clone> WrappedChildrenProvider<UserData> {
+    pub fn new(provider: Box<dyn ChildrenProvider<UserData>>) -> Self {
         WrappedChildrenProvider {
             provider: Arc::new(Mutex::new(provider)),
         }
     }
 
-    pub fn get_children(&self) -> Vec<WrappedRegretNode> {
+    pub fn get_children(&self) -> Vec<WrappedRegretNode<UserData>> {
         self.provider.lock().unwrap().get_children()
     }
 }
@@ -43,14 +43,25 @@ impl WrappedExpectedValueProvider {
 }
 
 #[derive(Clone)]
-pub struct RegretNode {
+pub enum ProviderType<UserData: Clone> {
+    Children(WrappedChildrenProvider<UserData>),
+    ExpectedValue(WrappedExpectedValueProvider),
+}
+
+#[derive(Clone)]
+pub struct Provider<UserData: Clone> {
+    pub provider_type: ProviderType<UserData>,
+    pub user_data: UserData,
+}
+
+#[derive(Clone)]
+pub struct RegretNode<UserData: Clone> {
     probability: f64,
     min_probability: f64,
     current_expected_value: f64,
-    parent: Option<WrappedRegretNode>,
-    children_provider: Option<WrappedChildrenProvider>,
-    expected_value_provider: Option<WrappedExpectedValueProvider>,
-    children: Vec<WrappedRegretNode>,
+    parent: Option<WrappedRegretNode<UserData>>,
+    provider: Provider<UserData>,
+    children: Vec<WrappedRegretNode<UserData>>,
     regret: f64,
     sum_probabilities: f64,
     num_probabilities: f64,
@@ -61,13 +72,12 @@ pub struct RegretNode {
     fixed_probability: Option<f64>,
 }
 
-impl RegretNode {
+impl<UserData: Clone> RegretNode<UserData> {
     pub fn new(
         probability: f64,
         min_probability: f64,
-        parent: Option<WrappedRegretNode>,
-        children_provider: Option<WrappedChildrenProvider>,
-        expected_value_provider: Option<WrappedExpectedValueProvider>,
+        parent: Option<WrappedRegretNode<UserData>>,
+        provider: Provider<UserData>,
         fixed_probability: Option<f64>,
     ) -> Self {
         RegretNode {
@@ -76,8 +86,7 @@ impl RegretNode {
             current_expected_value: 0.0,
             parent,
             children: Vec::new(),
-            children_provider,
-            expected_value_provider,
+            provider,
             regret: 0.0,
             sum_probabilities: 0.0,
             num_probabilities: 0.0,
@@ -182,21 +191,18 @@ impl RegretNode {
             return 0.0;
         }
 
-        if self.expected_value_provider.is_some() {
-            self.current_expected_value = self
-                .expected_value_provider
-                .as_ref()
-                .unwrap()
-                .get_expected_value();
-            return self.current_expected_value;
-        }
-
         self.populate_children();
 
-        self.current_expected_value = 0.0;
-        for child in self.get_children() {
-            self.current_expected_value += child.get_expected_value() * child.get_probability();
-        }
+        self.current_expected_value = match self.provider.provider_type {
+            ProviderType::ExpectedValue(ref provider) => provider.get_expected_value(),
+            ProviderType::Children(ref provider) => {
+                self.children = provider.get_children();
+                self.children
+                    .iter()
+                    .map(|child| child.get_expected_value() * child.get_probability())
+                    .sum::<f64>()
+            }
+        };
         self.current_expected_value
     }
 
@@ -215,16 +221,20 @@ impl RegretNode {
         parent_probability * self.probability
     }
 
-    fn get_children(&self) -> Vec<WrappedRegretNode> {
+    fn get_children(&self) -> Vec<WrappedRegretNode<UserData>> {
         self.children.clone()
     }
 
     fn populate_children(&mut self) {
-        self.children = if let Some(provider) = &self.children_provider {
-            provider.get_children()
-        } else {
-            Vec::new()
-        };
+        match self.provider.provider_type {
+            ProviderType::Children(ref provider) => {
+                self.children = provider.get_children();
+            }
+            ProviderType::ExpectedValue(_) => {
+                // If the provider is an expected value provider, we don't need to populate children
+                self.children.clear();
+            }
+        }
     }
 
     fn get_expected_value(&self) -> f64 {
@@ -245,12 +255,12 @@ impl RegretNode {
 }
 
 #[derive(Clone)]
-pub struct WrappedRegretNode {
-    node: Arc<Mutex<RegretNode>>,
+pub struct WrappedRegretNode<UserData: Clone> {
+    node: Arc<Mutex<RegretNode<UserData>>>,
 }
 
-impl WrappedRegretNode {
-    pub fn new(node: RegretNode) -> Self {
+impl<UserData: Clone> WrappedRegretNode<UserData> {
+    pub fn new(node: RegretNode<UserData>) -> Self {
         WrappedRegretNode {
             node: Arc::new(Mutex::new(node)),
         }
