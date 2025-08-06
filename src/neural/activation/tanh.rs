@@ -9,7 +9,8 @@ pub struct Tanh;
 
 impl Tanh {
     /// Creates a new Tanh instance.
-    #[must_use] pub const fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self
     }
 

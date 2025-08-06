@@ -12,7 +12,8 @@ pub struct NeuralNetworkStrategy {
 }
 
 impl NeuralNetworkStrategy {
-    #[must_use] pub const fn new(model_directory: String) -> Self {
+    #[must_use]
+    pub const fn new(model_directory: String) -> Self {
         Self { model_directory }
     }
 }

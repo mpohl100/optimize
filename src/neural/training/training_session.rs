@@ -136,7 +136,8 @@ impl TrainingSession {
     }
 
     /// get the resulting neural network
-    #[must_use] pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+    #[must_use]
+    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
         self.neural_network.clone()
     }
 }

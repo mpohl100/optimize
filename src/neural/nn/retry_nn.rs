@@ -30,7 +30,8 @@ pub struct RetryNeuralNetwork {
 }
 
 impl RetryNeuralNetwork {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         shape: NeuralNetworkShape,
         levels: i32,
         internal_model_directory: String,
@@ -66,7 +67,8 @@ impl RetryNeuralNetwork {
         }
     }
 
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedNeuralNetwork {
@@ -251,7 +253,8 @@ pub struct TrainableRetryNeuralNetwork {
 }
 
 impl TrainableRetryNeuralNetwork {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         shape: NeuralNetworkShape,
         levels: i32,
         internal_model_directory: String,
@@ -265,14 +268,12 @@ impl TrainableRetryNeuralNetwork {
                 utils.clone(),
             )));
         let backup_nn = match levels {
-            1..=i32::MAX => {
-                WrappedTrainableNeuralNetwork::new(Box::new(Self::new(
-                    shape.clone(),
-                    levels - 1,
-                    append_dir(internal_model_directory.clone(), "backup"),
-                    utils.clone(),
-                )))
-            },
+            1..=i32::MAX => WrappedTrainableNeuralNetwork::new(Box::new(Self::new(
+                shape.clone(),
+                levels - 1,
+                append_dir(internal_model_directory.clone(), "backup"),
+                utils.clone(),
+            ))),
             0 => WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
                 shape.clone(),
                 Directory::Internal(append_dir(internal_model_directory.clone(), "backup")),
@@ -290,7 +291,8 @@ impl TrainableRetryNeuralNetwork {
         }
     }
 
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedTrainableNeuralNetwork {
@@ -301,10 +303,7 @@ impl TrainableRetryNeuralNetwork {
                 TrainableClassicNeuralNetwork::from_disk(primary_model_directory, utils.clone())
                     .unwrap(),
             ));
-            let backup_nn = Self::from_disk(
-                backup_model_directory,
-                utils.clone(),
-            );
+            let backup_nn = Self::from_disk(backup_model_directory, utils.clone());
             let shape = backup_nn.shape();
             WrappedTrainableNeuralNetwork::new(Box::new(Self {
                 primary_nn,

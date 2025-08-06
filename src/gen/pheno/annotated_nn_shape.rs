@@ -15,7 +15,8 @@ pub struct AnnotatedLayerShape {
 }
 
 impl AnnotatedLayerShape {
-    #[must_use] pub const fn new(
+    #[must_use]
+    pub const fn new(
         layer: LayerShape,
         change_type: LayerChangeType,
     ) -> Self {
@@ -28,7 +29,8 @@ pub struct AnnotatedNeuralNetworkShape {
 }
 
 impl AnnotatedNeuralNetworkShape {
-    #[must_use] pub fn new(layers: NeuralNetworkShape) -> Self {
+    #[must_use]
+    pub fn new(layers: NeuralNetworkShape) -> Self {
         let annotated_layers = layers
             .layers
             .iter()
@@ -52,14 +54,16 @@ impl AnnotatedNeuralNetworkShape {
         self.layers.remove(position);
     }
 
-    #[must_use] pub fn get_layer(
+    #[must_use]
+    pub fn get_layer(
         &self,
         position: usize,
     ) -> &LayerShape {
         &self.layers[position].layer
     }
 
-    #[must_use] pub fn get_annotated_layer(
+    #[must_use]
+    pub fn get_annotated_layer(
         &self,
         position: usize,
     ) -> &AnnotatedLayerShape {
@@ -74,7 +78,8 @@ impl AnnotatedNeuralNetworkShape {
         self.layers[position] = AnnotatedLayerShape::new(layer, LayerChangeType::Change);
     }
 
-    #[must_use] pub fn to_neural_network_shape(&self) -> NeuralNetworkShape {
+    #[must_use]
+    pub fn to_neural_network_shape(&self) -> NeuralNetworkShape {
         let layers =
             self.layers.iter().map(|annotated_layer| annotated_layer.layer.clone()).collect();
         NeuralNetworkShape::new(layers)

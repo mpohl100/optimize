@@ -23,7 +23,8 @@ pub struct RandomNumberGenerator {
 }
 
 impl RandomNumberGenerator {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self { rng: StdRng::from_entropy() }
     }
 

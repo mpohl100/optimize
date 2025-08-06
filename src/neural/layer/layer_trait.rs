@@ -88,11 +88,13 @@ pub struct WrappedLayer {
 }
 
 impl WrappedLayer {
-    #[must_use] pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
+    #[must_use]
+    pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    #[must_use] pub fn duplicate(
+    #[must_use]
+    pub fn duplicate(
         &self,
         model_directory: String,
         position_in_nn: usize,
@@ -121,11 +123,13 @@ impl WrappedLayer {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
-    #[must_use] pub fn input_size(&self) -> usize {
+    #[must_use]
+    pub fn input_size(&self) -> usize {
         self.layer.lock().unwrap().input_size()
     }
 
-    #[must_use] pub fn output_size(&self) -> usize {
+    #[must_use]
+    pub fn output_size(&self) -> usize {
         self.layer.lock().unwrap().output_size()
     }
 
@@ -143,11 +147,13 @@ impl WrappedLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    #[must_use] pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    #[must_use]
+    pub fn get_weights(&self) -> WrappedMatrix<f64> {
         self.layer.lock().unwrap().get_weights()
     }
 
-    #[must_use] pub fn get_biases(&self) -> Vec<f64> {
+    #[must_use]
+    pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
     }
 }
@@ -269,11 +275,13 @@ pub struct WrappedTrainableLayer {
 }
 
 impl WrappedTrainableLayer {
-    #[must_use] pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
+    #[must_use]
+    pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    #[must_use] pub fn duplicate(
+    #[must_use]
+    pub fn duplicate(
         &self,
         model_directory: String,
         position_in_nn: usize,
@@ -302,11 +310,13 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
-    #[must_use] pub fn input_size(&self) -> usize {
+    #[must_use]
+    pub fn input_size(&self) -> usize {
         self.layer.lock().unwrap().input_size()
     }
 
-    #[must_use] pub fn output_size(&self) -> usize {
+    #[must_use]
+    pub fn output_size(&self) -> usize {
         self.layer.lock().unwrap().output_size()
     }
 
@@ -324,11 +334,13 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    #[must_use] pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    #[must_use]
+    pub fn get_weights(&self) -> WrappedMatrix<f64> {
         self.layer.lock().unwrap().get_weights()
     }
 
-    #[must_use] pub fn get_biases(&self) -> Vec<f64> {
+    #[must_use]
+    pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
     }
 

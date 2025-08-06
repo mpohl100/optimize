@@ -26,7 +26,8 @@ pub struct WrappedNeuralNetwork {
 }
 
 impl WrappedNeuralNetwork {
-    #[must_use] pub fn new(nn: Box<dyn NeuralNetwork + Send>) -> Self {
+    #[must_use]
+    pub fn new(nn: Box<dyn NeuralNetwork + Send>) -> Self {
         Self { nn: Arc::new(Mutex::new(nn)) }
     }
 
@@ -37,7 +38,8 @@ impl WrappedNeuralNetwork {
         self.nn.lock().unwrap().predict(input)
     }
 
-    #[must_use] pub fn shape(&self) -> NeuralNetworkShape {
+    #[must_use]
+    pub fn shape(&self) -> NeuralNetworkShape {
         self.nn.lock().unwrap().shape()
     }
 
@@ -60,11 +62,13 @@ impl WrappedNeuralNetwork {
         self.nn.lock().unwrap().set_internal();
     }
 
-    #[must_use] pub fn duplicate(&self) -> Self {
+    #[must_use]
+    pub fn duplicate(&self) -> Self {
         self.nn.lock().unwrap().duplicate()
     }
 
-    #[must_use] pub fn get_utils(&self) -> WrappedUtils {
+    #[must_use]
+    pub fn get_utils(&self) -> WrappedUtils {
         self.nn.lock().unwrap().get_utils()
     }
 }
@@ -110,7 +114,8 @@ pub struct WrappedTrainableNeuralNetwork {
 }
 
 impl WrappedTrainableNeuralNetwork {
-    #[must_use] pub fn new(nn: Box<dyn TrainableNeuralNetwork + Send>) -> Self {
+    #[must_use]
+    pub fn new(nn: Box<dyn TrainableNeuralNetwork + Send>) -> Self {
         Self { nn: Arc::new(Mutex::new(nn)) }
     }
 
@@ -121,7 +126,8 @@ impl WrappedTrainableNeuralNetwork {
         self.nn.lock().unwrap().predict(input)
     }
 
-    #[must_use] pub fn shape(&self) -> NeuralNetworkShape {
+    #[must_use]
+    pub fn shape(&self) -> NeuralNetworkShape {
         self.nn.lock().unwrap().shape()
     }
 
@@ -174,15 +180,18 @@ impl WrappedTrainableNeuralNetwork {
         );
     }
 
-    #[must_use] pub fn input_size(&self) -> usize {
+    #[must_use]
+    pub fn input_size(&self) -> usize {
         self.nn.lock().unwrap().input_size()
     }
 
-    #[must_use] pub fn output_size(&self) -> usize {
+    #[must_use]
+    pub fn output_size(&self) -> usize {
         self.nn.lock().unwrap().output_size()
     }
 
-    #[must_use] pub fn get_model_directory(&self) -> Directory {
+    #[must_use]
+    pub fn get_model_directory(&self) -> Directory {
         self.nn.lock().unwrap().get_model_directory()
     }
 
@@ -198,11 +207,13 @@ impl WrappedTrainableNeuralNetwork {
         self.nn.lock().unwrap().set_internal();
     }
 
-    #[must_use] pub fn duplicate_trainable(&self) -> Self {
+    #[must_use]
+    pub fn duplicate_trainable(&self) -> Self {
         self.nn.lock().unwrap().duplicate_trainable()
     }
 
-    #[must_use] pub fn get_utils(&self) -> WrappedUtils {
+    #[must_use]
+    pub fn get_utils(&self) -> WrappedUtils {
         self.nn.lock().unwrap().get_utils()
     }
 }

@@ -24,7 +24,8 @@ pub struct NeuralNetworkGenerator {
 }
 
 impl NeuralNetworkGenerator {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
@@ -42,7 +43,8 @@ impl NeuralNetworkGenerator {
         Self { current_winner: nn, params, evolution_params, num_threads, data_importer }
     }
 
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
@@ -75,8 +77,7 @@ impl NeuralNetworkGenerator {
         let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());
-        let strategy =
-            NeuralNetworkStrategy::new(self.current_winner.get_model_directory().path());
+        let strategy = NeuralNetworkStrategy::new(self.current_winner.get_model_directory().path());
         let launcher: ParallelEvolutionLauncher<
             NeuralNetworkPhenotype,
             NeuralNetworkStrategy,
@@ -92,7 +93,8 @@ impl NeuralNetworkGenerator {
     }
 
     /// Get the model directory
-    #[must_use] pub fn get_model_directory(&self) -> String {
+    #[must_use]
+    pub fn get_model_directory(&self) -> String {
         self.current_winner.get_model_directory().path()
     }
 }

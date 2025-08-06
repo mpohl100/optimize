@@ -34,7 +34,8 @@ where
     T: Default + Clone,
 {
     // Constructor with specified rows and columns
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         rows: usize,
         cols: usize,
     ) -> Self {
@@ -85,7 +86,8 @@ where
         &mut self.data[x * self.cols + y]
     }
 
-    #[must_use] pub fn get_unchecked(
+    #[must_use]
+    pub fn get_unchecked(
         &self,
         x: usize,
         y: usize,
@@ -103,12 +105,14 @@ where
     }
 
     // Return the number of rows
-    #[must_use] pub const fn rows(&self) -> usize {
+    #[must_use]
+    pub const fn rows(&self) -> usize {
         self.rows
     }
 
     // Return the number of columns
-    #[must_use] pub const fn cols(&self) -> usize {
+    #[must_use]
+    pub const fn cols(&self) -> usize {
         self.cols
     }
 }
@@ -127,7 +131,8 @@ pub struct RowIterMut<'a, T> {
 
 impl<T> Matrix<T> {
     /// Returns an iterator over the rows of the matrix (immutable)
-    #[must_use] pub const fn iter(&self) -> RowIter<T> {
+    #[must_use]
+    pub const fn iter(&self) -> RowIter<T> {
         RowIter { matrix: self, current_row: 0 }
     }
 
@@ -176,11 +181,13 @@ impl<'a, T> Iterator for RowIterMut<'a, T> {
 }
 
 impl<T: Sync> Matrix<T> {
-    #[must_use] pub fn par_iter(&self) -> rayon::slice::Chunks<'_, T> {
+    #[must_use]
+    pub fn par_iter(&self) -> rayon::slice::Chunks<'_, T> {
         self.data.par_chunks(self.cols)
     }
 
-    #[must_use] pub fn par_indexed_iter(&self) -> impl ParallelIterator<Item = (usize, &[T])> {
+    #[must_use]
+    pub fn par_indexed_iter(&self) -> impl ParallelIterator<Item = (usize, &[T])> {
         self.data.par_chunks(self.cols).enumerate()
     }
 }
@@ -204,7 +211,8 @@ impl<T> WrappedMatrix<T>
 where
     T: Default + Clone,
 {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         rows: usize,
         cols: usize,
     ) -> Self {
@@ -229,17 +237,20 @@ where
         mat.get_mut(x, y).cloned()
     }
 
-    #[must_use] pub fn rows(&self) -> usize {
+    #[must_use]
+    pub fn rows(&self) -> usize {
         let mat = self.mat.lock().unwrap();
         mat.rows()
     }
 
-    #[must_use] pub fn cols(&self) -> usize {
+    #[must_use]
+    pub fn cols(&self) -> usize {
         let mat = self.mat.lock().unwrap();
         mat.cols()
     }
 
-    #[must_use] pub fn mat(&self) -> Arc<Mutex<Matrix<T>>> {
+    #[must_use]
+    pub fn mat(&self) -> Arc<Mutex<Matrix<T>>> {
         self.mat.clone()
     }
 
@@ -253,7 +264,8 @@ where
         mat.set_mut_unchecked(x, y, value);
     }
 
-    #[must_use] pub fn get_unchecked(
+    #[must_use]
+    pub fn get_unchecked(
         &self,
         x: usize,
         y: usize,

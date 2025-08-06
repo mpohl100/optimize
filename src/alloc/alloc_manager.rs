@@ -13,7 +13,8 @@ pub struct AllocManager<WrappedType: WrappedAllocatableTrait> {
 }
 
 impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
-    #[must_use] pub const fn new(max_allocated_size: usize) -> Self {
+    #[must_use]
+    pub const fn new(max_allocated_size: usize) -> Self {
         Self { currently_allocated: Vec::new(), max_allocated_size, currently_allocated_size: 0 }
     }
 
@@ -71,7 +72,8 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
         }
     }
 
-    #[must_use] pub const fn get_max_allocated_size(&self) -> usize {
+    #[must_use]
+    pub const fn get_max_allocated_size(&self) -> usize {
         self.max_allocated_size
     }
 }
@@ -82,7 +84,8 @@ pub struct WrappedAllocManager<WrappedType: WrappedAllocatableTrait> {
 }
 
 impl<WrappedType: WrappedAllocatableTrait> WrappedAllocManager<WrappedType> {
-    #[must_use] pub fn new(alloc_manager: AllocManager<WrappedType>) -> Self {
+    #[must_use]
+    pub fn new(alloc_manager: AllocManager<WrappedType>) -> Self {
         Self { alloc_manager: Arc::new(Mutex::new(alloc_manager)) }
     }
 
@@ -100,7 +103,8 @@ impl<WrappedType: WrappedAllocatableTrait> WrappedAllocManager<WrappedType> {
         self.alloc_manager.lock().unwrap().deallocate(allocatable);
     }
 
-    #[must_use] pub fn get_max_allocated_size(&self) -> usize {
+    #[must_use]
+    pub fn get_max_allocated_size(&self) -> usize {
         self.alloc_manager.lock().unwrap().get_max_allocated_size()
     }
 }

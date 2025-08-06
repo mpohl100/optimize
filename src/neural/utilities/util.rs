@@ -14,7 +14,8 @@ pub struct WrappedThreadPool {
 }
 
 impl WrappedThreadPool {
-    #[must_use] pub fn new(num_threads: usize) -> Self {
+    #[must_use]
+    pub fn new(num_threads: usize) -> Self {
         let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
         Self { thread_pool: Arc::new(Mutex::new(thread_pool)) }
     }
@@ -40,7 +41,8 @@ pub struct Utils {
 }
 
 impl Utils {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         cpu_memory: usize,
         num_threads: usize,
     ) -> Self {
@@ -86,11 +88,13 @@ impl Utils {
         self.trainable_layer_alloc_manager.deallocate(allocatable);
     }
 
-    #[must_use] pub fn get_max_allocated_size(&self) -> usize {
+    #[must_use]
+    pub fn get_max_allocated_size(&self) -> usize {
         self.layer_alloc_manager.get_max_allocated_size()
     }
 
-    #[must_use] pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
+    #[must_use]
+    pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
         self.mutli_progress.clone()
     }
 
@@ -112,7 +116,8 @@ pub struct WrappedUtils {
 }
 
 impl WrappedUtils {
-    #[must_use] pub fn new(utils: Utils) -> Self {
+    #[must_use]
+    pub fn new(utils: Utils) -> Self {
         Self { utils: Arc::new(Mutex::new(utils)) }
     }
 
@@ -144,11 +149,13 @@ impl WrappedUtils {
         self.utils.lock().unwrap().deallocate_trainable(allocatable);
     }
 
-    #[must_use] pub fn get_max_allocated_size(&self) -> usize {
+    #[must_use]
+    pub fn get_max_allocated_size(&self) -> usize {
         self.utils.lock().unwrap().get_max_allocated_size()
     }
 
-    #[must_use] pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
+    #[must_use]
+    pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
         self.utils.lock().unwrap().get_multi_progress()
     }
 

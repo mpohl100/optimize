@@ -30,15 +30,18 @@ pub struct ActivationData {
 }
 
 impl ActivationData {
-    #[must_use] pub const fn new(activation_type: ActivationType) -> Self {
+    #[must_use]
+    pub const fn new(activation_type: ActivationType) -> Self {
         Self { activation_type, temperature: None }
     }
 
-    #[must_use] pub const fn new_softmax(temperature: f64) -> Self {
+    #[must_use]
+    pub const fn new_softmax(temperature: f64) -> Self {
         Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
     }
 
-    #[must_use] pub fn is_valid(&self) -> bool {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
         match self.activation_type {
             ActivationType::Softmax => {
                 self.temperature.is_some() && self.temperature.unwrap() > 0.0
@@ -47,11 +50,13 @@ impl ActivationData {
         }
     }
 
-    #[must_use] pub const fn activation_type(&self) -> ActivationType {
+    #[must_use]
+    pub const fn activation_type(&self) -> ActivationType {
         self.activation_type
     }
 
-    #[must_use] pub const fn temperature(&self) -> Option<f64> {
+    #[must_use]
+    pub const fn temperature(&self) -> Option<f64> {
         self.temperature
     }
 }
@@ -67,21 +72,24 @@ pub struct LayerShape {
 
 impl LayerShape {
     /// Returns the input size of the layer.
-    #[must_use] pub const fn input_size(&self) -> usize {
+    #[must_use]
+    pub const fn input_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { input_size, .. } => input_size,
         }
     }
 
     /// Returns the output size of the layer.
-    #[must_use] pub const fn output_size(&self) -> usize {
+    #[must_use]
+    pub const fn output_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { output_size, .. } => output_size,
         }
     }
 
     /// Returns the type of the layer.
-    #[must_use] pub fn layer_type(&self) -> LayerType {
+    #[must_use]
+    pub fn layer_type(&self) -> LayerType {
         self.layer_type.clone()
     }
 
@@ -91,7 +99,8 @@ impl LayerShape {
     ///
     /// * `true` if both input size and output size are greater than zero.
     /// * `false` otherwise.
-    #[must_use] pub fn is_valid(&self) -> bool {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
         self.input_size() > 0 && self.output_size() > 0 && self.activation.is_valid()
     }
 }
@@ -105,12 +114,14 @@ pub struct NeuralNetworkShape {
 
 impl NeuralNetworkShape {
     /// Creates a new `NeuralNetworkShape` with the given layers.
-    #[must_use] pub const fn new(layers: Vec<LayerShape>) -> Self {
+    #[must_use]
+    pub const fn new(layers: Vec<LayerShape>) -> Self {
         Self { layers }
     }
 
     /// Creates a new `NeuralNetworkShape` with the given layers from disk.
-    #[must_use] pub fn from_disk(model_directory: String) -> Option<Self> {
+    #[must_use]
+    pub fn from_disk(model_directory: String) -> Option<Self> {
         let path = format!("{model_directory}/shape.yaml");
         if !std::path::Path::new(&path).exists() {
             return None;
@@ -121,7 +132,8 @@ impl NeuralNetworkShape {
     }
 
     // Creates a new `NeuralNetworkShape` with the given layers from file.
-    #[must_use] pub fn from_file(file_name: String) -> Self {
+    #[must_use]
+    pub fn from_file(file_name: String) -> Self {
         let file = File::open(file_name).unwrap();
         let shape: Self = serde_yaml::from_reader(file).unwrap();
         shape
@@ -134,7 +146,8 @@ impl NeuralNetworkShape {
     /// * `true` if all layers are valid and the input size of each layer matches
     ///   the output size of the previous layer (except for the first layer).
     /// * `false` otherwise.
-    #[must_use] pub fn is_valid(&self) -> bool {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
         if self.layers.is_empty() {
             return false;
         }
@@ -173,7 +186,8 @@ impl NeuralNetworkShape {
     }
 
     /// Returns the layer at the specified index.
-    #[must_use] pub fn get_layer(
+    #[must_use]
+    pub fn get_layer(
         &self,
         index: usize,
     ) -> LayerShape {
@@ -181,7 +195,8 @@ impl NeuralNetworkShape {
     }
 
     /// Returns the number of layers in the neural network shape.
-    #[must_use] pub fn num_layers(&self) -> usize {
+    #[must_use]
+    pub fn num_layers(&self) -> usize {
         self.layers.len()
     }
 
@@ -204,7 +219,8 @@ impl NeuralNetworkShape {
     }
 
     /// Cut out a subnetwork from the neural network shape.
-    #[must_use] pub fn cut_out(
+    #[must_use]
+    pub fn cut_out(
         &self,
         start: usize,
         end: usize,
@@ -219,7 +235,8 @@ impl NeuralNetworkShape {
         Self { layers }
     }
 
-    #[must_use] pub fn merge(
+    #[must_use]
+    pub fn merge(
         &self,
         other: Self,
         middle_activation_data: ActivationData,

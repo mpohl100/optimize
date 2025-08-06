@@ -37,7 +37,8 @@ pub struct FakeRng {
 }
 
 impl FakeRng {
-    #[must_use] pub fn new(values: Vec<f32>) -> Self {
+    #[must_use]
+    pub fn new(values: Vec<f32>) -> Self {
         Self { values: values.into_iter().collect() }
     }
 }

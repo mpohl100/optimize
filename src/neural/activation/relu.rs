@@ -11,7 +11,8 @@ pub struct ReLU {
 }
 
 impl ReLU {
-    #[must_use] pub const fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self { input_cache: None }
     }
 }
