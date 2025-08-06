@@ -35,7 +35,8 @@ pub struct ClassicNeuralNetwork {
 
 impl ClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         shape: NeuralNetworkShape,
         internal_model_directory: String,
         utils: WrappedUtils,
@@ -78,7 +79,8 @@ impl ClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> Option<Self> {
@@ -317,7 +319,8 @@ pub struct TrainableClassicNeuralNetwork {
 
 impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         shape: NeuralNetworkShape,
         model_directory: Directory,
         utils: WrappedUtils,
@@ -359,7 +362,8 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
-    #[must_use] pub fn new_dir(
+    #[must_use]
+    pub fn new_dir(
         model_directory: Directory,
         utils: WrappedUtils,
     ) -> Self {
@@ -516,7 +520,8 @@ impl TrainableClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> Option<Self> {
@@ -913,7 +918,7 @@ impl Drop for TrainableClassicNeuralNetwork {
 mod tests {
     use super::*;
     use crate::neural::{
-        nn::shape::{ActivationType, LayerShape},
+        nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
     };
 
