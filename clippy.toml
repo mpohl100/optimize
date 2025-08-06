@@ -1,0 +1,11 @@
+# clippy.toml
+
+warns = [
+  "clippy::all",
+  "clippy::pedantic",
+  "clippy::nursery",
+  "clippy::cargo"
+]
+
+# Enforce visibility ordering (pub before private)
+allow_clippy_lints = ["mod_module_files"]
