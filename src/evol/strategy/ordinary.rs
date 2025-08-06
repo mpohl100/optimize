@@ -1,4 +1,4 @@
-//! # OrdinaryStrategy
+//! # `OrdinaryStrategy`
 //!
 //! The `OrdinaryStrategy` struct represents a basic breeding strategy where the first
 //! parent is considered as the winner of the previous generation, and the remaining
@@ -9,7 +9,7 @@ use crate::evol::phenotype::Phenotype;
 use crate::evol::rng;
 use std::fmt::Error;
 
-/// # OrdinaryStrategy
+/// # `OrdinaryStrategy`
 ///
 /// The `OrdinaryStrategy` struct represents a basic breeding strategy where the first
 /// parent is considered as the winner of the previous generation, and the remaining

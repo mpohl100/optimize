@@ -3,7 +3,7 @@ use crate::neural::nn::shape::ActivationType;
 
 use super::activate::ActivationTrait;
 
-/// ReLU (Rectified Linear Unit) activation function.
+/// `ReLU` (Rectified Linear Unit) activation function.
 #[derive(Debug, Clone)]
 pub struct ReLU {
     // Cache for the input during forward pass, used during backward pass
@@ -11,8 +11,8 @@ pub struct ReLU {
 }
 
 impl ReLU {
-    pub fn new() -> Self {
-        ReLU { input_cache: None }
+    #[must_use] pub const fn new() -> Self {
+        Self { input_cache: None }
     }
 }
 

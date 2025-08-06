@@ -1,4 +1,4 @@
-//! # AdjustStrategy
+//! # `AdjustStrategy`
 //!
 //! The `AdjustStrategy` struct represents a breeding strategy where the first
 //! parent is considered as the winner of the previous generation, and the remaining
@@ -15,7 +15,7 @@ pub trait Adjust<Pheno: Phenotype> {
     fn get_number_mutates(&self) -> usize;
 }
 
-/// # AdjustStrategy
+/// # `AdjustStrategy`
 ///
 /// The `AdjustStrategy` struct represents a breeding strategy where the first
 /// parent is considered as the winner of the previous generation, and the remaining
@@ -111,7 +111,7 @@ where
     ///
     /// This method develops a phenotype.
     /// The development process involves repeated mutations as often as calculated
-    /// calculated by the method calculate_number_of_mutations.
+    /// calculated by the method `calculate_number_of_mutations`.
     fn develop(
         &self,
         pheno: Pheno,

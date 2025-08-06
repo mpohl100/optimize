@@ -25,15 +25,15 @@ impl TrainingSession {
     ) -> Result<Self, Box<dyn Error>> {
         validate_params(params.clone())?;
         let shape = params.shape().clone();
-        let pre_shape = params.pre_shape().clone();
+        let pre_shape = params.pre_shape();
         let levels = params.levels();
         Ok(Self {
             params,
             neural_network: new_trainable_neural_network(NeuralNetworkCreationArguments::new(
-                shape.clone(),
+                shape,
                 levels,
                 pre_shape,
-                model_directory.path().to_string(),
+                model_directory.path(),
                 utils,
             )),
             data_importer,
@@ -44,11 +44,11 @@ impl TrainingSession {
         nn: WrappedTrainableNeuralNetwork,
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
-    ) -> Result<TrainingSession, Box<dyn Error>> {
-        let mut changed_params = params.clone();
-        changed_params.set_shape(nn.shape().clone());
+    ) -> Result<Self, Box<dyn Error>> {
+        let mut changed_params = params;
+        changed_params.set_shape(nn.shape());
         validate_params(changed_params.clone())?;
-        Ok(TrainingSession { params: changed_params, neural_network: nn, data_importer })
+        Ok(Self { params: changed_params, neural_network: nn, data_importer })
     }
 
     // Load a model from disk and create a training session
@@ -57,13 +57,13 @@ impl TrainingSession {
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
         utils: WrappedUtils,
-    ) -> Result<TrainingSession, Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         // if the directory does not esist, return an error
         if std::fs::metadata(model_directory.clone()).is_err() {
             return Err("Model directory does not exist".into());
         }
-        let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
-        Ok(TrainingSession { params, neural_network: nn, data_importer })
+        let nn = trainable_neural_network_from_disk(model_directory, utils);
+        Ok(Self { params, neural_network: nn, data_importer })
     }
 
     // Train method
@@ -120,7 +120,7 @@ impl TrainingSession {
                     nb_correct_outputs += 1;
                 }
             }
-            success_count += nb_correct_outputs as f64 / target.len() as f64;
+            success_count += f64::from(nb_correct_outputs) / target.len() as f64;
         }
 
         // Return the accuracy as the fraction of successful predictions
@@ -136,7 +136,7 @@ impl TrainingSession {
     }
 
     /// get the resulting neural network
-    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+    #[must_use] pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
         self.neural_network.clone()
     }
 }

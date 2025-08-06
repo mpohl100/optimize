@@ -7,7 +7,7 @@ use crate::neural::layer::dense_layer::TrainableDenseLayer;
 use crate::neural::layer::layer_trait::WrappedLayer;
 use crate::neural::layer::layer_trait::WrappedTrainableLayer;
 use crate::neural::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
-use crate::neural::nn::shape::*;
+use crate::neural::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
 use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
@@ -35,13 +35,13 @@ pub struct ClassicNeuralNetwork {
 
 impl ClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(
+    #[must_use] pub fn new(
         shape: NeuralNetworkShape,
         internal_model_directory: String,
         utils: WrappedUtils,
     ) -> Self {
         let shape_clone = shape.clone();
-        let mut network = ClassicNeuralNetwork {
+        let mut network = Self {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
@@ -78,20 +78,20 @@ impl ClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
-    ) -> Option<ClassicNeuralNetwork> {
+    ) -> Option<Self> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
         }
         let sh = shape.unwrap();
-        let mut network = ClassicNeuralNetwork {
+        let mut network = Self {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
-            model_directory: Directory::User(model_directory.clone()),
+            model_directory: Directory::User(model_directory),
             past_internal_directory: Vec::new(),
             utils,
         };
@@ -130,7 +130,7 @@ impl ClassicNeuralNetwork {
         model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
-        let backup_directory = format!("{}_backup", model_directory);
+        let backup_directory = format!("{model_directory}_backup");
         if std::fs::metadata(&model_directory).is_ok() {
             // copy the directory to a backup
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
@@ -173,9 +173,9 @@ impl ClassicNeuralNetwork {
         model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
-        std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(format!("{}/layers/layer_{}.txt", model_directory, i))?;
+            layer.save(format!("{model_directory}/layers/layer_{i}.txt"))?;
         }
         Ok(())
     }
@@ -224,9 +224,9 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         if let Directory::Internal(_) = self.model_directory {
             self.past_internal_directory.push(self.model_directory.path());
         }
-        self.model_directory = Directory::User(user_model_directory.clone());
+        self.model_directory = Directory::User(user_model_directory);
         let model_directory = self.model_directory.path();
-        self.save_internal(model_directory.clone())
+        self.save_internal(model_directory)
     }
 
     fn get_model_directory(&self) -> Directory {
@@ -263,7 +263,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        WrappedNeuralNetwork::new(Box::new(ClassicNeuralNetwork {
+        WrappedNeuralNetwork::new(Box::new(Self {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),
@@ -317,13 +317,13 @@ pub struct TrainableClassicNeuralNetwork {
 
 impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(
+    #[must_use] pub fn new(
         shape: NeuralNetworkShape,
         model_directory: Directory,
         utils: WrappedUtils,
     ) -> Self {
         let shape_clone = shape.clone();
-        let mut network = TrainableClassicNeuralNetwork {
+        let mut network = Self {
             layers: Vec::new(),
             activations: Vec::new(),
             shape,
@@ -359,11 +359,11 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
-    pub fn new_dir(
+    #[must_use] pub fn new_dir(
         model_directory: Directory,
         utils: WrappedUtils,
     ) -> Self {
-        let network = TrainableClassicNeuralNetwork {
+        let network = Self {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: NeuralNetworkShape::default(),
@@ -382,7 +382,7 @@ impl TrainableClassicNeuralNetwork {
         model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
-        let backup_directory = format!("{}_backup", model_directory);
+        let backup_directory = format!("{model_directory}_backup");
         if std::fs::metadata(&model_directory).is_ok() {
             // copy the directory to a backup not move
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
@@ -424,11 +424,11 @@ impl TrainableClassicNeuralNetwork {
         model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
-        if std::fs::metadata(format!("{}/layers", model_directory)).is_err() {
-            std::fs::create_dir_all(format!("{}/layers", model_directory))?;
+        if std::fs::metadata(format!("{model_directory}/layers")).is_err() {
+            std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         }
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save_weight(format!("{}/layers/layer_{}.txt", model_directory, i))?;
+            layer.save_weight(format!("{model_directory}/layers/layer_{i}.txt"))?;
         }
         Ok(())
     }
@@ -516,20 +516,20 @@ impl TrainableClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
-    ) -> Option<TrainableClassicNeuralNetwork> {
+    ) -> Option<Self> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
         }
         let sh = shape.unwrap();
-        let mut network = TrainableClassicNeuralNetwork {
+        let mut network = Self {
             layers: Vec::new(),
             activations: Vec::new(),
             shape: sh.clone(),
-            model_directory: Directory::User(model_directory.clone()),
+            model_directory: Directory::User(model_directory),
             past_internal_model_directory: Vec::new(),
             utils,
         };
@@ -641,9 +641,9 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
         if self.model_directory.path() != user_model_directory {
             self.past_internal_model_directory.push(self.model_directory.path());
         }
-        self.model_directory = Directory::User(user_model_directory.clone());
+        self.model_directory = Directory::User(user_model_directory);
         let model_directory = self.model_directory.path();
-        self.save_internal(model_directory.clone())
+        self.save_internal(model_directory)
     }
 
     fn get_model_directory(&self) -> Directory {
@@ -759,7 +759,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 let accuracy = success_count / train_inputs.len() as f64 * 100.0;
                 let loss_display = loss / train_inputs.len() as f64;
                 pb.set_position((j + 1) as u64);
-                pb.set_message(format!("Accuracy: {:.2} %, Loss: {:.4}", accuracy, loss_display));
+                pb.set_message(format!("Accuracy: {accuracy:.2} %, Loss: {loss_display:.4}"));
             });
 
             // Validation phase
@@ -793,8 +793,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             loss /= train_inputs.len() as f64;
             let accuracy = success_count / train_inputs.len() as f64 * 100.0;
             let message = format!(
-            "Epoch {} finished | Train Acc: {:.2} %, Train Loss: {:.4} | Val Acc: {:.2} %, Val Loss: {:.4}",
-            epoch, accuracy, loss, validation_accuracy, validation_loss);
+            "Epoch {epoch} finished | Train Acc: {accuracy:.2} %, Train Loss: {loss:.4} | Val Acc: {validation_accuracy:.2} %, Val Loss: {validation_loss:.4}");
             pb.finish_with_message(message);
             multi_progress.remove(&pb);
         }
@@ -812,7 +811,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         batch_size: usize,
     ) {
         for i in 0..epochs {
-            println!("Epoch: {}\r", i);
+            println!("Epoch: {i}\r");
             let mut loss = 0.0;
             let input_chunks = inputs.chunks(batch_size);
             let target_chunks = targets.chunks(batch_size);
@@ -830,7 +829,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    success_count += nb_correct_outputs as f64 / target.len() as f64;
+                    success_count += f64::from(nb_correct_outputs) / target.len() as f64;
 
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
@@ -854,12 +853,12 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
 
     /// Returns the input size of the first layer in the network.
     fn input_size(&self) -> usize {
-        self.shape.layers.first().map_or(0, |layer| layer.input_size())
+        self.shape.layers.first().map_or(0, super::shape::LayerShape::input_size)
     }
 
     /// Returns the output size of the last layer in the network.
     fn output_size(&self) -> usize {
-        self.shape.layers.last().map_or(0, |layer| layer.output_size())
+        self.shape.layers.last().map_or(0, super::shape::LayerShape::output_size)
     }
 
     fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
@@ -873,7 +872,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             new_layers.push(layer.duplicate(model_directory.clone(), i));
             layer.cleanup();
         }
-        WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork {
+        WrappedTrainableNeuralNetwork::new(Box::new(Self {
             layers: new_layers,
             activations: self.activations.clone(),
             shape: self.shape.clone(),

@@ -30,7 +30,7 @@ pub struct RetryNeuralNetwork {
 }
 
 impl RetryNeuralNetwork {
-    pub fn new(
+    #[must_use] pub fn new(
         shape: NeuralNetworkShape,
         levels: i32,
         internal_model_directory: String,
@@ -38,12 +38,12 @@ impl RetryNeuralNetwork {
     ) -> Self {
         let actual_shape = add_internal_dimensions(shape.clone());
         let primary_nn = WrappedNeuralNetwork::new(Box::new(ClassicNeuralNetwork::new(
-            actual_shape.clone(),
+            actual_shape,
             append_dir(internal_model_directory.clone(), "primary"),
             utils.clone(),
         )));
         let backup_nn = match levels {
-            1..=i32::MAX => WrappedNeuralNetwork::new(Box::new(RetryNeuralNetwork::new(
+            1..=i32::MAX => WrappedNeuralNetwork::new(Box::new(Self::new(
                 shape.clone(),
                 levels - 1,
                 append_dir(internal_model_directory.clone(), "backup"),
@@ -54,7 +54,7 @@ impl RetryNeuralNetwork {
                 append_dir(internal_model_directory.clone(), "backup"),
                 utils.clone(),
             ))),
-            _ => panic!("Invalid level: {}", levels),
+            _ => panic!("Invalid level: {levels}"),
         };
         Self {
             primary_nn,
@@ -66,7 +66,7 @@ impl RetryNeuralNetwork {
         }
     }
 
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedNeuralNetwork {
@@ -76,7 +76,7 @@ impl RetryNeuralNetwork {
             let primary_nn = WrappedNeuralNetwork::new(Box::new(
                 ClassicNeuralNetwork::from_disk(primary_model_directory, utils.clone()).unwrap(),
             ));
-            let backup_nn = RetryNeuralNetwork::from_disk(backup_model_directory, utils.clone());
+            let backup_nn = Self::from_disk(backup_model_directory, utils.clone());
             let shape = backup_nn.shape();
             WrappedNeuralNetwork::new(Box::new(Self {
                 primary_nn,
@@ -120,7 +120,7 @@ fn add_internal_dimensions(shape: NeuralNetworkShape) -> NeuralNetworkShape {
             input_size: internal_layer.input_size(),
             output_size: internal_layer.output_size() + 1,
         },
-        activation: internal_layer.activation.clone(),
+        activation: internal_layer.activation,
     };
     annotated_shape.change_layer(0, new_dense_layer_type);
 
@@ -144,7 +144,7 @@ fn append_dir(
     model_directory: String,
     subdir: &str,
 ) -> String {
-    let mut path = model_directory.clone();
+    let mut path = model_directory;
     path.push('/');
     path.push_str(subdir);
     path
@@ -201,7 +201,7 @@ impl NeuralNetwork for RetryNeuralNetwork {
         let new_model_directory = get_first_free_model_directory(self.model_directory.clone());
         copy_dir_recursive(
             Path::new(&self.model_directory.path()),
-            Path::new(&new_model_directory.clone()),
+            Path::new(&new_model_directory),
         )
         .expect("Failed to copy model directory for retry neural network");
         let mut cloned_retry_nn = neural_network_from_disk(new_model_directory, self.utils.clone());
@@ -251,7 +251,7 @@ pub struct TrainableRetryNeuralNetwork {
 }
 
 impl TrainableRetryNeuralNetwork {
-    pub fn new(
+    #[must_use] pub fn new(
         shape: NeuralNetworkShape,
         levels: i32,
         internal_model_directory: String,
@@ -260,13 +260,13 @@ impl TrainableRetryNeuralNetwork {
         let actual_shape = add_internal_dimensions(shape.clone());
         let primary_nn =
             WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
-                actual_shape.clone(),
+                actual_shape,
                 Directory::Internal(append_dir(internal_model_directory.clone(), "primary")),
                 utils.clone(),
             )));
         let backup_nn = match levels {
             1..=i32::MAX => {
-                WrappedTrainableNeuralNetwork::new(Box::new(TrainableRetryNeuralNetwork::new(
+                WrappedTrainableNeuralNetwork::new(Box::new(Self::new(
                     shape.clone(),
                     levels - 1,
                     append_dir(internal_model_directory.clone(), "backup"),
@@ -278,7 +278,7 @@ impl TrainableRetryNeuralNetwork {
                 Directory::Internal(append_dir(internal_model_directory.clone(), "backup")),
                 utils.clone(),
             ))),
-            _ => panic!("Invalid level: {}", levels),
+            _ => panic!("Invalid level: {levels}"),
         };
         Self {
             primary_nn,
@@ -290,7 +290,7 @@ impl TrainableRetryNeuralNetwork {
         }
     }
 
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedTrainableNeuralNetwork {
@@ -301,8 +301,8 @@ impl TrainableRetryNeuralNetwork {
                 TrainableClassicNeuralNetwork::from_disk(primary_model_directory, utils.clone())
                     .unwrap(),
             ));
-            let backup_nn = TrainableRetryNeuralNetwork::from_disk(
-                backup_model_directory.clone(),
+            let backup_nn = Self::from_disk(
+                backup_model_directory,
                 utils.clone(),
             );
             let shape = backup_nn.shape();

@@ -11,7 +11,7 @@ pub struct NeuralNetworkChallenge {
 }
 
 impl NeuralNetworkChallenge {
-    pub fn new(
+    #[must_use] pub fn new(
         params: TrainingParams,
         data_importer: Box<dyn DataImporter + Send + Sync>,
     ) -> Self {
@@ -31,7 +31,7 @@ impl Challenge<NeuralNetworkPhenotype> for NeuralNetworkChallenge {
         )
         .unwrap();
         let result = training_session.train();
-        phenotype.set_nn(training_session.get_nn().clone());
+        phenotype.set_nn(training_session.get_nn());
         result.unwrap()
     }
 }

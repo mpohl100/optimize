@@ -9,7 +9,7 @@ pub struct Sigmoid;
 
 impl Sigmoid {
     /// Creates a new Sigmoid instance.
-    pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self
     }
 

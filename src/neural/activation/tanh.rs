@@ -9,7 +9,7 @@ pub struct Tanh;
 
 impl Tanh {
     /// Creates a new Tanh instance.
-    pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self
     }
 
@@ -42,7 +42,7 @@ impl ActivationTrait for Tanh {
         grad_output
             .iter()
             .zip(self.tanh_vec(grad_output).iter())
-            .map(|(&grad, &output)| grad * (1.0 - output.powi(2)))
+            .map(|(&grad, &output)| grad * output.mul_add(-output, 1.0))
             .collect()
     }
 

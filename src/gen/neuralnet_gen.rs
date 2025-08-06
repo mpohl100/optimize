@@ -24,7 +24,7 @@ pub struct NeuralNetworkGenerator {
 }
 
 impl NeuralNetworkGenerator {
-    pub fn new(
+    #[must_use] pub fn new(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
@@ -37,12 +37,12 @@ impl NeuralNetworkGenerator {
             params.levels(),
             params.pre_shape(),
             model_directory,
-            utils.clone(),
+            utils,
         ));
         Self { current_winner: nn, params, evolution_params, num_threads, data_importer }
     }
 
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         params: TrainingParams,
         evolution_params: EvolutionOptions,
         data_importer: Box<dyn DataImporter + Send + Sync>,
@@ -50,9 +50,9 @@ impl NeuralNetworkGenerator {
         num_threads: usize,
         utils: WrappedUtils,
     ) -> Self {
-        let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
-        let mut changed_params = params.clone();
-        changed_params.set_shape(nn.shape().clone());
+        let nn = trainable_neural_network_from_disk(model_directory, utils);
+        let mut changed_params = params;
+        changed_params.set_shape(nn.shape());
         Self {
             current_winner: nn,
             params: changed_params,
@@ -69,30 +69,30 @@ impl NeuralNetworkGenerator {
         assert!(self.current_winner.shape().is_valid());
         assert!(self.current_winner.shape().num_layers() > 0);
         // make sure both shapes are the same
-        self.params.set_shape(self.current_winner.shape().clone());
+        self.params.set_shape(self.current_winner.shape());
 
         let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
         let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());
         let strategy =
-            NeuralNetworkStrategy::new(self.current_winner.get_model_directory().path().clone());
+            NeuralNetworkStrategy::new(self.current_winner.get_model_directory().path());
         let launcher: ParallelEvolutionLauncher<
             NeuralNetworkPhenotype,
             NeuralNetworkStrategy,
             NeuralNetworkChallenge,
-        > = ParallelEvolutionLauncher::new(strategy.clone(), challenge.clone(), self.num_threads);
+        > = ParallelEvolutionLauncher::new(strategy, challenge, self.num_threads);
         let result = launcher.evolve(&options, starting_value, &mut rng);
-        self.current_winner = result.unwrap().pheno.get_nn().clone();
+        self.current_winner = result.unwrap().pheno.get_nn();
     }
 
     /// Save the current winner to disk
     pub fn save(&mut self) {
-        let _ = self.current_winner.save(self.current_winner.get_model_directory().path().clone());
+        let _ = self.current_winner.save(self.current_winner.get_model_directory().path());
     }
 
     /// Get the model directory
-    pub fn get_model_directory(&self) -> String {
-        self.current_winner.get_model_directory().path().clone()
+    #[must_use] pub fn get_model_directory(&self) -> String {
+        self.current_winner.get_model_directory().path()
     }
 }

@@ -1,4 +1,4 @@
-//! # BreedStrategy
+//! # `BreedStrategy`
 //!
 //! The `BreedStrategy` trait defines the interface for strategies responsible for breeding
 //! new individuals (phenotypes) based on a set of parent individuals and evolution options.
@@ -12,7 +12,7 @@ use crate::evol::{
     evolution::options::EvolutionOptions, phenotype::Phenotype, rng::RandomNumberGenerator,
 };
 
-/// # BreedStrategy
+/// # `BreedStrategy`
 ///
 /// The `BreedStrategy` trait defines the interface for strategies responsible for breeding
 /// new individuals (phenotypes) based on a set of parent individuals and evolution options.

@@ -29,7 +29,7 @@ pub struct EitherNeuralNetwork {
 }
 
 impl EitherNeuralNetwork {
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedNeuralNetwork {
@@ -83,13 +83,13 @@ impl EitherNeuralNetwork {
             }
             let mut left_nn = self.left_nn.as_ref().unwrap().clone();
 
-            left_nn.predict(input.clone())
+            left_nn.predict(input)
         } else {
             if self.right_nn.is_none() {
                 return pre_output;
             }
             let mut right_nn = self.right_nn.as_ref().unwrap().clone();
-            right_nn.predict(input.clone())
+            right_nn.predict(input)
         }
     }
 }
@@ -98,7 +98,7 @@ fn append_dir(
     model_directory: String,
     subdir: &str,
 ) -> String {
-    let mut path = model_directory.clone();
+    let mut path = model_directory;
     path.push('/');
     path.push_str(subdir);
     path
@@ -151,20 +151,20 @@ impl NeuralNetwork for EitherNeuralNetwork {
     fn allocate(&mut self) {
         self.pre_nn.allocate();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.allocate()
+            left_nn.allocate();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.allocate()
+            right_nn.allocate();
         }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.deallocate()
+            left_nn.deallocate();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.deallocate()
+            right_nn.deallocate();
         }
     }
 
@@ -172,10 +172,10 @@ impl NeuralNetwork for EitherNeuralNetwork {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.set_internal()
+            left_nn.set_internal();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.set_internal()
+            right_nn.set_internal();
         }
     }
 
@@ -183,7 +183,7 @@ impl NeuralNetwork for EitherNeuralNetwork {
         let new_model_directory = get_first_free_model_directory(self.model_directory.clone());
         copy_dir_recursive(
             Path::new(&self.model_directory.path()),
-            Path::new(&new_model_directory.clone()),
+            Path::new(&new_model_directory),
         )
         .expect("Failed to copy model directory for retry neural network");
         let mut cloned_retry_nn = neural_network_from_disk(new_model_directory, self.utils.clone());
@@ -236,7 +236,7 @@ pub struct TrainableEitherNeuralNetwork {
 }
 
 impl TrainableEitherNeuralNetwork {
-    pub fn new(
+    #[must_use] pub fn new(
         shape: NeuralNetworkShape,
         pre_shape: NeuralNetworkShape,
         max_levels: i32,
@@ -262,7 +262,7 @@ impl TrainableEitherNeuralNetwork {
         }
     }
 
-    pub fn from_disk(
+    #[must_use] pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedTrainableNeuralNetwork {
@@ -319,13 +319,13 @@ impl TrainableEitherNeuralNetwork {
             }
             let mut left_nn = self.left_nn.as_ref().unwrap().clone();
 
-            left_nn.predict(input.clone())
+            left_nn.predict(input)
         } else {
             if self.right_nn.is_none() {
                 return pre_output;
             }
             let mut right_nn = self.right_nn.as_ref().unwrap().clone();
-            right_nn.predict(input.clone())
+            right_nn.predict(input)
         }
     }
 }
@@ -372,20 +372,20 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
     fn allocate(&mut self) {
         self.pre_nn.allocate();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.allocate()
+            left_nn.allocate();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.allocate()
+            right_nn.allocate();
         }
     }
 
     fn deallocate(&mut self) {
         self.pre_nn.deallocate();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.deallocate()
+            left_nn.deallocate();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.deallocate()
+            right_nn.deallocate();
         }
     }
 
@@ -393,10 +393,10 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
         if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.set_internal()
+            left_nn.set_internal();
         }
         if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.set_internal()
+            right_nn.set_internal();
         }
     }
 
@@ -497,7 +497,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         if right_inputs.len() < 100 {
             self.pre_nn = temp_neural_network.clone();
             self.pre_nn
-                .save(pre_model_directory.clone())
+                .save(pre_model_directory)
                 .expect("Failed to save pre neural network");
             return temp_accuracy;
         }
@@ -506,14 +506,14 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             .iter()
             .map(|input| {
                 let target = vec![1.0, 0.0];
-                (input.clone(), target.clone())
+                (input.clone(), target)
             })
             .collect();
         let (right_inputs_pre, right_targets_pre): (Vec<Vec<f64>>, Vec<Vec<f64>>) = right_inputs
             .iter()
             .map(|input| {
                 let target = vec![0.0, 1.0];
-                (input.clone(), target.clone())
+                (input.clone(), target)
             })
             .collect();
 
@@ -565,7 +565,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         );
 
         self.left_nn = Some(left_nn.clone());
-        left_nn.save(left_model_directory.clone()).expect("Failed to save left neural network");
+        left_nn.save(left_model_directory).expect("Failed to save left neural network");
 
         // Train the right neural network
         let right_model_directory = append_dir(self.model_directory.path(), "right");
@@ -588,7 +588,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             validation_split,
         );
         self.right_nn = Some(right_nn.clone());
-        right_nn.save(right_model_directory.clone()).expect("Failed to save right neural network");
+        right_nn.save(right_model_directory).expect("Failed to save right neural network");
 
         left_accuracy + right_accuracy
     }
