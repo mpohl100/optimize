@@ -32,7 +32,7 @@ pub struct DenseLayer {
 }
 
 impl DenseLayer {
-    pub fn new(
+    #[must_use] pub fn new(
         input_size: usize,
         output_size: usize,
         model_directory: Directory,
@@ -41,13 +41,13 @@ impl DenseLayer {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = match model_directory {
             Directory::User(path) => {
-                Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+                Directory::User(format!("{path}/layers/layer_{position_in_nn}.txt"))
             },
             Directory::Internal(path) => {
-                Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+                Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
             },
         };
-        DenseLayer {
+        Self {
             rows: output_size,
             cols: input_size,
             weights: None,
@@ -156,9 +156,7 @@ impl Layer for DenseLayer {
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        if !self.is_allocated() {
-            panic!("Layer not allocated");
-        }
+        assert!(self.is_allocated(), "Layer not allocated");
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
         let inputs = input.to_vec();
@@ -243,13 +241,13 @@ impl AllocatableLayer for DenseLayer {
         position_in_nn: usize,
     ) -> Box<dyn AllocatableLayer + Send> {
         self.deallocate();
-        let new_layer = Box::new(DenseLayer::new(
+        let new_layer = Box::new(Self::new(
             self.input_size(),
             self.output_size(),
             Directory::Internal(model_directory),
             position_in_nn,
         )) as Box<dyn AllocatableLayer + Send>;
-        new_layer.copy_on_filesystem(self.layer_path.path().clone());
+        new_layer.copy_on_filesystem(self.layer_path.path());
         new_layer
     }
 
@@ -259,7 +257,7 @@ impl AllocatableLayer for DenseLayer {
     ) {
         // Copy the layer to the new directory
         let new_layer_path = self.layer_path.clone();
-        let original_path = layer_path.clone();
+        let original_path = layer_path;
         // Create the new directory if it doesn't exist
         let new_layer_path_string = new_layer_path.path();
         if !new_layer_path.exists() {
@@ -306,8 +304,8 @@ pub struct TrainableDenseLayer {
 }
 
 impl TrainableDenseLayer {
-    /// Creates a new TrainableDenseLayer with given input and output sizes.
-    pub fn new(
+    /// Creates a new `TrainableDenseLayer` with given input and output sizes.
+    #[must_use] pub fn new(
         input_size: usize,
         output_size: usize,
         model_directory: Directory,
@@ -316,13 +314,13 @@ impl TrainableDenseLayer {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = match model_directory {
             Directory::User(path) => {
-                Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+                Directory::User(format!("{path}/layers/layer_{position_in_nn}.txt"))
             },
             Directory::Internal(path) => {
-                Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
+                Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
             },
         };
-        TrainableDenseLayer {
+        Self {
             rows: output_size,
             cols: input_size,
             weights: None,
@@ -443,9 +441,7 @@ impl Layer for TrainableDenseLayer {
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        if !self.is_allocated() {
-            panic!("Layer not allocated");
-        }
+        assert!(self.is_allocated(), "Layer not allocated");
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
@@ -630,16 +626,14 @@ impl TrainableLayer for TrainableDenseLayer {
         learning_rate: f64,
         utils: WrappedUtils,
     ) {
-        if !self.is_allocated() {
-            panic!("Layer not allocated");
-        }
+        assert!(self.is_allocated(), "Layer not allocated");
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weight
         let _ = utils.execute(move || {
             weights.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
-                weights_row.iter_mut().for_each(|weight| {
+                for weight in weights_row.iter_mut() {
                     weight.value -= learning_rate * weight.grad;
-                });
+                }
             });
             0
         });
@@ -696,12 +690,12 @@ impl TrainableLayer for TrainableDenseLayer {
         // Update weights
         let _ = utils.execute(move || {
             weights.mat().lock().unwrap().par_iter_mut().for_each(|weight_row| {
-                weight_row.iter_mut().for_each(|weight| {
+                for weight in weight_row.iter_mut() {
                     let grad = weight.grad;
 
                     // Update first and second moments
-                    weight.m = beta1 * weight.m + (1.0 - beta1) * grad;
-                    weight.v = beta2 * weight.v + (1.0 - beta2) * grad.powi(2);
+                    weight.m = beta1.mul_add(weight.m, (1.0 - beta1) * grad);
+                    weight.v = beta2.mul_add(weight.v, (1.0 - beta2) * grad.powi(2));
 
                     // Bias correction
                     let m_hat = weight.m / (1.0 - beta1_pow_t);
@@ -710,7 +704,7 @@ impl TrainableLayer for TrainableDenseLayer {
                     // Adjusted learning rate and update
                     let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
                     weight.value -= adjusted_learning_rate * m_hat;
-                });
+                }
             });
             0
         });
@@ -721,9 +715,9 @@ impl TrainableLayer for TrainableDenseLayer {
 
             // Update first and second moments
             self.biases.as_mut().unwrap()[i].m =
-                beta1 * self.biases.as_ref().unwrap()[i].m + (1.0 - beta1) * grad;
+                beta1.mul_add(self.biases.as_ref().unwrap()[i].m, (1.0 - beta1) * grad);
             self.biases.as_mut().unwrap()[i].v =
-                beta2 * self.biases.as_ref().unwrap()[i].v + (1.0 - beta2) * grad.powi(2);
+                beta2.mul_add(self.biases.as_ref().unwrap()[i].v, (1.0 - beta2) * grad.powi(2));
 
             // Bias correction
             let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t as i32));
@@ -807,13 +801,13 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
         position_in_nn: usize,
     ) -> Box<dyn TrainableAllocatableLayer + Send> {
         self.deallocate();
-        let new_layer = Box::new(TrainableDenseLayer::new(
+        let new_layer = Box::new(Self::new(
             self.input_size(),
             self.output_size(),
             Directory::Internal(model_directory),
             position_in_nn,
         )) as Box<dyn TrainableAllocatableLayer + Send>;
-        new_layer.copy_on_filesystem(self.layer_path.path().clone());
+        new_layer.copy_on_filesystem(self.layer_path.path());
         new_layer
     }
 
@@ -823,7 +817,7 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
     ) {
         // Copy the layer to the new directory
         let new_layer_path = self.layer_path.clone();
-        let original_path = layer_path.clone();
+        let original_path = layer_path;
         // Create the new directory if it doesn't exist
         let new_layer_path_string = new_layer_path.path();
         if !new_layer_path.exists() {
@@ -852,7 +846,7 @@ fn save(
         std::fs::create_dir_all(dir).expect("Failed to create directory");
     }
     // create a lock file which acts as a lock
-    let lock_file_path = format!("{}.lock", path);
+    let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
     lock_file.lock_exclusive()?;
     // Save weights and biases to a file at the specified path
@@ -864,8 +858,8 @@ fn save(
         }
         writeln!(file)?;
     }
-    for bias in biases.iter() {
-        write!(file, "{}; ", bias)?;
+    for bias in biases {
+        write!(file, "{bias}; ")?;
     }
     writeln!(file)?;
     Ok(())
@@ -883,7 +877,7 @@ fn save_weight(
     }
 
     // create a lock file which acts as a lock
-    let lock_file_path = format!("{}.lock", path);
+    let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
     lock_file.lock_exclusive()?;
 
@@ -897,7 +891,7 @@ fn save_weight(
         }
         writeln!(file)?;
     }
-    for bias in biases.iter() {
+    for bias in biases {
         write!(file, "{} {} {} {};", bias.value, bias.grad, bias.m, bias.v)?;
     }
     writeln!(file)?;
@@ -906,7 +900,7 @@ fn save_weight(
 
 fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> {
     // create a lock file which acts as a lock
-    let lock_file_path = format!("{}.lock", path);
+    let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
     lock_file.lock_exclusive()?;
 
@@ -922,7 +916,7 @@ fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> 
         weights = WrappedMatrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
-                let parts = line.split(";").collect::<Vec<_>>();
+                let parts = line.split(';').collect::<Vec<_>>();
                 // parts len must be euqal to cols
                 if parts.len() - 1 != cols {
                     return Err(format!(
@@ -947,7 +941,7 @@ fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> 
         }
     }
     if let Some(Ok(line)) = lines.next() {
-        let parts = line.split(";").collect::<Vec<_>>();
+        let parts = line.split(';').collect::<Vec<_>>();
         biases = vec![0.0; weights.rows()];
         // parts len must be equal to rows
         if parts.len() - 1 != weights.rows() {
@@ -975,7 +969,7 @@ fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> 
 
 fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<dyn Error>> {
     // create a lock file which acts as a lock
-    let lock_file_path = format!("{}.lock", path);
+    let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
     lock_file.lock_exclusive()?;
 
@@ -991,7 +985,7 @@ fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<d
         weights = WrappedMatrix::new(rows, cols);
         for i in 0..rows {
             if let Some(Ok(line)) = lines.next() {
-                let parts = line.split(";").collect::<Vec<_>>();
+                let parts = line.split(';').collect::<Vec<_>>();
                 // parts len must be euqal to cols
                 if parts.len() - 1 != cols {
                     return Err(format!(
@@ -1036,7 +1030,7 @@ fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<d
         }
     }
     if let Some(Ok(line)) = lines.next() {
-        let parts = line.split(";").collect::<Vec<_>>();
+        let parts = line.split(';').collect::<Vec<_>>();
         biases = vec![Bias::default(); weights.rows()];
         // parts len must be equal to rows
         if parts.len() - 1 != weights.rows() {

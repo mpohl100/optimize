@@ -1,4 +1,4 @@
-//! # RandomNumberGenerator
+//! # `RandomNumberGenerator`
 //!
 //! The `RandomNumberGenerator` struct provides a simple interface for generating
 //! random floating-point numbers within a specified range using the `rand` crate.
@@ -23,7 +23,7 @@ pub struct RandomNumberGenerator {
 }
 
 impl RandomNumberGenerator {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self { rng: StdRng::from_entropy() }
     }
 

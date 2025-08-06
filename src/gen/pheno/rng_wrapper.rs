@@ -37,8 +37,8 @@ pub struct FakeRng {
 }
 
 impl FakeRng {
-    pub fn new(values: Vec<f32>) -> Self {
-        FakeRng { values: values.into_iter().collect() }
+    #[must_use] pub fn new(values: Vec<f32>) -> Self {
+        Self { values: values.into_iter().collect() }
     }
 }
 
@@ -55,9 +55,7 @@ impl RngWrapper for FakeRng {
             match val {
                 Some(val) => {
                     // Check
-                    if val < min || val > max {
-                        panic!("Value out of range");
-                    }
+                    assert!(!(val < min || val > max), "Value out of range");
                     result.push_back(val);
                 },
                 None => panic!("No more values"),

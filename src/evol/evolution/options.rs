@@ -1,4 +1,4 @@
-//! # EvolutionOptions
+//! # `EvolutionOptions`
 //!
 //! The `EvolutionOptions` struct represents the configuration options for an evolutionary
 //! algorithm. It includes parameters such as the number of generations, logging level,
@@ -65,7 +65,7 @@ pub struct EvolutionOptions {
 }
 
 impl EvolutionOptions {
-    pub fn new(
+    #[must_use] pub const fn new(
         num_generations: usize,
         log_level: LogLevel,
         population_size: usize,
@@ -74,19 +74,19 @@ impl EvolutionOptions {
         Self { num_generations, log_level, population_size, num_offsprings }
     }
 
-    pub fn get_num_generations(&self) -> usize {
+    #[must_use] pub const fn get_num_generations(&self) -> usize {
         self.num_generations
     }
 
-    pub fn get_log_level(&self) -> &LogLevel {
+    #[must_use] pub const fn get_log_level(&self) -> &LogLevel {
         &self.log_level
     }
 
-    pub fn get_population_size(&self) -> usize {
+    #[must_use] pub const fn get_population_size(&self) -> usize {
         self.population_size
     }
 
-    pub fn get_num_offspring(&self) -> usize {
+    #[must_use] pub const fn get_num_offspring(&self) -> usize {
         self.num_offsprings
     }
 }

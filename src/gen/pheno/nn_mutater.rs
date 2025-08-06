@@ -100,7 +100,7 @@ pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
         1 => ActivationData::new(ActivationType::Sigmoid),
         2 => ActivationData::new(ActivationType::Tanh),
         3 => {
-            let random_temperature = rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap() as f64;
+            let random_temperature = f64::from(rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap());
             ActivationData::new_softmax(random_temperature)
         },
         _ => panic!("Invalid random number generated"),
@@ -118,7 +118,7 @@ fn fetch_added_layers(
     let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
 
     let layer = shape.get_layer(position);
-    let closest_power_of_two = 2.0_f32.powf((layer.input_size() as f32).log2().floor());
+    let closest_power_of_two = (layer.input_size() as f32).log2().floor().exp2();
 
     let begin_size = layer.input_size();
     let end_size = layer.output_size();

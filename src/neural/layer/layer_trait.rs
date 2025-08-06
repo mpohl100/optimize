@@ -88,11 +88,11 @@ pub struct WrappedLayer {
 }
 
 impl WrappedLayer {
-    pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
+    #[must_use] pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    pub fn duplicate(
+    #[must_use] pub fn duplicate(
         &self,
         model_directory: String,
         position_in_nn: usize,
@@ -121,11 +121,11 @@ impl WrappedLayer {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
-    pub fn input_size(&self) -> usize {
+    #[must_use] pub fn input_size(&self) -> usize {
         self.layer.lock().unwrap().input_size()
     }
 
-    pub fn output_size(&self) -> usize {
+    #[must_use] pub fn output_size(&self) -> usize {
         self.layer.lock().unwrap().output_size()
     }
 
@@ -143,11 +143,11 @@ impl WrappedLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    #[must_use] pub fn get_weights(&self) -> WrappedMatrix<f64> {
         self.layer.lock().unwrap().get_weights()
     }
 
-    pub fn get_biases(&self) -> Vec<f64> {
+    #[must_use] pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
     }
 }
@@ -269,11 +269,11 @@ pub struct WrappedTrainableLayer {
 }
 
 impl WrappedTrainableLayer {
-    pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
+    #[must_use] pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    pub fn duplicate(
+    #[must_use] pub fn duplicate(
         &self,
         model_directory: String,
         position_in_nn: usize,
@@ -302,11 +302,11 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
-    pub fn input_size(&self) -> usize {
+    #[must_use] pub fn input_size(&self) -> usize {
         self.layer.lock().unwrap().input_size()
     }
 
-    pub fn output_size(&self) -> usize {
+    #[must_use] pub fn output_size(&self) -> usize {
         self.layer.lock().unwrap().output_size()
     }
 
@@ -324,11 +324,11 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().read(path)
     }
 
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
-        self.layer.lock().unwrap().get_weights().clone()
+    #[must_use] pub fn get_weights(&self) -> WrappedMatrix<f64> {
+        self.layer.lock().unwrap().get_weights()
     }
 
-    pub fn get_biases(&self) -> Vec<f64> {
+    #[must_use] pub fn get_biases(&self) -> Vec<f64> {
         self.layer.lock().unwrap().get_biases()
     }
 
@@ -352,14 +352,14 @@ impl WrappedTrainableLayer {
         learning_rate: f64,
         utils: WrappedUtils,
     ) {
-        self.layer.lock().unwrap().update_weights(learning_rate, utils)
+        self.layer.lock().unwrap().update_weights(learning_rate, utils);
     }
 
     pub fn assign_weights(
         &mut self,
-        other: WrappedTrainableLayer,
+        other: Self,
     ) {
-        self.layer.lock().unwrap().assign_weights(other)
+        self.layer.lock().unwrap().assign_weights(other);
     }
 
     pub fn adjust_adam(
@@ -371,7 +371,7 @@ impl WrappedTrainableLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils)
+        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils);
     }
 
     pub fn save_weight(

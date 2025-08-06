@@ -1,7 +1,7 @@
 use crate::neural::nn::shape::LayerShape;
 use crate::neural::nn::shape::NeuralNetworkShape;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LayerChangeType {
     Add,
     Remove,
@@ -15,7 +15,7 @@ pub struct AnnotatedLayerShape {
 }
 
 impl AnnotatedLayerShape {
-    pub fn new(
+    #[must_use] pub const fn new(
         layer: LayerShape,
         change_type: LayerChangeType,
     ) -> Self {
@@ -28,7 +28,7 @@ pub struct AnnotatedNeuralNetworkShape {
 }
 
 impl AnnotatedNeuralNetworkShape {
-    pub fn new(layers: NeuralNetworkShape) -> Self {
+    #[must_use] pub fn new(layers: NeuralNetworkShape) -> Self {
         let annotated_layers = layers
             .layers
             .iter()
@@ -52,14 +52,14 @@ impl AnnotatedNeuralNetworkShape {
         self.layers.remove(position);
     }
 
-    pub fn get_layer(
+    #[must_use] pub fn get_layer(
         &self,
         position: usize,
     ) -> &LayerShape {
         &self.layers[position].layer
     }
 
-    pub fn get_annotated_layer(
+    #[must_use] pub fn get_annotated_layer(
         &self,
         position: usize,
     ) -> &AnnotatedLayerShape {
@@ -74,7 +74,7 @@ impl AnnotatedNeuralNetworkShape {
         self.layers[position] = AnnotatedLayerShape::new(layer, LayerChangeType::Change);
     }
 
-    pub fn to_neural_network_shape(&self) -> NeuralNetworkShape {
+    #[must_use] pub fn to_neural_network_shape(&self) -> NeuralNetworkShape {
         let layers =
             self.layers.iter().map(|annotated_layer| annotated_layer.layer.clone()).collect();
         NeuralNetworkShape::new(layers)

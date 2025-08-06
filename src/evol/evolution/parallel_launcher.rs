@@ -99,10 +99,10 @@ where
             mutexed_fitness.lock().unwrap().sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
             match options.get_log_level() {
-                LogLevel::Minimal => println!("Generation: {}", generation),
+                LogLevel::Minimal => println!("Generation: {generation}"),
                 LogLevel::Verbose => {
                     mutexed_fitness.lock().unwrap().iter().for_each(|result| {
-                        println!("Generation: {} \n", generation);
+                        println!("Generation: {generation} \n");
                         println!("Phenotype: {:?} \n Score: {}", result.pheno, result.score);
                     });
                 },

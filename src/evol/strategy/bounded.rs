@@ -1,4 +1,4 @@
-//! # BoundedBreedStrategy
+//! # `BoundedBreedStrategy`
 //!
 //! Similarly to `OrdinaryStrategy`, the `BoundedBreedStrategy` struct represents
 //! a breeding strategy where the first parent is considered the winner
@@ -22,7 +22,7 @@ pub trait Magnitude<Pheno: Phenotype> {
     fn max_magnitude(&self) -> f64;
 }
 
-/// # BoundedBreedStrategy
+/// # `BoundedBreedStrategy`
 ///
 /// Similarly to `OrdinaryStrategy`, the `BoundedBreedStrategy` struct represents
 /// a breeding strategy where the first parent is considered the winner

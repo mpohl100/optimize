@@ -19,7 +19,7 @@ pub struct NeuralNetworkPhenotype {
 impl Clone for NeuralNetworkPhenotype {
     fn clone(&self) -> Self {
         Self {
-            nn: self.get_nn().clone(),
+            nn: self.get_nn(),
             left_half_shape: self.left_half_shape.clone(),
             right_half_shape: self.right_half_shape.clone(),
             nb_mutates: self.nb_mutates,
@@ -28,7 +28,7 @@ impl Clone for NeuralNetworkPhenotype {
 }
 
 impl NeuralNetworkPhenotype {
-    pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
+    #[must_use] pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
         Self {
             nn: nn.duplicate_trainable(),
             left_half_shape: None,
@@ -37,7 +37,7 @@ impl NeuralNetworkPhenotype {
         }
     }
 
-    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+    #[must_use] pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
         self.nn.clone()
     }
 
@@ -45,7 +45,7 @@ impl NeuralNetworkPhenotype {
         &mut self,
         nn: WrappedTrainableNeuralNetwork,
     ) {
-        self.nn = nn.clone();
+        self.nn = nn;
     }
 
     fn set_left_half_shape(
@@ -82,7 +82,7 @@ impl NeuralNetworkPhenotype {
             let right_shape = right_half_shape.unwrap();
             left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
         } else {
-            self.get_nn().shape().clone()
+            self.get_nn().shape()
         };
 
         let mut mutater = NeuralNetworkMutater::new(rng_wrapper);
@@ -97,7 +97,7 @@ impl NeuralNetworkPhenotype {
             }
         }
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
-            self.get_nn().shape().clone(),
+            self.get_nn().shape(),
             None,
             None,
             self.nn.get_model_directory().path(),
@@ -118,14 +118,14 @@ impl NeuralNetworkPhenotype {
             let right_shape = right_half_shape.unwrap();
             left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
         } else {
-            self.get_nn().shape().clone()
+            self.get_nn().shape()
         };
 
         let random_number = rng_wrapper.fetch_uniform(1.0, 5.0, 1);
         // round do to integer
         let random_number = random_number[0].round() as i32;
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
-            previous_shape.clone(),
+            previous_shape,
             Some(random_number),
             None,
             self.nn.get_model_directory().path(),
@@ -154,9 +154,9 @@ impl Phenotype for NeuralNetworkPhenotype {
             right_index_end += 1;
         }
         let left_half_shape =
-            left_original_nn.shape().clone().cut_out(left_index_begin, left_index_end);
+            left_original_nn.shape().cut_out(left_index_begin, left_index_end);
         let right_half_shape =
-            right_original_nn.shape().clone().cut_out(right_index_begin, right_index_end);
+            right_original_nn.shape().cut_out(right_index_begin, right_index_end);
         self.set_left_half_shape(left_half_shape);
         self.set_right_half_shape(right_half_shape);
     }
@@ -176,7 +176,7 @@ impl Phenotype for NeuralNetworkPhenotype {
     }
 }
 
-impl Adjust<NeuralNetworkPhenotype> for NeuralNetworkPhenotype {
+impl Adjust<Self> for NeuralNetworkPhenotype {
     fn incr_number_mutates(&mut self) -> usize {
         self.nb_mutates += 1;
         self.nb_mutates

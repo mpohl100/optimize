@@ -10,7 +10,7 @@ pub struct Softmax {
 
 impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
-    pub fn new(temperature: f64) -> Self {
+    #[must_use] pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
         Self { temperature, cached_output: None }
     }
@@ -20,7 +20,7 @@ impl Softmax {
         &self,
         input: &[f64],
     ) -> Vec<f64> {
-        let max_input = input.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+        let max_input = input.iter().copied().fold(f64::NEG_INFINITY, f64::max);
         let exp_values: Vec<f64> =
             input.iter().map(|&x| ((x - max_input) / self.temperature).exp()).collect();
         let sum_exp = exp_values.iter().sum::<f64>();

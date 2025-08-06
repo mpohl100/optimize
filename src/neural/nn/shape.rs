@@ -4,7 +4,7 @@ use std::io::Write;
 
 /// Enum representing the type of layer in a neural network.
 /// Each variant includes the input size and output size of the layer.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
     Dense { input_size: usize, output_size: usize },
@@ -13,7 +13,7 @@ pub enum LayerType {
 /// Enum representing the type of activation function used in a layer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ActivationType {
-    /// ReLU (Rectified Linear Unit) activation function.
+    /// `ReLU` (Rectified Linear Unit) activation function.
     ReLU,
     /// Sigmoid activation function.
     Sigmoid,
@@ -30,15 +30,15 @@ pub struct ActivationData {
 }
 
 impl ActivationData {
-    pub fn new(activation_type: ActivationType) -> Self {
+    #[must_use] pub const fn new(activation_type: ActivationType) -> Self {
         Self { activation_type, temperature: None }
     }
 
-    pub fn new_softmax(temperature: f64) -> Self {
+    #[must_use] pub const fn new_softmax(temperature: f64) -> Self {
         Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
     }
 
-    pub fn is_valid(&self) -> bool {
+    #[must_use] pub fn is_valid(&self) -> bool {
         match self.activation_type {
             ActivationType::Softmax => {
                 self.temperature.is_some() && self.temperature.unwrap() > 0.0
@@ -47,11 +47,11 @@ impl ActivationData {
         }
     }
 
-    pub fn activation_type(&self) -> ActivationType {
+    #[must_use] pub const fn activation_type(&self) -> ActivationType {
         self.activation_type
     }
 
-    pub fn temperature(&self) -> Option<f64> {
+    #[must_use] pub const fn temperature(&self) -> Option<f64> {
         self.temperature
     }
 }
@@ -61,27 +61,27 @@ impl ActivationData {
 pub struct LayerShape {
     /// The type of the layer (e.g., Dense) with input and output sizes.
     pub layer_type: LayerType,
-    /// The activation function used in the layer (e.g., ReLU, Sigmoid).
+    /// The activation function used in the layer (e.g., `ReLU`, Sigmoid).
     pub activation: ActivationData,
 }
 
 impl LayerShape {
     /// Returns the input size of the layer.
-    pub fn input_size(&self) -> usize {
+    #[must_use] pub const fn input_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { input_size, .. } => input_size,
         }
     }
 
     /// Returns the output size of the layer.
-    pub fn output_size(&self) -> usize {
+    #[must_use] pub const fn output_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { output_size, .. } => output_size,
         }
     }
 
     /// Returns the type of the layer.
-    pub fn layer_type(&self) -> LayerType {
+    #[must_use] pub fn layer_type(&self) -> LayerType {
         self.layer_type.clone()
     }
 
@@ -91,7 +91,7 @@ impl LayerShape {
     ///
     /// * `true` if both input size and output size are greater than zero.
     /// * `false` otherwise.
-    pub fn is_valid(&self) -> bool {
+    #[must_use] pub fn is_valid(&self) -> bool {
         self.input_size() > 0 && self.output_size() > 0 && self.activation.is_valid()
     }
 }
@@ -105,25 +105,25 @@ pub struct NeuralNetworkShape {
 
 impl NeuralNetworkShape {
     /// Creates a new `NeuralNetworkShape` with the given layers.
-    pub fn new(layers: Vec<LayerShape>) -> Self {
+    #[must_use] pub const fn new(layers: Vec<LayerShape>) -> Self {
         Self { layers }
     }
 
     /// Creates a new `NeuralNetworkShape` with the given layers from disk.
-    pub fn from_disk(model_directory: String) -> Option<Self> {
-        let path = format!("{}/shape.yaml", model_directory);
+    #[must_use] pub fn from_disk(model_directory: String) -> Option<Self> {
+        let path = format!("{model_directory}/shape.yaml");
         if !std::path::Path::new(&path).exists() {
             return None;
         }
         let file = File::open(path).unwrap();
-        let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
+        let shape: Self = serde_yaml::from_reader(file).unwrap();
         Some(shape)
     }
 
     // Creates a new `NeuralNetworkShape` with the given layers from file.
-    pub fn from_file(file_name: String) -> Self {
+    #[must_use] pub fn from_file(file_name: String) -> Self {
         let file = File::open(file_name).unwrap();
-        let shape: NeuralNetworkShape = serde_yaml::from_reader(file).unwrap();
+        let shape: Self = serde_yaml::from_reader(file).unwrap();
         shape
     }
 
@@ -134,7 +134,7 @@ impl NeuralNetworkShape {
     /// * `true` if all layers are valid and the input size of each layer matches
     ///   the output size of the previous layer (except for the first layer).
     /// * `false` otherwise.
-    pub fn is_valid(&self) -> bool {
+    #[must_use] pub fn is_valid(&self) -> bool {
         if self.layers.is_empty() {
             return false;
         }
@@ -166,14 +166,14 @@ impl NeuralNetworkShape {
         if std::fs::metadata(&model_directory).is_err() {
             std::fs::create_dir_all(&model_directory).unwrap();
         }
-        let path = format!("{}/shape.yaml", model_directory);
+        let path = format!("{model_directory}/shape.yaml");
         let mut file = File::create(path).unwrap();
         let yaml = serde_yaml::to_string(self).unwrap();
         file.write_all(yaml.as_bytes()).unwrap();
     }
 
     /// Returns the layer at the specified index.
-    pub fn get_layer(
+    #[must_use] pub fn get_layer(
         &self,
         index: usize,
     ) -> LayerShape {
@@ -181,7 +181,7 @@ impl NeuralNetworkShape {
     }
 
     /// Returns the number of layers in the neural network shape.
-    pub fn num_layers(&self) -> usize {
+    #[must_use] pub fn num_layers(&self) -> usize {
         self.layers.len()
     }
 
@@ -204,30 +204,26 @@ impl NeuralNetworkShape {
     }
 
     /// Cut out a subnetwork from the neural network shape.
-    pub fn cut_out(
+    #[must_use] pub fn cut_out(
         &self,
         start: usize,
         end: usize,
-    ) -> NeuralNetworkShape {
+    ) -> Self {
         // check that start are within bounds
-        if start >= self.layers.len() {
-            panic!("Start index out of bounds");
-        }
+        assert!(start < self.layers.len(), "Start index out of bounds");
 
         // check that end are within bounds
-        if end > self.layers.len() {
-            panic!("End index out of bounds");
-        }
+        assert!(end <= self.layers.len(), "End index out of bounds");
 
         let layers = self.layers[start..end].to_vec();
-        NeuralNetworkShape { layers }
+        Self { layers }
     }
 
-    pub fn merge(
+    #[must_use] pub fn merge(
         &self,
-        other: NeuralNetworkShape,
+        other: Self,
         middle_activation_data: ActivationData,
-    ) -> NeuralNetworkShape {
+    ) -> Self {
         let mut layers = self.layers.clone();
 
         let merge_layer_input_size = self.layers.last().unwrap().output_size();
@@ -242,8 +238,8 @@ impl NeuralNetworkShape {
         };
         layers.push(merge_layer);
 
-        layers.extend(other.layers.clone());
-        let new_shape = NeuralNetworkShape { layers };
+        layers.extend(other.layers);
+        let new_shape = Self { layers };
         assert!(new_shape.is_valid());
         new_shape
     }

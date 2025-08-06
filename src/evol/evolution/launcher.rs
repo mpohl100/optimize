@@ -14,7 +14,7 @@ pub struct EvolutionResult<Pheno: Phenotype> {
 }
 
 /// Manages the evolution process using a specified breeding strategy and challenge.
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub struct EvolutionLauncher<Pheno, Strategy, Chall>
 where
     Pheno: Phenotype,
@@ -42,7 +42,7 @@ where
     /// # Returns
     ///
     /// A new `EvolutionLauncher` instance.
-    pub fn new(
+    pub const fn new(
         strategy: Strategy,
         challenge: Chall,
     ) -> Self {
@@ -75,20 +75,20 @@ where
 
             fitness.clear();
 
-            candidates.iter_mut().for_each(|candidate| {
+            for candidate in candidates.iter_mut() {
                 let score = self.challenge.score(candidate);
-                fitness.push(EvolutionResult { pheno: candidate.clone(), score })
-            });
+                fitness.push(EvolutionResult { pheno: candidate.clone(), score });
+            }
 
             fitness.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
             match options.get_log_level() {
-                LogLevel::Minimal => println!("Generation: {}", generation),
+                LogLevel::Minimal => println!("Generation: {generation}"),
                 LogLevel::Verbose => {
-                    fitness.iter().for_each(|result| {
-                        println!("Generation: {} \n", generation);
+                    for result in fitness.iter() {
+                        println!("Generation: {generation} \n");
                         println!("Phenotype: {:?} \n Score: {}", result.pheno, result.score);
-                    });
+                    }
                 },
                 LogLevel::None => {},
             }
