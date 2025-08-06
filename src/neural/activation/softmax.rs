@@ -10,7 +10,8 @@ pub struct Softmax {
 
 impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
-    #[must_use] pub fn new(temperature: f64) -> Self {
+    #[must_use]
+    pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
         Self { temperature, cached_output: None }
     }

@@ -28,7 +28,8 @@ impl Clone for NeuralNetworkPhenotype {
 }
 
 impl NeuralNetworkPhenotype {
-    #[must_use] pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
+    #[must_use]
+    pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
         Self {
             nn: nn.duplicate_trainable(),
             left_half_shape: None,
@@ -37,7 +38,8 @@ impl NeuralNetworkPhenotype {
         }
     }
 
-    #[must_use] pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
+    #[must_use]
+    pub fn get_nn(&self) -> WrappedTrainableNeuralNetwork {
         self.nn.clone()
     }
 
@@ -153,8 +155,7 @@ impl Phenotype for NeuralNetworkPhenotype {
         if right_index_end == right_index_begin {
             right_index_end += 1;
         }
-        let left_half_shape =
-            left_original_nn.shape().cut_out(left_index_begin, left_index_end);
+        let left_half_shape = left_original_nn.shape().cut_out(left_index_begin, left_index_end);
         let right_half_shape =
             right_original_nn.shape().cut_out(right_index_begin, right_index_end);
         self.set_left_half_shape(left_half_shape);

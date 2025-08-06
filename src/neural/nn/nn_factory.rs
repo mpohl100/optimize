@@ -20,7 +20,8 @@ pub struct NeuralNetworkCreationArguments {
 }
 
 impl NeuralNetworkCreationArguments {
-    #[must_use] pub const fn new(
+    #[must_use]
+    pub const fn new(
         shape: NeuralNetworkShape,
         levels: Option<i32>,
         pre_shape: Option<NeuralNetworkShape>,
@@ -31,7 +32,8 @@ impl NeuralNetworkCreationArguments {
     }
 }
 
-#[must_use] pub fn new_neural_network(
+#[must_use]
+pub fn new_neural_network(
     neural_network_creation_arguments: NeuralNetworkCreationArguments
 ) -> WrappedNeuralNetwork {
     match neural_network_creation_arguments.levels {
@@ -49,7 +51,8 @@ impl NeuralNetworkCreationArguments {
     }
 }
 
-#[must_use] pub fn new_trainable_neural_network(
+#[must_use]
+pub fn new_trainable_neural_network(
     neural_network_creation_arguments: NeuralNetworkCreationArguments
 ) -> WrappedTrainableNeuralNetwork {
     match (neural_network_creation_arguments.pre_shape, neural_network_creation_arguments.levels) {
@@ -78,7 +81,8 @@ impl NeuralNetworkCreationArguments {
     }
 }
 
-#[must_use] pub fn neural_network_from_disk(
+#[must_use]
+pub fn neural_network_from_disk(
     model_directory: String,
     utils: WrappedUtils,
 ) -> WrappedNeuralNetwork {
@@ -95,7 +99,8 @@ impl NeuralNetworkCreationArguments {
     ))
 }
 
-#[must_use] pub fn trainable_neural_network_from_disk(
+#[must_use]
+pub fn trainable_neural_network_from_disk(
     model_directory: String,
     utils: WrappedUtils,
 ) -> WrappedTrainableNeuralNetwork {
@@ -108,7 +113,8 @@ impl NeuralNetworkCreationArguments {
     ))
 }
 
-#[must_use] pub fn get_first_free_model_directory(model_directory: Directory) -> String {
+#[must_use]
+pub fn get_first_free_model_directory(model_directory: Directory) -> String {
     let model_directory_orig = model_directory.path();
     // truncate _{integer} from the end of the model_directory
     let mut model_directory = model_directory_orig;

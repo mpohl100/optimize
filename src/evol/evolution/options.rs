@@ -65,7 +65,8 @@ pub struct EvolutionOptions {
 }
 
 impl EvolutionOptions {
-    #[must_use] pub const fn new(
+    #[must_use]
+    pub const fn new(
         num_generations: usize,
         log_level: LogLevel,
         population_size: usize,
@@ -74,19 +75,23 @@ impl EvolutionOptions {
         Self { num_generations, log_level, population_size, num_offsprings }
     }
 
-    #[must_use] pub const fn get_num_generations(&self) -> usize {
+    #[must_use]
+    pub const fn get_num_generations(&self) -> usize {
         self.num_generations
     }
 
-    #[must_use] pub const fn get_log_level(&self) -> &LogLevel {
+    #[must_use]
+    pub const fn get_log_level(&self) -> &LogLevel {
         &self.log_level
     }
 
-    #[must_use] pub const fn get_population_size(&self) -> usize {
+    #[must_use]
+    pub const fn get_population_size(&self) -> usize {
         self.population_size
     }
 
-    #[must_use] pub const fn get_num_offspring(&self) -> usize {
+    #[must_use]
+    pub const fn get_num_offspring(&self) -> usize {
         self.num_offsprings
     }
 }

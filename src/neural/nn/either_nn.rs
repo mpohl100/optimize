@@ -29,7 +29,8 @@ pub struct EitherNeuralNetwork {
 }
 
 impl EitherNeuralNetwork {
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedNeuralNetwork {
@@ -236,7 +237,8 @@ pub struct TrainableEitherNeuralNetwork {
 }
 
 impl TrainableEitherNeuralNetwork {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         shape: NeuralNetworkShape,
         pre_shape: NeuralNetworkShape,
         max_levels: i32,
@@ -262,7 +264,8 @@ impl TrainableEitherNeuralNetwork {
         }
     }
 
-    #[must_use] pub fn from_disk(
+    #[must_use]
+    pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> WrappedTrainableNeuralNetwork {
@@ -496,9 +499,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         let pre_model_directory = append_dir(self.model_directory.path(), "pre");
         if right_inputs.len() < 100 {
             self.pre_nn = temp_neural_network.clone();
-            self.pre_nn
-                .save(pre_model_directory)
-                .expect("Failed to save pre neural network");
+            self.pre_nn.save(pre_model_directory).expect("Failed to save pre neural network");
             return temp_accuracy;
         }
 

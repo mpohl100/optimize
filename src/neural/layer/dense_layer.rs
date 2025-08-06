@@ -32,7 +32,8 @@ pub struct DenseLayer {
 }
 
 impl DenseLayer {
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         input_size: usize,
         output_size: usize,
         model_directory: Directory,
@@ -305,7 +306,8 @@ pub struct TrainableDenseLayer {
 
 impl TrainableDenseLayer {
     /// Creates a new `TrainableDenseLayer` with given input and output sizes.
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         input_size: usize,
         output_size: usize,
         model_directory: Directory,
