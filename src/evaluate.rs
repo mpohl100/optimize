@@ -102,5 +102,5 @@ fn main() {
 
     // Return the accuracy as the fraction of successful predictions
     let accuracy = success_count / inputs.len() as f64;
-    println!("Accuracy: {}", accuracy);
+    println!("Accuracy: {accuracy}");
 }
