@@ -36,11 +36,11 @@ struct FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn new(input_file: String, target_file: String) -> Self {
-        Self {
-            input_file,
-            target_file,
-        }
+    fn new(
+        input_file: String,
+        target_file: String,
+    ) -> Self {
+        Self { input_file, target_file }
     }
 }
 
@@ -56,7 +56,10 @@ impl DataImporter for FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn read_data(&self, file: String) -> Vec<Vec<f64>> {
+    fn read_data(
+        &self,
+        file: String,
+    ) -> Vec<Vec<f64>> {
         let mut rdr = csv::Reader::from_path(file).unwrap();
         let mut data = Vec::new();
         for result in rdr.records() {
@@ -91,8 +94,7 @@ fn main() {
         let output = nn.predict(input.to_vec());
 
         // dump output to predict_file
-        wtr.write_record(output.iter().map(|x| x.to_string()))
-            .unwrap();
+        wtr.write_record(output.iter().map(|x| x.to_string())).unwrap();
 
         // Check if the output matches the target
         let mut nb_correct_outputs = 0;

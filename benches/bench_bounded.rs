@@ -23,11 +23,17 @@ impl XCoordinate {
 }
 
 impl Phenotype for XCoordinate {
-    fn crossover(&mut self, other: &Self) {
+    fn crossover(
+        &mut self,
+        other: &Self,
+    ) {
         self.x = (self.x + other.x) / 2.0;
     }
 
-    fn mutate(&mut self, rng: &mut RandomNumberGenerator) {
+    fn mutate(
+        &mut self,
+        rng: &mut RandomNumberGenerator,
+    ) {
         let delta = *rng.fetch_uniform(-100.0, 100.0, 1).front().unwrap() as f64;
         self.x += delta / 100.0;
     }
@@ -58,7 +64,10 @@ impl XCoordinateChallenge {
 }
 
 impl Challenge<XCoordinate> for XCoordinateChallenge {
-    fn score(&self, phenotype: &mut XCoordinate) -> f64 {
+    fn score(
+        &self,
+        phenotype: &mut XCoordinate,
+    ) -> f64 {
         let x = phenotype.get_x();
         let delta = x - self.target;
         1.0 / delta.powi(2)

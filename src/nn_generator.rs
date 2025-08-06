@@ -63,11 +63,7 @@ struct Args {
 
 impl Args {
     fn get_training_params(&self) -> TrainingParams {
-        let levels = if self.retry_levels > 0 {
-            Some(self.retry_levels)
-        } else {
-            None
-        };
+        let levels = if self.retry_levels > 0 { Some(self.retry_levels) } else { None };
         let pre_shape = if self.pre_shape.is_empty() {
             None
         } else {
@@ -82,10 +78,7 @@ impl Args {
             let output_size = data.labels[0].len();
             // create a shape with one dense layer and the sigmoid activation function
             let shape = NeuralNetworkShape::new(vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size,
-                    output_size,
-                },
+                layer_type: LayerType::Dense { input_size, output_size },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             }]);
             return TrainingParams::new(
@@ -108,10 +101,7 @@ impl Args {
         let input_size = data.data[0].len();
         let output_size = data.labels[0].len();
         assert_eq!(shape.layers[0].input_size(), input_size);
-        assert_eq!(
-            shape.layers[shape.layers.len() - 1].output_size(),
-            output_size
-        );
+        assert_eq!(shape.layers[shape.layers.len() - 1].output_size(), output_size);
         TrainingParams::new(
             shape,
             levels,
@@ -148,11 +138,11 @@ struct FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn new(input_file: String, target_file: String) -> Self {
-        Self {
-            input_file,
-            target_file,
-        }
+    fn new(
+        input_file: String,
+        target_file: String,
+    ) -> Self {
+        Self { input_file, target_file }
     }
 }
 
@@ -168,7 +158,10 @@ impl DataImporter for FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn read_data(&self, file: String) -> Vec<Vec<f64>> {
+    fn read_data(
+        &self,
+        file: String,
+    ) -> Vec<Vec<f64>> {
         let mut rdr = csv::Reader::from_path(file).unwrap();
         let mut data = Vec::new();
         for result in rdr.records() {

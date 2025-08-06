@@ -13,7 +13,10 @@ impl Tanh {
         Self
     }
 
-    fn tanh_vec(&self, input: &[f64]) -> Vec<f64> {
+    fn tanh_vec(
+        &self,
+        input: &[f64],
+    ) -> Vec<f64> {
         input.iter().map(|&x| x.tanh()).collect()
     }
 }
@@ -25,11 +28,17 @@ impl Default for Tanh {
 }
 
 impl ActivationTrait for Tanh {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         self.tanh_vec(input)
     }
 
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+    fn backward(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64> {
         grad_output
             .iter()
             .zip(self.tanh_vec(grad_output).iter())

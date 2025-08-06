@@ -27,18 +27,12 @@ impl NeuralNetworkCreationArguments {
         model_directory: String,
         utils: WrappedUtils,
     ) -> Self {
-        Self {
-            shape,
-            levels,
-            pre_shape,
-            model_directory,
-            utils,
-        }
+        Self { shape, levels, pre_shape, model_directory, utils }
     }
 }
 
 pub fn new_neural_network(
-    neural_network_creation_arguments: NeuralNetworkCreationArguments,
+    neural_network_creation_arguments: NeuralNetworkCreationArguments
 ) -> WrappedNeuralNetwork {
     match neural_network_creation_arguments.levels {
         Some(levels) => WrappedNeuralNetwork::new(Box::new(RetryNeuralNetwork::new(
@@ -56,12 +50,9 @@ pub fn new_neural_network(
 }
 
 pub fn new_trainable_neural_network(
-    neural_network_creation_arguments: NeuralNetworkCreationArguments,
+    neural_network_creation_arguments: NeuralNetworkCreationArguments
 ) -> WrappedTrainableNeuralNetwork {
-    match (
-        neural_network_creation_arguments.pre_shape,
-        neural_network_creation_arguments.levels,
-    ) {
+    match (neural_network_creation_arguments.pre_shape, neural_network_creation_arguments.levels) {
         (None, Some(levels)) => {
             WrappedTrainableNeuralNetwork::new(Box::new(TrainableRetryNeuralNetwork::new(
                 neural_network_creation_arguments.shape,
@@ -69,7 +60,7 @@ pub fn new_trainable_neural_network(
                 neural_network_creation_arguments.model_directory,
                 neural_network_creation_arguments.utils,
             )))
-        }
+        },
         (Some(pre_shape), Some(levels)) => {
             WrappedTrainableNeuralNetwork::new(Box::new(TrainableEitherNeuralNetwork::new(
                 neural_network_creation_arguments.shape,
@@ -78,7 +69,7 @@ pub fn new_trainable_neural_network(
                 neural_network_creation_arguments.model_directory,
                 neural_network_creation_arguments.utils,
             )))
-        }
+        },
         _ => WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
             neural_network_creation_arguments.shape,
             Directory::Internal(neural_network_creation_arguments.model_directory),
@@ -138,7 +129,10 @@ pub fn get_first_free_model_directory(model_directory: Directory) -> String {
     model_directory
 }
 
-pub fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
+pub fn copy_dir_recursive(
+    src: &Path,
+    dst: &Path,
+) -> io::Result<()> {
     if !dst.exists() {
         fs::create_dir_all(dst)?;
     }

@@ -12,32 +12,36 @@ impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
-        Self {
-            temperature,
-            cached_output: None,
-        }
+        Self { temperature, cached_output: None }
     }
 
     /// Applies the softmax function to a vector of inputs.
-    fn softmax(&self, input: &[f64]) -> Vec<f64> {
+    fn softmax(
+        &self,
+        input: &[f64],
+    ) -> Vec<f64> {
         let max_input = input.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-        let exp_values: Vec<f64> = input
-            .iter()
-            .map(|&x| ((x - max_input) / self.temperature).exp())
-            .collect();
+        let exp_values: Vec<f64> =
+            input.iter().map(|&x| ((x - max_input) / self.temperature).exp()).collect();
         let sum_exp = exp_values.iter().sum::<f64>();
         exp_values.into_iter().map(|v| v / sum_exp).collect()
     }
 }
 
 impl ActivationTrait for Softmax {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         let output = self.softmax(input);
         self.cached_output = Some(output.clone()); // Cache the output for the backward pass
         output
     }
 
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+    fn backward(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64> {
         let softmax_output = match &self.cached_output {
             Some(output) => output.clone(),
             None => panic!("Softmax forward must be called before backward."),
@@ -77,10 +81,7 @@ mod tests {
 
         let sum: f64 = output.iter().sum();
         assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
-        assert!(
-            output.iter().all(|&v| v > 0.0),
-            "Softmax probabilities must be positive."
-        );
+        assert!(output.iter().all(|&v| v > 0.0), "Softmax probabilities must be positive.");
     }
 
     #[test]
@@ -93,10 +94,7 @@ mod tests {
 
         let sum: f64 = output.iter().sum();
         assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
-        assert!(
-            output.iter().all(|&v| v > 0.0),
-            "Softmax probabilities must be positive."
-        );
+        assert!(output.iter().all(|&v| v > 0.0), "Softmax probabilities must be positive.");
     }
 
     #[test]

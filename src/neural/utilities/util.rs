@@ -15,16 +15,14 @@ pub struct WrappedThreadPool {
 
 impl WrappedThreadPool {
     pub fn new(num_threads: usize) -> Self {
-        let thread_pool = ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap();
-        Self {
-            thread_pool: Arc::new(Mutex::new(thread_pool)),
-        }
+        let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
+        Self { thread_pool: Arc::new(Mutex::new(thread_pool)) }
     }
 
-    pub fn execute<F, R>(&self, f: F) -> R
+    pub fn execute<F, R>(
+        &self,
+        f: F,
+    ) -> R
     where
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
@@ -42,7 +40,10 @@ pub struct Utils {
 }
 
 impl Utils {
-    pub fn new(cpu_memory: usize, num_threads: usize) -> Self {
+    pub fn new(
+        cpu_memory: usize,
+        num_threads: usize,
+    ) -> Self {
         Self {
             layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
                 WrappedLayer,
@@ -57,19 +58,31 @@ impl Utils {
         }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedLayer) -> bool {
+    pub fn allocate(
+        &mut self,
+        allocatable: WrappedLayer,
+    ) -> bool {
         self.layer_alloc_manager.allocate(allocatable)
     }
 
-    pub fn deallocate(&mut self, allocatable: WrappedLayer) {
+    pub fn deallocate(
+        &mut self,
+        allocatable: WrappedLayer,
+    ) {
         self.layer_alloc_manager.deallocate(allocatable);
     }
 
-    pub fn allocate_trainable(&mut self, allocatable: WrappedTrainableLayer) -> bool {
+    pub fn allocate_trainable(
+        &mut self,
+        allocatable: WrappedTrainableLayer,
+    ) -> bool {
         self.trainable_layer_alloc_manager.allocate(allocatable)
     }
 
-    pub fn deallocate_trainable(&mut self, allocatable: WrappedTrainableLayer) {
+    pub fn deallocate_trainable(
+        &mut self,
+        allocatable: WrappedTrainableLayer,
+    ) {
         self.trainable_layer_alloc_manager.deallocate(allocatable);
     }
 
@@ -81,7 +94,10 @@ impl Utils {
         self.mutli_progress.clone()
     }
 
-    pub fn execute<F, R>(&self, f: F) -> R
+    pub fn execute<F, R>(
+        &self,
+        f: F,
+    ) -> R
     where
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
@@ -97,24 +113,34 @@ pub struct WrappedUtils {
 
 impl WrappedUtils {
     pub fn new(utils: Utils) -> Self {
-        Self {
-            utils: Arc::new(Mutex::new(utils)),
-        }
+        Self { utils: Arc::new(Mutex::new(utils)) }
     }
 
-    pub fn allocate(&mut self, allocatable: WrappedLayer) -> bool {
+    pub fn allocate(
+        &mut self,
+        allocatable: WrappedLayer,
+    ) -> bool {
         self.utils.lock().unwrap().allocate(allocatable)
     }
 
-    pub fn deallocate(&mut self, allocatable: WrappedLayer) {
+    pub fn deallocate(
+        &mut self,
+        allocatable: WrappedLayer,
+    ) {
         self.utils.lock().unwrap().deallocate(allocatable);
     }
 
-    pub fn allocate_trainable(&mut self, allocatable: WrappedTrainableLayer) -> bool {
+    pub fn allocate_trainable(
+        &mut self,
+        allocatable: WrappedTrainableLayer,
+    ) -> bool {
         self.utils.lock().unwrap().allocate_trainable(allocatable)
     }
 
-    pub fn deallocate_trainable(&mut self, allocatable: WrappedTrainableLayer) {
+    pub fn deallocate_trainable(
+        &mut self,
+        allocatable: WrappedTrainableLayer,
+    ) {
         self.utils.lock().unwrap().deallocate_trainable(allocatable);
     }
 
@@ -126,7 +152,10 @@ impl WrappedUtils {
         self.utils.lock().unwrap().get_multi_progress().clone()
     }
 
-    pub fn execute<F, R>(&self, f: F) -> R
+    pub fn execute<F, R>(
+        &self,
+        f: F,
+    ) -> R
     where
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,

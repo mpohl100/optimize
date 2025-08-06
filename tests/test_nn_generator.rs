@@ -40,24 +40,15 @@ fn test_neural_network_generator() {
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 128,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 64,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],

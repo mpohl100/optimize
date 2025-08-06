@@ -10,5 +10,8 @@ pub trait Challenge<Pheno: Phenotype> {
     /// # Returns
     ///
     /// The fitness score of the phenotype as a floating-point number.
-    fn score(&self, phenotype: &mut Pheno) -> f64;
+    fn score(
+        &self,
+        phenotype: &mut Pheno,
+    ) -> f64;
 }

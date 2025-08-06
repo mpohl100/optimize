@@ -24,9 +24,7 @@ pub struct RandomNumberGenerator {
 
 impl RandomNumberGenerator {
     pub fn new() -> Self {
-        Self {
-            rng: StdRng::from_entropy(),
-        }
+        Self { rng: StdRng::from_entropy() }
     }
 
     /// Generates a specified number of random floating-point numbers within the given range.
@@ -53,7 +51,12 @@ impl RandomNumberGenerator {
     ///     println!("Random Number: {}", number);
     /// }
     /// ```
-    pub fn fetch_uniform(&mut self, from: f32, to: f32, num: usize) -> VecDeque<f32> {
+    pub fn fetch_uniform(
+        &mut self,
+        from: f32,
+        to: f32,
+        num: usize,
+    ) -> VecDeque<f32> {
         let mut uniform_numbers = VecDeque::new();
         uniform_numbers.extend((0..num).map(|_| self.rng.gen_range(from..to)));
         uniform_numbers

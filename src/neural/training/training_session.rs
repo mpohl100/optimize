@@ -48,11 +48,7 @@ impl TrainingSession {
         let mut changed_params = params.clone();
         changed_params.set_shape(nn.shape().clone());
         validate_params(changed_params.clone())?;
-        Ok(TrainingSession {
-            params: changed_params,
-            neural_network: nn,
-            data_importer,
-        })
+        Ok(TrainingSession { params: changed_params, neural_network: nn, data_importer })
     }
 
     // Load a model from disk and create a training session
@@ -67,11 +63,7 @@ impl TrainingSession {
             return Err("Model directory does not exist".into());
         }
         let nn = trainable_neural_network_from_disk(model_directory.clone(), utils);
-        Ok(TrainingSession {
-            params,
-            neural_network: nn,
-            data_importer,
-        })
+        Ok(TrainingSession { params, neural_network: nn, data_importer })
     }
 
     // Train method
@@ -136,7 +128,10 @@ impl TrainingSession {
     }
 
     /// Save the model to disk
-    pub fn save_model(&mut self, model_directory: String) -> Result<(), Box<dyn Error>> {
+    pub fn save_model(
+        &mut self,
+        model_directory: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.neural_network.save(model_directory)
     }
 
@@ -206,31 +201,19 @@ mod tests {
         let nn_shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 64,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 64,
-                        output_size: 64,
-                    },
+                    layer_type: LayerType::Dense { input_size: 64, output_size: 64 },
                     activation: ActivationData::new_softmax(2.0),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 64,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                     activation: ActivationData::new(ActivationType::Sigmoid),
                 },
             ],
@@ -255,10 +238,6 @@ mod tests {
 
         // Train the neural network and check the success rate
         let success_rate = training_session.train().expect("Training failed");
-        assert!(
-            success_rate >= 0.9,
-            "Expected success rate >= 0.9, got {}",
-            success_rate
-        );
+        assert!(success_rate >= 0.9, "Expected success rate >= 0.9, got {}", success_rate);
     }
 }

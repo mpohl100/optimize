@@ -3,9 +3,15 @@ use crate::neural::{nn::directory::Directory, utilities::util::WrappedUtils};
 use std::sync::{Arc, Mutex};
 
 pub trait NeuralNetwork: std::fmt::Debug {
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64>;
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64>;
     fn shape(&self) -> NeuralNetworkShape;
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>>;
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>>;
     fn get_model_directory(&self) -> Directory;
     fn allocate(&mut self);
     fn deallocate(&mut self);
@@ -21,12 +27,13 @@ pub struct WrappedNeuralNetwork {
 
 impl WrappedNeuralNetwork {
     pub fn new(nn: Box<dyn NeuralNetwork + Send>) -> Self {
-        Self {
-            nn: Arc::new(Mutex::new(nn)),
-        }
+        Self { nn: Arc::new(Mutex::new(nn)) }
     }
 
-    pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    pub fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.nn.lock().unwrap().predict(input)
     }
 
@@ -34,7 +41,10 @@ impl WrappedNeuralNetwork {
         self.nn.lock().unwrap().shape()
     }
 
-    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.nn.lock().unwrap().save(user_model_directory)
     }
 
@@ -101,12 +111,13 @@ pub struct WrappedTrainableNeuralNetwork {
 
 impl WrappedTrainableNeuralNetwork {
     pub fn new(nn: Box<dyn TrainableNeuralNetwork + Send>) -> Self {
-        Self {
-            nn: Arc::new(Mutex::new(nn)),
-        }
+        Self { nn: Arc::new(Mutex::new(nn)) }
     }
 
-    pub fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    pub fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.nn.lock().unwrap().predict(input)
     }
 
@@ -114,7 +125,10 @@ impl WrappedTrainableNeuralNetwork {
         self.nn.lock().unwrap().shape()
     }
 
-    pub fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.nn.lock().unwrap().save(user_model_directory)
     }
 

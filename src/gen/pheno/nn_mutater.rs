@@ -16,40 +16,37 @@ impl<'a> NeuralNetworkMutater<'a> {
         Self { rng }
     }
 
-    pub fn mutate_shape(&mut self, shape: NeuralNetworkShape) -> AnnotatedNeuralNetworkShape {
+    pub fn mutate_shape(
+        &mut self,
+        shape: NeuralNetworkShape,
+    ) -> AnnotatedNeuralNetworkShape {
         let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape.clone());
         let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
         match random_number {
             0 => {
-                let position = self
-                    .rng
-                    .fetch_uniform(0.0, shape.num_layers() as f32, 1)
-                    .pop_front()
-                    .unwrap() as usize;
+                let position =
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                        as usize;
                 let layers = fetch_added_layers(self.rng, &shape, position);
                 mutated_shape.change_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
-            }
+            },
             1 => {
                 let activation = fetch_activation_data(self.rng);
-                let position = self
-                    .rng
-                    .fetch_uniform(0.0, shape.num_layers() as f32, 1)
-                    .pop_front()
-                    .unwrap() as usize;
+                let position =
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                        as usize;
                 let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
                 mutated_shape.change_layer(position, layer);
-            }
+            },
             2 => {
                 if shape.num_layers() == 1 {
                     return mutated_shape;
                 }
-                let position = self
-                    .rng
-                    .fetch_uniform(0.0, shape.num_layers() as f32, 1)
-                    .pop_front()
-                    .unwrap() as usize;
+                let position =
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                        as usize;
                 let shape_len = shape.num_layers() - 1;
                 if position == 0 {
                     let input_size = shape.get_layer(0).input_size();
@@ -87,10 +84,10 @@ impl<'a> NeuralNetworkMutater<'a> {
                     };
                     mutated_shape.change_layer(position, new_layer);
                 }
-            }
+            },
             _ => {
                 panic!("Invalid random number generated");
-            }
+            },
         }
         mutated_shape
     }
@@ -105,7 +102,7 @@ pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
         3 => {
             let random_temperature = rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap() as f64;
             ActivationData::new_softmax(random_temperature)
-        }
+        },
         _ => panic!("Invalid random number generated"),
     }
 }
@@ -139,18 +136,12 @@ fn fetch_added_layers(
     }
 
     let first_layer = LayerShape {
-        layer_type: LayerType::Dense {
-            input_size: begin_size,
-            output_size: inner_size,
-        },
+        layer_type: LayerType::Dense { input_size: begin_size, output_size: inner_size },
         activation: activation.clone(),
     };
 
     let second_layer = LayerShape {
-        layer_type: LayerType::Dense {
-            input_size: inner_size,
-            output_size: end_size,
-        },
+        layer_type: LayerType::Dense { input_size: inner_size, output_size: end_size },
         activation,
     };
     vec![first_layer, second_layer]
@@ -175,30 +166,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -216,30 +198,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Sigmoid)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -257,30 +230,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Tanh)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -301,30 +265,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -342,30 +297,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Sigmoid)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -383,30 +329,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Tanh)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -427,30 +364,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -468,30 +396,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Sigmoid)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -509,30 +428,21 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 256);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::Tanh)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -554,17 +464,11 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -572,30 +476,21 @@ mod tests {
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(2).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(2).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
         assert_eq!(
@@ -614,17 +509,11 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -632,30 +521,21 @@ mod tests {
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(2).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(2).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
         assert_eq!(
@@ -674,17 +554,11 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -692,30 +566,21 @@ mod tests {
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 256);
         assert_eq!(
             mutated_shape.get_layer(1).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(2).change_type,
-            LayerChangeType::Add
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(2).change_type, LayerChangeType::Add);
         assert_eq!(mutated_shape.get_layer(2).input_size(), 256);
         assert_eq!(mutated_shape.get_layer(2).output_size(), 10);
         assert_eq!(
@@ -735,20 +600,14 @@ mod tests {
         let mut rng = FakeRng::new(vec![2.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 196,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
         assert_eq!(
@@ -769,17 +628,11 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -787,10 +640,7 @@ mod tests {
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
         assert_eq!(
@@ -807,17 +657,11 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -825,10 +669,7 @@ mod tests {
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
         let mutated_shape = mutater.mutate_shape(shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 10);
         assert_eq!(
@@ -849,24 +690,15 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 64,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 64,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -875,20 +707,14 @@ mod tests {
         let mutated_shape = mutater.mutate_shape(shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 64);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 64);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -905,24 +731,15 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 64,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 64,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -931,20 +748,14 @@ mod tests {
         let mutated_shape = mutater.mutate_shape(shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(
@@ -961,24 +772,15 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 196,
-                        output_size: 128,
-                    },
+                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 64,
-                    },
+                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 64,
-                        output_size: 10,
-                    },
+                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -987,20 +789,14 @@ mod tests {
         let mutated_shape = mutater.mutate_shape(shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
-        assert_eq!(
-            mutated_shape.get_annotated_layer(0).change_type,
-            LayerChangeType::None
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
         assert_eq!(mutated_shape.get_layer(0).output_size(), 128);
         assert_eq!(
             mutated_shape.get_layer(0).activation,
             ActivationData::new(ActivationType::ReLU)
         );
-        assert_eq!(
-            mutated_shape.get_annotated_layer(1).change_type,
-            LayerChangeType::Change
-        );
+        assert_eq!(mutated_shape.get_annotated_layer(1).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(1).input_size(), 128);
         assert_eq!(mutated_shape.get_layer(1).output_size(), 10);
         assert_eq!(

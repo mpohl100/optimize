@@ -17,24 +17,15 @@ fn test_neural_network_breeding() {
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 128,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 64,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
@@ -65,13 +56,9 @@ fn test_neural_network_breeding() {
     let nn_strategy = NeuralNetworkStrategy::new(model_directory.clone());
 
     for _ in 0..20 {
-        let children = nn_strategy
-            .breed(&parents, &evol_opts, &mut rng)
-            .expect("Breed failed");
+        let children = nn_strategy.breed(&parents, &evol_opts, &mut rng).expect("Breed failed");
         assert_eq!(children.len(), 10);
-        assert!(children
-            .iter()
-            .all(|child| child.get_nn().shape().is_valid()));
+        assert!(children.iter().all(|child| child.get_nn().shape().is_valid()));
         parents.clear();
         for child in children.iter().take(4) {
             parents.push(child.clone());

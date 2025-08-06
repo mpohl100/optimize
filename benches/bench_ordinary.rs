@@ -17,8 +17,16 @@ fn bench_ordinary(c: &mut Criterion) {
     struct MockPhenotype;
 
     impl learn::evol::phenotype::Phenotype for MockPhenotype {
-        fn crossover(&mut self, other: &Self) {}
-        fn mutate(&mut self, rng: &mut RandomNumberGenerator) {}
+        fn crossover(
+            &mut self,
+            other: &Self,
+        ) {
+        }
+        fn mutate(
+            &mut self,
+            rng: &mut RandomNumberGenerator,
+        ) {
+        }
     }
 
     let mut parents = Vec::<MockPhenotype>::new();
@@ -27,11 +35,7 @@ fn bench_ordinary(c: &mut Criterion) {
 
     c.bench_function("breed", |b| {
         b.iter(|| {
-            strategy.breed(
-                black_box(&parents),
-                black_box(&evol_options),
-                black_box(&mut rng),
-            )
+            strategy.breed(black_box(&parents), black_box(&evol_options), black_box(&mut rng))
         })
     });
 }

@@ -75,7 +75,10 @@ impl TrainingParams {
         self.use_adam
     }
 
-    pub fn set_shape(&mut self, shape: NeuralNetworkShape) {
+    pub fn set_shape(
+        &mut self,
+        shape: NeuralNetworkShape,
+    ) {
         self.shape = shape;
     }
 }

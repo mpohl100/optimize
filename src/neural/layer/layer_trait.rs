@@ -17,10 +17,17 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     /// # Returns
     ///
     /// * A vector of `f64` values representing the output of the layer.
-    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64>;
+    fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64>;
 
     /// Performs the forward pass of the layer for inputs doing batch caching.
-    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64>;
+    fn forward_batch(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64>;
 
     /// Returns the input size of the layer.
     ///
@@ -37,10 +44,16 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     fn output_size(&self) -> usize;
 
     /// Saves the layer to a file at the specified path.
-    fn save(&self, path: String) -> Result<(), Box<dyn Error>>;
+    fn save(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
-    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>>;
+    fn read(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
     fn get_weights(&self) -> WrappedMatrix<f64>;
@@ -63,7 +76,10 @@ pub trait AllocatableLayer: Allocatable + Layer {
     ) -> Box<dyn AllocatableLayer + Send>;
 
     /// Copy the layer on the filesystem
-    fn copy_on_filesystem(&self, layer_path: String);
+    fn copy_on_filesystem(
+        &self,
+        layer_path: String,
+    );
 }
 
 #[derive(Debug, Clone)]
@@ -73,28 +89,35 @@ pub struct WrappedLayer {
 
 impl WrappedLayer {
     pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
-        Self {
-            layer: Arc::new(Mutex::new(layer)),
-        }
+        Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    pub fn duplicate(&self, model_directory: String, position_in_nn: usize) -> Self {
+    pub fn duplicate(
+        &self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Self {
         let mut layer = self.layer.lock().unwrap();
         let new_layer = layer.duplicate(model_directory, position_in_nn);
-        Self {
-            layer: Arc::new(Mutex::new(new_layer)),
-        }
+        Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    pub fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().forward(input, utils)
     }
 
-    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    pub fn forward_batch(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
@@ -106,11 +129,17 @@ impl WrappedLayer {
         self.layer.lock().unwrap().output_size()
     }
 
-    pub fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn save(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().save(path)
     }
 
-    pub fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn read(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read(path)
     }
 
@@ -164,20 +193,34 @@ pub trait TrainableLayer: Layer {
     /// # Returns
     ///
     /// * A vector of `f64` values representing the gradient of the loss with respect to the input.
-    fn backward(&mut self, grad_output: &[f64], utils: WrappedUtils) -> Vec<f64>;
+    fn backward(
+        &mut self,
+        grad_output: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64>;
 
     /// Performs the backward pass of the layer for inputs doing batch caching.
-    fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64>;
+    fn backward_batch(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64>;
 
     /// Updates the weights of the layer based on the specified learning rate.
     ///
     /// # Arguments
     ///
     /// * `learning_rate` - A `f64` value representing the learning rate for weight updates.
-    fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils);
+    fn update_weights(
+        &mut self,
+        learning_rate: f64,
+        utils: WrappedUtils,
+    );
 
     /// Assigns the weight of the input other layer
-    fn assign_weights(&mut self, other: WrappedTrainableLayer);
+    fn assign_weights(
+        &mut self,
+        other: WrappedTrainableLayer,
+    );
 
     /// Adjusts the weights according to the Adam optimizer.
     fn adjust_adam(
@@ -191,10 +234,16 @@ pub trait TrainableLayer: Layer {
     );
 
     /// Saves the layer to a file at the specified path.
-    fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>>;
+    fn save_weight(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
-    fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>>;
+    fn read_weight(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>>;
 }
 
 dyn_clone::clone_trait_object!(TrainableLayer);
@@ -208,7 +257,10 @@ pub trait TrainableAllocatableLayer: Allocatable + TrainableLayer {
     ) -> Box<dyn TrainableAllocatableLayer + Send>;
 
     /// Copy the layer on the filesystem
-    fn copy_on_filesystem(&self, layer_path: String);
+    fn copy_on_filesystem(
+        &self,
+        layer_path: String,
+    );
 }
 
 #[derive(Debug, Clone)]
@@ -218,28 +270,35 @@ pub struct WrappedTrainableLayer {
 
 impl WrappedTrainableLayer {
     pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
-        Self {
-            layer: Arc::new(Mutex::new(layer)),
-        }
+        Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
-    pub fn duplicate(&self, model_directory: String, position_in_nn: usize) -> Self {
+    pub fn duplicate(
+        &self,
+        model_directory: String,
+        position_in_nn: usize,
+    ) -> Self {
         let mut layer = self.layer.lock().unwrap();
         let new_layer = layer.duplicate(model_directory, position_in_nn);
-        Self {
-            layer: Arc::new(Mutex::new(new_layer)),
-        }
+        Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
         self.layer.lock().unwrap().cleanup();
     }
 
-    pub fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    pub fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().forward(input, utils)
     }
 
-    pub fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    pub fn forward_batch(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().forward_batch(input)
     }
 
@@ -251,11 +310,17 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().output_size()
     }
 
-    pub fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn save(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().save(path)
     }
 
-    pub fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn read(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read(path)
     }
 
@@ -267,22 +332,33 @@ impl WrappedTrainableLayer {
         self.layer.lock().unwrap().get_biases()
     }
 
-    pub fn backward(&mut self, grad_output: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    pub fn backward(
+        &mut self,
+        grad_output: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().backward(grad_output, utils)
     }
 
-    pub fn backward_batch(&mut self, grad_output: &[f64]) -> Vec<f64> {
+    pub fn backward_batch(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64> {
         self.layer.lock().unwrap().backward_batch(grad_output)
     }
 
-    pub fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils) {
-        self.layer
-            .lock()
-            .unwrap()
-            .update_weights(learning_rate, utils)
+    pub fn update_weights(
+        &mut self,
+        learning_rate: f64,
+        utils: WrappedUtils,
+    ) {
+        self.layer.lock().unwrap().update_weights(learning_rate, utils)
     }
 
-    pub fn assign_weights(&mut self, other: WrappedTrainableLayer) {
+    pub fn assign_weights(
+        &mut self,
+        other: WrappedTrainableLayer,
+    ) {
         self.layer.lock().unwrap().assign_weights(other)
     }
 
@@ -295,16 +371,19 @@ impl WrappedTrainableLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        self.layer
-            .lock()
-            .unwrap()
-            .adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils)
+        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils)
     }
 
-    pub fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn save_weight(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().save_weight(path)
     }
-    pub fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    pub fn read_weight(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         self.layer.lock().unwrap().read_weight(path)
     }
 }
