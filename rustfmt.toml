@@ -1,0 +1,31 @@
+# rustfmt.toml
+
+# Layout & Spacing
+edition = "2021"
+max_width = 100
+use_small_heuristics = "Max"
+wrap_comments = true
+newline_style = "Unix"
+blank_lines_upper_bound = 2
+blank_lines_lower_bound = 0
+
+# Brace and control structures
+control_brace_style = "AlwaysNextLine"
+fn_params_layout = "Vertical"
+match_block_trailing_comma = true
+
+# Imports and Modules
+reorder_imports = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+
+# Struct and Enum formatting
+struct_field_align_threshold = 0
+enum_discrim_align_threshold = 0
+
+# Reorder where clauses
+reorder_where_clauses = true
+
+# Forces pub before private (indirectly via grouping)
+normalize_comments = true
+normalize_doc_attributes = true
