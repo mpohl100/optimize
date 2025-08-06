@@ -7,10 +7,7 @@ use std::io::Write;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
-    Dense {
-        input_size: usize,
-        output_size: usize,
-    },
+    Dense { input_size: usize, output_size: usize },
 }
 
 /// Enum representing the type of activation function used in a layer.
@@ -34,24 +31,18 @@ pub struct ActivationData {
 
 impl ActivationData {
     pub fn new(activation_type: ActivationType) -> Self {
-        Self {
-            activation_type,
-            temperature: None,
-        }
+        Self { activation_type, temperature: None }
     }
 
     pub fn new_softmax(temperature: f64) -> Self {
-        Self {
-            activation_type: ActivationType::Softmax,
-            temperature: Some(temperature),
-        }
+        Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
     }
 
     pub fn is_valid(&self) -> bool {
         match self.activation_type {
             ActivationType::Softmax => {
                 self.temperature.is_some() && self.temperature.unwrap() > 0.0
-            }
+            },
             _ => self.temperature.is_none(),
         }
     }
@@ -166,7 +157,10 @@ impl NeuralNetworkShape {
         true
     }
 
-    pub fn to_yaml(&self, model_directory: String) {
+    pub fn to_yaml(
+        &self,
+        model_directory: String,
+    ) {
         // Create file in shape.yaml in model_directory and put the yaml there
         // ensure model_directory exists
         if std::fs::metadata(&model_directory).is_err() {
@@ -179,7 +173,10 @@ impl NeuralNetworkShape {
     }
 
     /// Returns the layer at the specified index.
-    pub fn get_layer(&self, index: usize) -> LayerShape {
+    pub fn get_layer(
+        &self,
+        index: usize,
+    ) -> LayerShape {
         self.layers[index].clone()
     }
 
@@ -189,17 +186,29 @@ impl NeuralNetworkShape {
     }
 
     /// Adds a new layer at the specified position.
-    pub fn add_layer(&mut self, position: usize, layer: LayerShape) {
+    pub fn add_layer(
+        &mut self,
+        position: usize,
+        layer: LayerShape,
+    ) {
         self.layers.insert(position, layer);
     }
 
     /// Changes layer at the specified position.
-    pub fn change_layer(&mut self, position: usize, layer: LayerShape) {
+    pub fn change_layer(
+        &mut self,
+        position: usize,
+        layer: LayerShape,
+    ) {
         self.layers[position] = layer;
     }
 
     /// Cut out a subnetwork from the neural network shape.
-    pub fn cut_out(&self, start: usize, end: usize) -> NeuralNetworkShape {
+    pub fn cut_out(
+        &self,
+        start: usize,
+        end: usize,
+    ) -> NeuralNetworkShape {
         // check that start are within bounds
         if start >= self.layers.len() {
             panic!("Start index out of bounds");
@@ -247,19 +256,13 @@ mod tests {
     #[test]
     fn test_layer_shape_validity() {
         let valid_layer = LayerShape {
-            layer_type: LayerType::Dense {
-                input_size: 10,
-                output_size: 5,
-            },
+            layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
             activation: ActivationData::new(ActivationType::ReLU),
         };
         assert!(valid_layer.is_valid());
 
         let invalid_layer = LayerShape {
-            layer_type: LayerType::Dense {
-                input_size: 0,
-                output_size: 5,
-            },
+            layer_type: LayerType::Dense { input_size: 0, output_size: 5 },
             activation: ActivationData::new(ActivationType::Sigmoid),
         };
         assert!(!invalid_layer.is_valid());
@@ -269,17 +272,11 @@ mod tests {
     fn test_neural_network_shape_validity() {
         let layers = vec![
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 10,
-                    output_size: 5,
-                },
+                layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 5,
-                    output_size: 3,
-                },
+                layer_type: LayerType::Dense { input_size: 5, output_size: 3 },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ];
@@ -288,10 +285,7 @@ mod tests {
 
         let invalid_layers = vec![
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 10,
-                    output_size: 5,
-                },
+                layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
@@ -302,9 +296,7 @@ mod tests {
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ];
-        let invalid_network = NeuralNetworkShape {
-            layers: invalid_layers,
-        };
+        let invalid_network = NeuralNetworkShape { layers: invalid_layers };
         assert!(!invalid_network.is_valid());
     }
 }

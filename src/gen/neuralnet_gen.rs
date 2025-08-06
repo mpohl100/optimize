@@ -39,14 +39,7 @@ impl NeuralNetworkGenerator {
             model_directory,
             utils.clone(),
         ));
-        Self {
-            current_winner: nn,
-            params,
-            evolution_params,
-
-            num_threads,
-            data_importer,
-        }
+        Self { current_winner: nn, params, evolution_params, num_threads, data_importer }
     }
 
     pub fn from_disk(
@@ -95,9 +88,7 @@ impl NeuralNetworkGenerator {
 
     /// Save the current winner to disk
     pub fn save(&mut self) {
-        let _ = self
-            .current_winner
-            .save(self.current_winner.get_model_directory().path().clone());
+        let _ = self.current_winner.save(self.current_winner.get_model_directory().path().clone());
     }
 
     /// Get the model directory

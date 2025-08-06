@@ -42,7 +42,11 @@ where
     /// # Returns
     ///
     /// A new `EvolutionLauncher` instance.
-    pub fn new(strategy: Strategy, challenge: Chall, num_threads: usize) -> Self {
+    pub fn new(
+        strategy: Strategy,
+        challenge: Chall,
+        num_threads: usize,
+    ) -> Self {
         Self {
             strategy: Arc::new(Mutex::new(strategy)),
             challenge: Arc::new(Mutex::new(challenge)),
@@ -75,38 +79,24 @@ where
         let mutexed_fitness = Mutex::new(fitness);
 
         // Set up thread pool
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(self.num_threads)
-            .build_global()
-            .unwrap();
+        rayon::ThreadPoolBuilder::new().num_threads(self.num_threads).build_global().unwrap();
 
         for generation in 0..options.get_num_generations() {
             candidates.clear();
-            candidates.extend(
-                self.strategy
-                    .lock()
-                    .unwrap()
-                    .breed(&parents, options, rng)?,
-            );
+            candidates.extend(self.strategy.lock().unwrap().breed(&parents, options, rng)?);
 
             mutexed_fitness.lock().unwrap().clear();
             let ch = self.challenge.clone();
             candidates.par_iter_mut().for_each(|candidate| {
                 let cloned_challenge = ch.lock().unwrap().clone();
                 let score = cloned_challenge.score(candidate);
-                let result = EvolutionResult {
-                    pheno: candidate.clone(),
-                    score,
-                };
+                let result = EvolutionResult { pheno: candidate.clone(), score };
 
                 // Push to the shared fitness vector
                 mutexed_fitness.lock().unwrap().push(result);
             });
 
-            mutexed_fitness
-                .lock()
-                .unwrap()
-                .sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+            mutexed_fitness.lock().unwrap().sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
             match options.get_log_level() {
                 LogLevel::Minimal => println!("Generation: {}", generation),
@@ -115,8 +105,8 @@ where
                         println!("Generation: {} \n", generation);
                         println!("Phenotype: {:?} \n Score: {}", result.pheno, result.score);
                     });
-                }
-                LogLevel::None => {}
+                },
+                LogLevel::None => {},
             }
 
             parents.clear();

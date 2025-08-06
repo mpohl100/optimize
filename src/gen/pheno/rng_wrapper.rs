@@ -3,7 +3,12 @@ use crate::evol::rng::RandomNumberGenerator;
 use std::collections::VecDeque;
 
 pub trait RngWrapper {
-    fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32>;
+    fn fetch_uniform(
+        &mut self,
+        min: f32,
+        max: f32,
+        count: usize,
+    ) -> VecDeque<f32>;
 }
 
 pub struct RealRng<'a> {
@@ -17,7 +22,12 @@ impl<'a> RealRng<'a> {
 }
 
 impl RngWrapper for RealRng<'_> {
-    fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32> {
+    fn fetch_uniform(
+        &mut self,
+        min: f32,
+        max: f32,
+        count: usize,
+    ) -> VecDeque<f32> {
         self.rng.fetch_uniform(min, max, count)
     }
 }
@@ -28,14 +38,17 @@ pub struct FakeRng {
 
 impl FakeRng {
     pub fn new(values: Vec<f32>) -> Self {
-        FakeRng {
-            values: values.into_iter().collect(),
-        }
+        FakeRng { values: values.into_iter().collect() }
     }
 }
 
 impl RngWrapper for FakeRng {
-    fn fetch_uniform(&mut self, min: f32, max: f32, count: usize) -> VecDeque<f32> {
+    fn fetch_uniform(
+        &mut self,
+        min: f32,
+        max: f32,
+        count: usize,
+    ) -> VecDeque<f32> {
         let mut result = VecDeque::new();
         for _ in 0..count {
             let val = self.values.pop_front();
@@ -46,7 +59,7 @@ impl RngWrapper for FakeRng {
                         panic!("Value out of range");
                     }
                     result.push_back(val);
-                }
+                },
                 None => panic!("No more values"),
             };
         }

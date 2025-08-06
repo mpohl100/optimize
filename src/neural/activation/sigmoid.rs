@@ -13,7 +13,10 @@ impl Sigmoid {
         Self
     }
 
-    fn sigmoid_vec(&self, input: &[f64]) -> Vec<f64> {
+    fn sigmoid_vec(
+        &self,
+        input: &[f64],
+    ) -> Vec<f64> {
         input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
     }
 }
@@ -25,11 +28,17 @@ impl Default for Sigmoid {
 }
 
 impl ActivationTrait for Sigmoid {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         self.sigmoid_vec(input)
     }
 
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+    fn backward(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64> {
         grad_output
             .iter()
             .zip(self.sigmoid_vec(grad_output).iter())

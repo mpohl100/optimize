@@ -34,36 +34,27 @@ impl DataImporter for MockDataImporter {
     }
 }
 
-fn train_model(model_directory: String, internal_model_directory: String) {
+fn train_model(
+    model_directory: String,
+    internal_model_directory: String,
+) {
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 128,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 128,
-                    output_size: 64,
-                },
+                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 64,
-                },
+                layer_type: LayerType::Dense { input_size: 64, output_size: 64 },
                 activation: ActivationData::new_softmax(2.0),
             },
             LayerShape {
-                layer_type: LayerType::Dense {
-                    input_size: 64,
-                    output_size: 10,
-                },
+                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
@@ -90,14 +81,12 @@ fn train_model(model_directory: String, internal_model_directory: String) {
             let success_rate = training_session.train().expect("Training failed");
             // print the success rate
             println!("Success rate: {}", success_rate);
-            training_session
-                .save_model(model_directory.clone())
-                .expect("Failed to save model");
+            training_session.save_model(model_directory.clone()).expect("Failed to save model");
             return;
-        }
+        },
         Err(e) => {
             println!("Failed to load model: {}", e);
-        }
+        },
     }
 
     let mut training_session = TrainingSession::new(
@@ -112,9 +101,7 @@ fn train_model(model_directory: String, internal_model_directory: String) {
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
     println!("Success rate: {}", success_rate);
-    training_session
-        .save_model(model_directory.clone())
-        .expect("Failed to save model");
+    training_session.save_model(model_directory.clone()).expect("Failed to save model");
 }
 
 #[test]
@@ -123,10 +110,7 @@ fn new_model_is_persisted() {
     let model_directory = "tests/test_model_persistence_1".to_string();
 
     // Act
-    train_model(
-        model_directory.clone(),
-        "tests/test_model_persistence_1_internal".to_string(),
-    );
+    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string());
 
     // Assert
     // Check if the model directory exists
@@ -140,16 +124,10 @@ fn new_model_is_persisted() {
 fn already_trained_model_is_loaded() {
     // Arrange
     let model_directory = "tests/test_model_persistence_2".to_string();
-    train_model(
-        model_directory.clone(),
-        "tests/test_model_persistence_2_internal".to_string(),
-    );
+    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string());
 
     // Act
-    train_model(
-        model_directory.clone(),
-        "tests/test_model_persistence_3_internal".to_string(),
-    );
+    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
 
     // Assert
     // Check if the model directory exists
@@ -173,18 +151,13 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
         // Arrange
         let utils = WrappedUtils::new(Utils::new(1000000000, 4));
 
-        train_model(
-            model_directory.clone(),
-            "tests/test_model_persistence_3_internal".to_string(),
-        );
+        train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
 
         let mut ordinary_model =
             ClassicNeuralNetwork::from_disk(model_directory.clone(), utils.clone()).unwrap();
         ordinary_model.allocate();
         // Act
-        ordinary_model
-            .save(new_model_directory.clone())
-            .expect("Failed to save model");
+        ordinary_model.save(new_model_directory.clone()).expect("Failed to save model");
 
         let mut trainable_ordinary_model =
             ClassicNeuralNetwork::from_disk(new_model_directory.clone(), utils).unwrap();

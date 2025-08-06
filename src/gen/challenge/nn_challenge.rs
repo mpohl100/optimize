@@ -11,16 +11,19 @@ pub struct NeuralNetworkChallenge {
 }
 
 impl NeuralNetworkChallenge {
-    pub fn new(params: TrainingParams, data_importer: Box<dyn DataImporter + Send + Sync>) -> Self {
-        Self {
-            params,
-            data_importer,
-        }
+    pub fn new(
+        params: TrainingParams,
+        data_importer: Box<dyn DataImporter + Send + Sync>,
+    ) -> Self {
+        Self { params, data_importer }
     }
 }
 
 impl Challenge<NeuralNetworkPhenotype> for NeuralNetworkChallenge {
-    fn score(&self, phenotype: &mut NeuralNetworkPhenotype) -> f64 {
+    fn score(
+        &self,
+        phenotype: &mut NeuralNetworkPhenotype,
+    ) -> f64 {
         let mut training_session = TrainingSession::from_network(
             phenotype.get_nn(),
             self.params.clone(),

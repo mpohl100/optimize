@@ -34,11 +34,11 @@ struct FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn new(input_file: String, target_file: String) -> Self {
-        Self {
-            input_file,
-            target_file,
-        }
+    fn new(
+        input_file: String,
+        target_file: String,
+    ) -> Self {
+        Self { input_file, target_file }
     }
 }
 
@@ -54,7 +54,10 @@ impl DataImporter for FileDataImporter {
 }
 
 impl FileDataImporter {
-    fn read_data(&self, file: String) -> Vec<Vec<f64>> {
+    fn read_data(
+        &self,
+        file: String,
+    ) -> Vec<Vec<f64>> {
         let mut rdr = csv::Reader::from_path(file).unwrap();
         let mut data = Vec::new();
         for result in rdr.records() {

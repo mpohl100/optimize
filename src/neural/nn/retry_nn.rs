@@ -66,7 +66,10 @@ impl RetryNeuralNetwork {
         }
     }
 
-    pub fn from_disk(model_directory: String, utils: WrappedUtils) -> WrappedNeuralNetwork {
+    pub fn from_disk(
+        model_directory: String,
+        utils: WrappedUtils,
+    ) -> WrappedNeuralNetwork {
         let primary_model_directory = append_dir(model_directory.clone(), "primary");
         let backup_model_directory = append_dir(model_directory.clone(), "backup");
         if std::path::Path::new(&primary_model_directory).exists() {
@@ -90,7 +93,10 @@ impl RetryNeuralNetwork {
         }
     }
 
-    fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         let primary_output = self.primary_nn.predict(input.clone());
         // if the last value in primary output is as close to zero as some tolerance, then we need to use the backup neural network
         if (primary_output[primary_output.len() - 1] - 1.0).abs() < 0.2 {
@@ -134,7 +140,10 @@ fn add_internal_dimensions(shape: NeuralNetworkShape) -> NeuralNetworkShape {
     annotated_shape.to_neural_network_shape()
 }
 
-fn append_dir(model_directory: String, subdir: &str) -> String {
+fn append_dir(
+    model_directory: String,
+    subdir: &str,
+) -> String {
     let mut path = model_directory.clone();
     path.push('/');
     path.push_str(subdir);
@@ -142,7 +151,10 @@ fn append_dir(model_directory: String, subdir: &str) -> String {
 }
 
 impl NeuralNetwork for RetryNeuralNetwork {
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input)
     }
 
@@ -150,10 +162,12 @@ impl NeuralNetwork for RetryNeuralNetwork {
         self.shape.clone()
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Directory::Internal(_) = self.model_directory {
-            self.past_internal_model_directories
-                .push(self.model_directory.path());
+            self.past_internal_model_directories.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let primary_user_model_directory = append_dir(user_model_directory.clone(), "primary");
@@ -258,7 +272,7 @@ impl TrainableRetryNeuralNetwork {
                     append_dir(internal_model_directory.clone(), "backup"),
                     utils.clone(),
                 )))
-            }
+            },
             0 => WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
                 shape.clone(),
                 Directory::Internal(append_dir(internal_model_directory.clone(), "backup")),
@@ -307,7 +321,10 @@ impl TrainableRetryNeuralNetwork {
         }
     }
 
-    fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         let primary_output = self.primary_nn.predict(input.clone());
         // if the last value in primary output is as close to zero as some tolerance, then we need to use the backup neural network
         if primary_output[primary_output.len() - 1].abs() < 0.05 {
@@ -320,7 +337,10 @@ impl TrainableRetryNeuralNetwork {
 }
 
 impl NeuralNetwork for TrainableRetryNeuralNetwork {
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input)
     }
 
@@ -328,10 +348,12 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
         self.shape.clone()
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Directory::Internal(_) = self.model_directory {
-            self.past_internal_model_directories
-                .push(self.model_directory.path());
+            self.past_internal_model_directories.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let primary_user_model_directory = append_dir(user_model_directory.clone(), "primary");
@@ -483,14 +505,7 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
         tolerance: f64,
         batch_size: usize,
     ) {
-        self.primary_nn.train_batch(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            batch_size,
-        );
+        self.primary_nn.train_batch(inputs, targets, learning_rate, epochs, tolerance, batch_size);
     }
 
     fn input_size(&self) -> usize {
@@ -555,17 +570,11 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],

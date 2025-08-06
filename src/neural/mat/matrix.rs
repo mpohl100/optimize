@@ -19,7 +19,10 @@ pub struct OutOfRangeError {
 }
 
 impl fmt::Display for OutOfRangeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         write!(f, "{}", self.message)
     }
 }
@@ -31,16 +34,19 @@ where
     T: Default + Clone,
 {
     // Constructor with specified rows and columns
-    pub fn new(rows: usize, cols: usize) -> Self {
-        Matrix {
-            rows,
-            cols,
-            data: vec![T::default(); rows * cols],
-        }
+    pub fn new(
+        rows: usize,
+        cols: usize,
+    ) -> Self {
+        Matrix { rows, cols, data: vec![T::default(); rows * cols] }
     }
 
     // Get a mutable reference to an element at (x, y)
-    pub fn get_mut(&mut self, x: usize, y: usize) -> Result<&mut T, OutOfRangeError> {
+    pub fn get_mut(
+        &mut self,
+        x: usize,
+        y: usize,
+    ) -> Result<&mut T, OutOfRangeError> {
         if x >= self.rows || y >= self.cols {
             Err(OutOfRangeError {
                 message: format!(
@@ -54,7 +60,11 @@ where
     }
 
     // Get an immutable reference to an element at (x, y)
-    pub fn get(&self, x: usize, y: usize) -> Result<&T, OutOfRangeError> {
+    pub fn get(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> Result<&T, OutOfRangeError> {
         if x >= self.rows || y >= self.cols {
             Err(OutOfRangeError {
                 message: format!(
@@ -67,15 +77,28 @@ where
         }
     }
 
-    pub fn get_mut_unchecked(&mut self, x: usize, y: usize) -> &mut T {
+    pub fn get_mut_unchecked(
+        &mut self,
+        x: usize,
+        y: usize,
+    ) -> &mut T {
         &mut self.data[x * self.cols + y]
     }
 
-    pub fn get_unchecked(&self, x: usize, y: usize) -> &T {
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> &T {
         &self.data[x * self.cols + y]
     }
 
-    pub fn set_mut_unchecked(&mut self, x: usize, y: usize, value: T) {
+    pub fn set_mut_unchecked(
+        &mut self,
+        x: usize,
+        y: usize,
+        value: T,
+    ) {
         self.data[x * self.cols + y] = value;
     }
 
@@ -105,18 +128,12 @@ pub struct RowIterMut<'a, T> {
 impl<T> Matrix<T> {
     /// Returns an iterator over the rows of the matrix (immutable)
     pub fn iter(&self) -> RowIter<T> {
-        RowIter {
-            matrix: self,
-            current_row: 0,
-        }
+        RowIter { matrix: self, current_row: 0 }
     }
 
     /// Returns an iterator over the rows of the matrix (mutable)
     pub fn iter_mut(&mut self) -> RowIterMut<T> {
-        RowIterMut {
-            matrix: self,
-            current_row: 0,
-        }
+        RowIterMut { matrix: self, current_row: 0 }
     }
 }
 
@@ -187,18 +204,27 @@ impl<T> WrappedMatrix<T>
 where
     T: Default + Clone,
 {
-    pub fn new(rows: usize, cols: usize) -> Self {
-        WrappedMatrix {
-            mat: Arc::new(Mutex::new(Matrix::<T>::new(rows, cols))),
-        }
+    pub fn new(
+        rows: usize,
+        cols: usize,
+    ) -> Self {
+        WrappedMatrix { mat: Arc::new(Mutex::new(Matrix::<T>::new(rows, cols))) }
     }
 
-    pub fn get(&self, x: usize, y: usize) -> Result<T, OutOfRangeError> {
+    pub fn get(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> Result<T, OutOfRangeError> {
         let mat = self.mat.lock().unwrap();
         mat.get(x, y).cloned()
     }
 
-    pub fn get_mut(&self, x: usize, y: usize) -> Result<T, OutOfRangeError> {
+    pub fn get_mut(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> Result<T, OutOfRangeError> {
         let mut mat = self.mat.lock().unwrap();
         mat.get_mut(x, y).cloned()
     }
@@ -217,12 +243,21 @@ where
         self.mat.clone()
     }
 
-    pub fn set_mut_unchecked(&self, x: usize, y: usize, value: T) {
+    pub fn set_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+        value: T,
+    ) {
         let mut mat = self.mat.lock().unwrap();
         mat.set_mut_unchecked(x, y, value);
     }
 
-    pub fn get_unchecked(&self, x: usize, y: usize) -> T {
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
         let mat = self.mat.lock().unwrap();
         mat.get_unchecked(x, y).clone()
     }

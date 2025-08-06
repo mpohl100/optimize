@@ -29,7 +29,10 @@ pub struct EitherNeuralNetwork {
 }
 
 impl EitherNeuralNetwork {
-    pub fn from_disk(model_directory: String, utils: WrappedUtils) -> WrappedNeuralNetwork {
+    pub fn from_disk(
+        model_directory: String,
+        utils: WrappedUtils,
+    ) -> WrappedNeuralNetwork {
         let pre_model_directory = append_dir(model_directory.clone(), "pre");
         let left_model_directory = append_dir(model_directory.clone(), "left");
         let right_model_directory = append_dir(model_directory.clone(), "right");
@@ -37,19 +40,13 @@ impl EitherNeuralNetwork {
             let pre_nn = neural_network_from_disk(pre_model_directory, utils.clone());
 
             let left_nn = if std::path::Path::new(&left_model_directory).exists() {
-                Some(neural_network_from_disk(
-                    left_model_directory,
-                    utils.clone(),
-                ))
+                Some(neural_network_from_disk(left_model_directory, utils.clone()))
             } else {
                 None
             };
 
             let right_nn = if std::path::Path::new(&right_model_directory).exists() {
-                Some(neural_network_from_disk(
-                    right_model_directory,
-                    utils.clone(),
-                ))
+                Some(neural_network_from_disk(right_model_directory, utils.clone()))
             } else {
                 None
             };
@@ -71,7 +68,10 @@ impl EitherNeuralNetwork {
         }
     }
 
-    fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         let pre_output = self.pre_nn.predict(input.clone());
         if self.left_nn.is_none() && self.right_nn.is_none() {
             return pre_output;
@@ -94,7 +94,10 @@ impl EitherNeuralNetwork {
     }
 }
 
-fn append_dir(model_directory: String, subdir: &str) -> String {
+fn append_dir(
+    model_directory: String,
+    subdir: &str,
+) -> String {
     let mut path = model_directory.clone();
     path.push('/');
     path.push_str(subdir);
@@ -102,7 +105,10 @@ fn append_dir(model_directory: String, subdir: &str) -> String {
 }
 
 impl NeuralNetwork for EitherNeuralNetwork {
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input)
     }
 
@@ -116,10 +122,12 @@ impl NeuralNetwork for EitherNeuralNetwork {
         }
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Directory::Internal(_) = self.model_directory {
-            self.past_internal_model_directories
-                .push(self.model_directory.path());
+            self.past_internal_model_directories.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let pre_user_model_directory = append_dir(user_model_directory.clone(), "pre");
@@ -265,19 +273,13 @@ impl TrainableEitherNeuralNetwork {
             let pre_nn = trainable_neural_network_from_disk(pre_model_directory, utils.clone());
 
             let left_nn = if std::path::Path::new(&primary_model_directory).exists() {
-                Some(trainable_neural_network_from_disk(
-                    primary_model_directory,
-                    utils.clone(),
-                ))
+                Some(trainable_neural_network_from_disk(primary_model_directory, utils.clone()))
             } else {
                 None
             };
 
             let right_nn = if std::path::Path::new(&backup_model_directory).exists() {
-                Some(trainable_neural_network_from_disk(
-                    backup_model_directory,
-                    utils.clone(),
-                ))
+                Some(trainable_neural_network_from_disk(backup_model_directory, utils.clone()))
             } else {
                 None
             };
@@ -302,7 +304,10 @@ impl TrainableEitherNeuralNetwork {
         }
     }
 
-    fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         let pre_output = self.pre_nn.predict(input.clone());
         if self.left_nn.is_none() && self.right_nn.is_none() {
             return pre_output;
@@ -326,7 +331,10 @@ impl TrainableEitherNeuralNetwork {
 }
 
 impl NeuralNetwork for TrainableEitherNeuralNetwork {
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input)
     }
 
@@ -334,10 +342,12 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
         self.shape.clone()
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Directory::Internal(_) = self.model_directory {
-            self.past_internal_model_directories
-                .push(self.model_directory.path());
+            self.past_internal_model_directories.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
 
@@ -555,9 +565,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         );
 
         self.left_nn = Some(left_nn.clone());
-        left_nn
-            .save(left_model_directory.clone())
-            .expect("Failed to save left neural network");
+        left_nn.save(left_model_directory.clone()).expect("Failed to save left neural network");
 
         // Train the right neural network
         let right_model_directory = append_dir(self.model_directory.path(), "right");
@@ -580,9 +588,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             validation_split,
         );
         self.right_nn = Some(right_nn.clone());
-        right_nn
-            .save(right_model_directory.clone())
-            .expect("Failed to save right neural network");
+        right_nn.save(right_model_directory.clone()).expect("Failed to save right neural network");
 
         left_accuracy + right_accuracy
     }
@@ -596,14 +602,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         tolerance: f64,
         batch_size: usize,
     ) {
-        self.pre_nn.train_batch(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            batch_size,
-        );
+        self.pre_nn.train_batch(inputs, targets, learning_rate, epochs, tolerance, batch_size);
     }
 
     fn input_size(&self) -> usize {
@@ -668,27 +667,18 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],
             },
             NeuralNetworkShape {
                 layers: vec![LayerShape {
-                    layer_type: LayerType::Dense {
-                        input_size: 3,
-                        output_size: 3,
-                    },
+                    layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                     activation: ActivationData::new_softmax(1.0),
                 }],
             },

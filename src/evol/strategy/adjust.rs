@@ -35,9 +35,7 @@ where
     Pheno: Phenotype + Adjust<Pheno>,
 {
     fn default() -> Self {
-        Self {
-            _marker: PhantomData,
-        }
+        Self { _marker: PhantomData }
     }
 }
 
@@ -71,17 +69,14 @@ where
         first_child.incr_number_mutates();
         children.push(first_child);
 
-        parents
-            .iter()
-            .skip(1)
-            .try_for_each(|parent| -> Result<(), Error> {
-                let mut child = winner_previous_generation.clone();
-                child.crossover(parent);
-                let mut mutated_child = self.develop(child, rng)?;
-                mutated_child.decr_number_mutates();
-                children.push(mutated_child);
-                Ok(())
-            })?;
+        parents.iter().skip(1).try_for_each(|parent| -> Result<(), Error> {
+            let mut child = winner_previous_generation.clone();
+            child.crossover(parent);
+            let mut mutated_child = self.develop(child, rng)?;
+            mutated_child.decr_number_mutates();
+            children.push(mutated_child);
+            Ok(())
+        })?;
 
         (parents.len()..evol_options.get_num_offspring()).try_for_each(
             |_| -> Result<(), Error> {

@@ -71,12 +71,7 @@ impl EvolutionOptions {
         population_size: usize,
         num_offsprings: usize,
     ) -> Self {
-        Self {
-            num_generations,
-            log_level,
-            population_size,
-            num_offsprings,
-        }
+        Self { num_generations, log_level, population_size, num_offsprings }
     }
 
     pub fn get_num_generations(&self) -> usize {

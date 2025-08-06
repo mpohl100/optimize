@@ -67,7 +67,7 @@ impl ClassicNeuralNetwork {
                 ActivationType::Softmax => {
                     Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
-                }
+                },
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -78,7 +78,10 @@ impl ClassicNeuralNetwork {
 
     /// Creates a new `NeuralNetwork` from the given model directory.
     #[allow(clippy::question_mark)]
-    pub fn from_disk(model_directory: String, utils: WrappedUtils) -> Option<ClassicNeuralNetwork> {
+    pub fn from_disk(
+        model_directory: String,
+        utils: WrappedUtils,
+    ) -> Option<ClassicNeuralNetwork> {
         let shape = NeuralNetworkShape::from_disk(model_directory.clone());
         if shape.is_none() {
             return None;
@@ -95,10 +98,7 @@ impl ClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense {
-                    input_size,
-                    output_size,
-                } => {
+                LayerType::Dense { input_size, output_size } => {
                     let layer = DenseLayer::new(
                         *input_size,
                         *output_size,
@@ -106,7 +106,7 @@ impl ClassicNeuralNetwork {
                         i,
                     );
                     WrappedLayer::new(Box::new(layer))
-                }
+                },
             };
             let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -115,7 +115,7 @@ impl ClassicNeuralNetwork {
                 ActivationType::Softmax => {
                     Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
-                }
+                },
             };
 
             network.add_activation_and_layer(activation, layer);
@@ -125,7 +125,10 @@ impl ClassicNeuralNetwork {
     }
 
     /// Saves the neural network to disk with the internal logic.
-    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_internal(
+        &self,
+        model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -165,7 +168,10 @@ impl ClassicNeuralNetwork {
     }
 
     /// Saves the layers of the neural network to disk.
-    fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_layers(
+        &self,
+        model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{}/layers", model_directory))?;
         for (i, layer) in self.layers.iter().enumerate() {
@@ -181,7 +187,10 @@ impl ClassicNeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input.
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
@@ -197,7 +206,10 @@ impl ClassicNeuralNetwork {
 
 impl NeuralNetwork for ClassicNeuralNetwork {
     /// Makes a prediction based on a single input by performing a forward pass.
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input.as_slice())
     }
 
@@ -205,10 +217,12 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         self.shape.clone()
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if let Directory::Internal(_) = self.model_directory {
-            self.past_internal_directory
-                .push(self.model_directory.path());
+            self.past_internal_directory.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
@@ -303,7 +317,11 @@ pub struct TrainableClassicNeuralNetwork {
 
 impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
-    pub fn new(shape: NeuralNetworkShape, model_directory: Directory, utils: WrappedUtils) -> Self {
+    pub fn new(
+        shape: NeuralNetworkShape,
+        model_directory: Directory,
+        utils: WrappedUtils,
+    ) -> Self {
         let shape_clone = shape.clone();
         let mut network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
@@ -330,7 +348,7 @@ impl TrainableClassicNeuralNetwork {
                 ActivationType::Softmax => {
                     Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
-                }
+                },
             };
 
             network.add_activation_and_trainable_layer(activation, layer);
@@ -341,7 +359,10 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
-    pub fn new_dir(model_directory: Directory, utils: WrappedUtils) -> Self {
+    pub fn new_dir(
+        model_directory: Directory,
+        utils: WrappedUtils,
+    ) -> Self {
         let network = TrainableClassicNeuralNetwork {
             layers: Vec::new(),
             activations: Vec::new(),
@@ -356,7 +377,10 @@ impl TrainableClassicNeuralNetwork {
         network
     }
 
-    fn save_internal(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_internal(
+        &self,
+        model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
         let backup_directory = format!("{}_backup", model_directory);
         if std::fs::metadata(&model_directory).is_ok() {
@@ -381,14 +405,24 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Adjusts the weights of the neural network using the Adam optimizer.
-    fn adjust_adam(&mut self, t: usize, learning_rate: f64, beta1: f64, beta2: f64, epsilon: f64) {
+    fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+    ) {
         for layer in &mut self.layers {
             layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon, self.utils.clone());
         }
     }
 
     /// Saves the layers of the neural network to disk.
-    fn save_layers(&self, model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_layers(
+        &self,
+        model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
         if std::fs::metadata(format!("{}/layers", model_directory)).is_err() {
             std::fs::create_dir_all(format!("{}/layers", model_directory))?;
@@ -420,7 +454,10 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input.
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
@@ -434,7 +471,10 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a forward pass through the network with the given input doing batch caching.
-    fn forward_batch(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward_batch(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             output = layer.forward_batch(&output);
@@ -444,13 +484,13 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a backward pass through the network with the given output gradient.
-    fn backward(&mut self, grad_output: Vec<f64>) {
+    fn backward(
+        &mut self,
+        grad_output: Vec<f64>,
+    ) {
         let mut grad = grad_output;
-        for (layer, activation) in self
-            .layers
-            .iter_mut()
-            .rev()
-            .zip(self.activations.iter_mut().rev())
+        for (layer, activation) in
+            self.layers.iter_mut().rev().zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
             layer.mark_for_use();
@@ -461,13 +501,13 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Performs a backward pass through the network with the given output gradient doing batch caching.
-    fn backward_batch(&mut self, grad_output: Vec<f64>) {
+    fn backward_batch(
+        &mut self,
+        grad_output: Vec<f64>,
+    ) {
         let mut grad = grad_output;
-        for (layer, activation) in self
-            .layers
-            .iter_mut()
-            .rev()
-            .zip(self.activations.iter_mut().rev())
+        for (layer, activation) in
+            self.layers.iter_mut().rev().zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
             grad = layer.backward_batch(&grad);
@@ -496,10 +536,7 @@ impl TrainableClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense {
-                    input_size,
-                    output_size,
-                } => {
+                LayerType::Dense { input_size, output_size } => {
                     let layer = TrainableDenseLayer::new(
                         *input_size,
                         *output_size,
@@ -507,7 +544,7 @@ impl TrainableClassicNeuralNetwork {
                         i,
                     );
                     WrappedTrainableLayer::new(Box::new(layer))
-                }
+                },
             };
             let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -516,7 +553,7 @@ impl TrainableClassicNeuralNetwork {
                 ActivationType::Softmax => {
                     Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
-                }
+                },
             };
 
             network.add_activation_and_trainable_layer(activation, layer);
@@ -586,7 +623,10 @@ impl TrainableClassicNeuralNetwork {
 
 impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Makes a prediction based on a single input by performing a forward pass.
-    fn predict(&mut self, input: Vec<f64>) -> Vec<f64> {
+    fn predict(
+        &mut self,
+        input: Vec<f64>,
+    ) -> Vec<f64> {
         self.forward(input.as_slice())
     }
 
@@ -594,10 +634,12 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
         self.shape.clone()
     }
 
-    fn save(&mut self, user_model_directory: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(
+        &mut self,
+        user_model_directory: String,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         if self.model_directory.path() != user_model_directory {
-            self.past_internal_model_directory
-                .push(self.model_directory.path());
+            self.past_internal_model_directory.push(self.model_directory.path());
         }
         self.model_directory = Directory::User(user_model_directory.clone());
         let model_directory = self.model_directory.path();
@@ -678,80 +720,70 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             let mut loss = 0.0;
             let mut success_count = 0.0;
 
-            train_inputs
-                .iter()
-                .zip(train_targets)
-                .enumerate()
-                .for_each(|(j, (input, target))| {
-                    // Forward pass
-                    let output = self.forward(input.as_slice());
+            train_inputs.iter().zip(train_targets).enumerate().for_each(|(j, (input, target))| {
+                // Forward pass
+                let output = self.forward(input.as_slice());
 
-                    // Calculate accuracy
-                    let correct_outputs = output
-                        .iter()
-                        .zip(target.iter())
-                        .filter(|(&o, &t)| (o - t).abs() < tolerance)
-                        .count();
-                    success_count += correct_outputs as f64 / target.len() as f64;
+                // Calculate accuracy
+                let correct_outputs = output
+                    .iter()
+                    .zip(target.iter())
+                    .filter(|(&o, &t)| (o - t).abs() < tolerance)
+                    .count();
+                success_count += correct_outputs as f64 / target.len() as f64;
 
-                    // Calculate loss gradient
-                    let grad_output: Vec<f64> = output
-                        .iter()
-                        .zip(target)
-                        .map(|(o, t)| {
-                            let error = o - t;
-                            loss += error * error;
-                            2.0 * error
-                        })
-                        .collect();
+                // Calculate loss gradient
+                let grad_output: Vec<f64> = output
+                    .iter()
+                    .zip(target)
+                    .map(|(o, t)| {
+                        let error = o - t;
+                        loss += error * error;
+                        2.0 * error
+                    })
+                    .collect();
 
-                    // Backward pass
-                    self.backward(grad_output);
+                // Backward pass
+                self.backward(grad_output);
 
-                    // Update weights
-                    if use_adam {
-                        self.adjust_adam(j + 1, learning_rate, 0.9, 0.999, 1e-8);
-                    } else {
-                        self.layers.iter_mut().for_each(|layer| {
-                            layer.update_weights(learning_rate, self.utils.clone())
-                        });
-                    }
+                // Update weights
+                if use_adam {
+                    self.adjust_adam(j + 1, learning_rate, 0.9, 0.999, 1e-8);
+                } else {
+                    self.layers
+                        .iter_mut()
+                        .for_each(|layer| layer.update_weights(learning_rate, self.utils.clone()));
+                }
 
-                    // Update the progress bar
-                    let accuracy = success_count / train_inputs.len() as f64 * 100.0;
-                    let loss_display = loss / train_inputs.len() as f64;
-                    pb.set_position((j + 1) as u64);
-                    pb.set_message(format!(
-                        "Accuracy: {:.2} %, Loss: {:.4}",
-                        accuracy, loss_display
-                    ));
-                });
+                // Update the progress bar
+                let accuracy = success_count / train_inputs.len() as f64 * 100.0;
+                let loss_display = loss / train_inputs.len() as f64;
+                pb.set_position((j + 1) as u64);
+                pb.set_message(format!("Accuracy: {:.2} %, Loss: {:.4}", accuracy, loss_display));
+            });
 
             // Validation phase
             let mut validation_loss = 0.0;
             let mut validation_success_count = 0.0;
 
-            validation_inputs
-                .iter()
-                .zip(validation_targets)
-                .for_each(|(input, target)| {
-                    let output = self.forward(input.as_slice());
-                    let correct_outputs = output
-                        .iter()
-                        .zip(target.iter())
-                        .filter(|(&o, &t)| (o - t).abs() < tolerance)
-                        .count();
-                    validation_success_count += correct_outputs as f64 / target.len() as f64;
+            validation_inputs.iter().zip(validation_targets).for_each(|(input, target)| {
+                let output = self.forward(input.as_slice());
+                let correct_outputs = output
+                    .iter()
+                    .zip(target.iter())
+                    .filter(|(&o, &t)| (o - t).abs() < tolerance)
+                    .count();
+                validation_success_count += correct_outputs as f64 / target.len() as f64;
 
-                    validation_loss += output
-                        .iter()
-                        .zip(target)
-                        .map(|(o, t)| {
-                            let error = o - t;
-                            error * error
-                        })
-                        .sum::<f64>();
-                });
+                validation_loss += output
+                    .iter()
+                    .zip(target)
+                    .map(|(o, t)| {
+                        let error = o - t;
+                        error * error
+                    })
+                    .sum::<f64>();
+            });
 
             validation_loss /= validation_inputs.len() as f64;
             let validation_accuracy =
@@ -813,12 +845,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 }
             }
             let accuracy = success_count / inputs.len() as f64 * 100.0;
-            println!(
-                "Epoch {}: Loss {}, Accuracy {}%\r",
-                i,
-                loss / inputs.len() as f64,
-                accuracy
-            );
+            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs.len() as f64, accuracy);
             if accuracy < 0.01 && i > 10 {
                 break;
             }
@@ -827,18 +854,12 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
 
     /// Returns the input size of the first layer in the network.
     fn input_size(&self) -> usize {
-        self.shape
-            .layers
-            .first()
-            .map_or(0, |layer| layer.input_size())
+        self.shape.layers.first().map_or(0, |layer| layer.input_size())
     }
 
     /// Returns the output size of the last layer in the network.
     fn output_size(&self) -> usize {
-        self.shape
-            .layers
-            .last()
-            .map_or(0, |layer| layer.output_size())
+        self.shape.layers.last().map_or(0, |layer| layer.output_size())
     }
 
     fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
@@ -904,17 +925,11 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::Sigmoid),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: 3,
-                            output_size: 3,
-                        },
+                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],

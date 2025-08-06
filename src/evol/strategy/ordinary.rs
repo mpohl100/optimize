@@ -83,8 +83,16 @@ mod tests {
         struct MockPhenotype;
 
         impl Phenotype for MockPhenotype {
-            fn crossover(&mut self, other: &Self) {}
-            fn mutate(&mut self, rng: &mut RandomNumberGenerator) {}
+            fn crossover(
+                &mut self,
+                other: &Self,
+            ) {
+            }
+            fn mutate(
+                &mut self,
+                rng: &mut RandomNumberGenerator,
+            ) {
+            }
         }
 
         let mut parents = Vec::<MockPhenotype>::new();

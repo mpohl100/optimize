@@ -42,10 +42,10 @@ impl DenseLayer {
         let layer_path = match model_directory {
             Directory::User(path) => {
                 Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
-            }
+            },
             Directory::Internal(path) => {
                 Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
-            }
+            },
         };
         DenseLayer {
             rows: output_size,
@@ -151,7 +151,11 @@ impl Allocatable for DenseLayer {
 }
 
 impl Layer for DenseLayer {
-    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
@@ -165,11 +169,7 @@ impl Layer for DenseLayer {
                 .unwrap()
                 .par_indexed_iter()
                 .map(|(row_idx, weights_row)| {
-                    weights_row
-                        .iter()
-                        .zip(inputs.iter())
-                        .map(|(&w, &x)| w * x)
-                        .sum::<f64>()
+                    weights_row.iter().zip(inputs.iter()).map(|(&w, &x)| w * x).sum::<f64>()
                         + biases[row_idx] // Use the bias corresponding to the row index
                 })
                 .collect::<Vec<f64>>();
@@ -177,7 +177,10 @@ impl Layer for DenseLayer {
         })
     }
 
-    fn forward_batch(&mut self, _input: &[f64]) -> Vec<f64> {
+    fn forward_batch(
+        &mut self,
+        _input: &[f64],
+    ) -> Vec<f64> {
         unimplemented!()
     }
 
@@ -189,15 +192,17 @@ impl Layer for DenseLayer {
         self.rows
     }
 
-    fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
-        save(
-            path,
-            self.weights.as_ref().unwrap().clone(),
-            self.biases.as_ref().unwrap(),
-        )
+    fn save(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
+        save(path, self.weights.as_ref().unwrap().clone(), self.biases.as_ref().unwrap())
     }
 
-    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    fn read(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
         self.rows = weights.rows();
@@ -248,7 +253,10 @@ impl AllocatableLayer for DenseLayer {
         new_layer
     }
 
-    fn copy_on_filesystem(&self, layer_path: String) {
+    fn copy_on_filesystem(
+        &self,
+        layer_path: String,
+    ) {
         // Copy the layer to the new directory
         let new_layer_path = self.layer_path.clone();
         let original_path = layer_path.clone();
@@ -309,10 +317,10 @@ impl TrainableDenseLayer {
         let layer_path = match model_directory {
             Directory::User(path) => {
                 Directory::User(format!("{}/layers/layer_{}.txt", path, position_in_nn))
-            }
+            },
             Directory::Internal(path) => {
                 Directory::Internal(format!("{}/layers/layer_{}.txt", path, position_in_nn))
-            }
+            },
         };
         TrainableDenseLayer {
             rows: output_size,
@@ -333,12 +341,7 @@ impl TrainableDenseLayer {
         for i in 0..self.weights.as_ref().unwrap().rows() {
             for j in 0..self.weights.as_ref().unwrap().cols() {
                 let value = rng.gen_range(-0.5..0.5);
-                let w = Weight {
-                    value,
-                    grad: 0.0,
-                    m: 0.0,
-                    v: 0.0,
-                };
+                let w = Weight { value, grad: 0.0, m: 0.0, v: 0.0 };
                 self.weights.as_ref().unwrap().set_mut_unchecked(i, j, w);
             }
         }
@@ -435,7 +438,11 @@ impl Allocatable for TrainableDenseLayer {
 }
 
 impl Layer for TrainableDenseLayer {
-    fn forward(&mut self, input: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
@@ -450,11 +457,7 @@ impl Layer for TrainableDenseLayer {
                 .unwrap()
                 .par_indexed_iter()
                 .map(|(row_idx, weights_row)| {
-                    weights_row
-                        .iter()
-                        .zip(inputs.iter())
-                        .map(|(&w, &x)| w.value * x)
-                        .sum::<f64>()
+                    weights_row.iter().zip(inputs.iter()).map(|(&w, &x)| w.value * x).sum::<f64>()
                         + biases[row_idx].value // Use the bias corresponding to the row index
                 })
                 .collect()
@@ -462,7 +465,10 @@ impl Layer for TrainableDenseLayer {
     }
 
     #[allow(clippy::needless_range_loop)]
-    fn forward_batch(&mut self, _input: &[f64]) -> Vec<f64> {
+    fn forward_batch(
+        &mut self,
+        _input: &[f64],
+    ) -> Vec<f64> {
         unimplemented!()
     }
 
@@ -474,7 +480,10 @@ impl Layer for TrainableDenseLayer {
         self.rows
     }
 
-    fn save(&self, path: String) -> Result<(), Box<dyn Error>> {
+    fn save(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
             // just copy the files
             let original_path = self.layer_path.path();
@@ -510,7 +519,10 @@ impl Layer for TrainableDenseLayer {
         save(path, weights, &biases)
     }
 
-    fn read(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    fn read(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read(path)?;
         self.rows = weights.rows();
@@ -521,12 +533,7 @@ impl Layer for TrainableDenseLayer {
             for j in 0..weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    let w = Weight {
-                        value: v,
-                        grad: 0.0,
-                        m: 0.0,
-                        v: 0.0,
-                    };
+                    let w = Weight { value: v, grad: 0.0, m: 0.0, v: 0.0 };
                     self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
                 }
             }
@@ -552,12 +559,7 @@ impl Layer for TrainableDenseLayer {
     }
 
     fn get_biases(&self) -> Vec<f64> {
-        self.biases
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|bias| bias.value)
-            .collect()
+        self.biases.as_ref().unwrap().iter().map(|bias| bias.value).collect()
     }
 
     fn cleanup(&self) {
@@ -581,22 +583,21 @@ impl TrainableLayer for TrainableDenseLayer {
     ///
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
     /// - Returns: Gradient of the loss with respect to the input of this layer
-    fn backward(&mut self, d_out: &[f64], utils: WrappedUtils) -> Vec<f64> {
+    fn backward(
+        &mut self,
+        d_out: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
         let weights = self.weights.as_ref().unwrap().clone();
         let input_cache = self.input_cache.as_ref().unwrap().clone();
         let d_out_vec = d_out.to_vec();
         // Calculate weight gradients
         let _ = utils.execute(move || {
-            weights
-                .mat()
-                .lock()
-                .unwrap()
-                .par_indexed_iter_mut()
-                .for_each(|(i, row_grad)| {
-                    row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
-                        grad.grad = d_out_vec[i] * input_cache[j];
-                    });
+            weights.mat().lock().unwrap().par_indexed_iter_mut().for_each(|(i, row_grad)| {
+                row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
+                    grad.grad = d_out_vec[i] * input_cache[j];
                 });
+            });
             0
         });
 
@@ -624,23 +625,22 @@ impl TrainableLayer for TrainableDenseLayer {
     /// Update weights and biases using their respective gradients
     ///
     /// - `learning_rate`: The step size for gradient descent
-    fn update_weights(&mut self, learning_rate: f64, utils: WrappedUtils) {
+    fn update_weights(
+        &mut self,
+        learning_rate: f64,
+        utils: WrappedUtils,
+    ) {
         if !self.is_allocated() {
             panic!("Layer not allocated");
         }
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weight
         let _ = utils.execute(move || {
-            weights
-                .mat()
-                .lock()
-                .unwrap()
-                .par_iter_mut()
-                .for_each(|weights_row| {
-                    weights_row.iter_mut().for_each(|weight| {
-                        weight.value -= learning_rate * weight.grad;
-                    });
+            weights.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
+                weights_row.iter_mut().for_each(|weight| {
+                    weight.value -= learning_rate * weight.grad;
                 });
+            });
             0
         });
 
@@ -651,11 +651,17 @@ impl TrainableLayer for TrainableDenseLayer {
     }
 
     #[allow(clippy::needless_range_loop)]
-    fn backward_batch(&mut self, _grad_output: &[f64]) -> Vec<f64> {
+    fn backward_batch(
+        &mut self,
+        _grad_output: &[f64],
+    ) -> Vec<f64> {
         unimplemented!()
     }
 
-    fn assign_weights(&mut self, other: WrappedTrainableLayer) {
+    fn assign_weights(
+        &mut self,
+        other: WrappedTrainableLayer,
+    ) {
         let weights = other.get_weights();
 
         let biases = other.get_biases();
@@ -664,12 +670,7 @@ impl TrainableLayer for TrainableDenseLayer {
             for j in 0..self.weights.as_ref().unwrap().cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    let w = Weight {
-                        value: v,
-                        grad: 0.0,
-                        m: 0.0,
-                        v: 0.0,
-                    };
+                    let w = Weight { value: v, grad: 0.0, m: 0.0, v: 0.0 };
                     self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
                 }
             }
@@ -694,28 +695,23 @@ impl TrainableLayer for TrainableDenseLayer {
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weights
         let _ = utils.execute(move || {
-            weights
-                .mat()
-                .lock()
-                .unwrap()
-                .par_iter_mut()
-                .for_each(|weight_row| {
-                    weight_row.iter_mut().for_each(|weight| {
-                        let grad = weight.grad;
+            weights.mat().lock().unwrap().par_iter_mut().for_each(|weight_row| {
+                weight_row.iter_mut().for_each(|weight| {
+                    let grad = weight.grad;
 
-                        // Update first and second moments
-                        weight.m = beta1 * weight.m + (1.0 - beta1) * grad;
-                        weight.v = beta2 * weight.v + (1.0 - beta2) * grad.powi(2);
+                    // Update first and second moments
+                    weight.m = beta1 * weight.m + (1.0 - beta1) * grad;
+                    weight.v = beta2 * weight.v + (1.0 - beta2) * grad.powi(2);
 
-                        // Bias correction
-                        let m_hat = weight.m / (1.0 - beta1_pow_t);
-                        let v_hat = weight.v / (1.0 - beta2_pow_t);
+                    // Bias correction
+                    let m_hat = weight.m / (1.0 - beta1_pow_t);
+                    let v_hat = weight.v / (1.0 - beta2_pow_t);
 
-                        // Adjusted learning rate and update
-                        let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-                        weight.value -= adjusted_learning_rate * m_hat;
-                    });
+                    // Adjusted learning rate and update
+                    let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
+                    weight.value -= adjusted_learning_rate * m_hat;
                 });
+            });
             0
         });
 
@@ -741,7 +737,10 @@ impl TrainableLayer for TrainableDenseLayer {
         }
     }
 
-    fn save_weight(&self, path: String) -> Result<(), Box<dyn Error>> {
+    fn save_weight(
+        &self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         if !self.is_allocated() {
             // just copy the files
             let original_path = self.layer_path.path();
@@ -773,7 +772,10 @@ impl TrainableLayer for TrainableDenseLayer {
         save_weight(path, weights, &biases)
     }
 
-    fn read_weight(&mut self, path: String) -> Result<(), Box<dyn Error>> {
+    fn read_weight(
+        &mut self,
+        path: String,
+    ) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         let (weights, biases) = read_weight(path)?;
         self.rows = weights.rows();
@@ -815,7 +817,10 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
         new_layer
     }
 
-    fn copy_on_filesystem(&self, layer_path: String) {
+    fn copy_on_filesystem(
+        &self,
+        layer_path: String,
+    ) {
         // Copy the layer to the new directory
         let new_layer_path = self.layer_path.clone();
         let original_path = layer_path.clone();
@@ -836,7 +841,11 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
     }
 }
 
-fn save(path: String, weights: WrappedMatrix<f64>, biases: &[f64]) -> Result<(), Box<dyn Error>> {
+fn save(
+    path: String,
+    weights: WrappedMatrix<f64>,
+    biases: &[f64],
+) -> Result<(), Box<dyn Error>> {
     // Ensure the directory exists
     let p = Path::new(&path);
     if let Some(dir) = p.parent() {
@@ -884,11 +893,7 @@ fn save_weight(
     for i in 0..weights.rows() {
         for j in 0..weights.cols() {
             let weight = weights.get_unchecked(i, j);
-            write!(
-                file,
-                "{} {} {} {};",
-                weight.value, weight.grad, weight.m, weight.v
-            )?;
+            write!(file, "{} {} {} {};", weight.value, weight.grad, weight.m, weight.v)?;
         }
         writeln!(file)?;
     }

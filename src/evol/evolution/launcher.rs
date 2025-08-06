@@ -42,12 +42,11 @@ where
     /// # Returns
     ///
     /// A new `EvolutionLauncher` instance.
-    pub fn new(strategy: Strategy, challenge: Chall) -> Self {
-        Self {
-            strategy,
-            challenge,
-            _marker: PhantomData,
-        }
+    pub fn new(
+        strategy: Strategy,
+        challenge: Chall,
+    ) -> Self {
+        Self { strategy, challenge, _marker: PhantomData }
     }
     /// Evolves a population of phenotypes over multiple generations.
     ///
@@ -78,10 +77,7 @@ where
 
             candidates.iter_mut().for_each(|candidate| {
                 let score = self.challenge.score(candidate);
-                fitness.push(EvolutionResult {
-                    pheno: candidate.clone(),
-                    score,
-                })
+                fitness.push(EvolutionResult { pheno: candidate.clone(), score })
             });
 
             fitness.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
@@ -93,8 +89,8 @@ where
                         println!("Generation: {} \n", generation);
                         println!("Phenotype: {:?} \n Score: {}", result.pheno, result.score);
                     });
-                }
-                LogLevel::None => {}
+                },
+                LogLevel::None => {},
             }
 
             parents.clear();

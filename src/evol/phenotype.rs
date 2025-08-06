@@ -112,7 +112,10 @@ where
     ///     }
     /// }
     /// ```
-    fn crossover(&mut self, other: &Self);
+    fn crossover(
+        &mut self,
+        other: &Self,
+    );
 
     /// Performs mutation on the individual using the provided random number generator.
     ///
@@ -149,5 +152,8 @@ where
     ///     }
     /// }
     /// ```
-    fn mutate(&mut self, rng: &mut RandomNumberGenerator);
+    fn mutate(
+        &mut self,
+        rng: &mut RandomNumberGenerator,
+    );
 }

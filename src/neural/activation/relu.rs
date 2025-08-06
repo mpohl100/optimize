@@ -23,18 +23,21 @@ impl Default for ReLU {
 }
 
 impl ActivationTrait for ReLU {
-    fn forward(&mut self, input: &[f64]) -> Vec<f64> {
+    fn forward(
+        &mut self,
+        input: &[f64],
+    ) -> Vec<f64> {
         // Cache the input for use in backpropagation
         self.input_cache = Some(input.to_vec());
 
         // Apply ReLU function: output x if x > 0, else 0
-        input
-            .iter()
-            .map(|&x| if x > 0.0 { x } else { 0.0 })
-            .collect()
+        input.iter().map(|&x| if x > 0.0 { x } else { 0.0 }).collect()
     }
 
-    fn backward(&mut self, grad_output: &[f64]) -> Vec<f64> {
+    fn backward(
+        &mut self,
+        grad_output: &[f64],
+    ) -> Vec<f64> {
         // Retrieve the cached input from the forward pass
         let input = match &self.input_cache {
             Some(input) => input,
