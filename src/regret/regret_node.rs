@@ -277,11 +277,11 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
                     self.provider
                         .user_data
                         .as_ref()
-                        .map_or_else(|| vec![], |data| vec![data.clone()]),
+                        .map_or_else(|| Vec::new(), |data| vec![data.clone()]),
                 );
                 provider.get_expected_value(cloned_parents_data)
             },
-            ProviderType::Children(ref provider) => self
+            ProviderType::Children(ref _provider) => self
                 .children
                 .iter()
                 .map(|child| child.get_expected_value() * child.get_probability())
