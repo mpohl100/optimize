@@ -244,6 +244,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         parent_probability * self.probability
     }
 
+    #[allow(dead_code)]
     fn get_children(&self) -> Vec<WrappedRegretNode<UserData>> {
         self.children.clone()
     }
@@ -251,7 +252,16 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
     fn populate_children(&mut self) {
         match self.provider.provider_type {
             ProviderType::Children(ref provider) => {
-                self.children = provider.get_children(self.parents_data.clone());
+                let mut cloned_parents_data = self.parents_data.clone();
+                match self.provider.user_data {
+                    Some(ref user_data) => {
+                        cloned_parents_data.push(user_data.clone());
+                    },
+                    None => {
+                        // If no user data is provided, we just use the parents data
+                    },
+                }
+                self.children = provider.get_children(cloned_parents_data);
             },
             ProviderType::ExpectedValue(_) => {
                 // If the provider is an expected value provider, we don't need to populate children
@@ -330,6 +340,7 @@ impl<UserData: UserDataTrait> WrappedRegretNode<UserData> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use core::panic;
 
@@ -370,17 +381,14 @@ mod tests {
             &self,
             parents_data: Vec<RoshamboData>,
         ) -> Vec<WrappedRegretNode<RoshamboData>> {
-            if parents_data.len() < 1 {
+            if parents_data.is_empty() {
                 let mut children = Vec::new();
                 for choice in [Choice::Rock, Choice::Paper, Choice::Scissors].iter() {
-                    let cloned_parents_data = parents_data.clone();
                     let data = RoshamboData { choice: choice.clone() };
-                    let mut parents_data = cloned_parents_data.clone();
-                    parents_data.push(RoshamboData { choice: choice.clone() });
                     let node = RegretNode::new(
                         0.0,
                         0.0,
-                        parents_data,
+                        parents_data.clone(),
                         Provider {
                             provider_type: ProviderType::Children(WrappedChildrenProvider::new(
                                 Box::new(RoshamboChildrenProvider::new()),
@@ -395,13 +403,11 @@ mod tests {
             } else if parents_data.len() == 1 {
                 let mut children = Vec::new();
                 for choice in [Choice::Rock, Choice::Paper, Choice::Scissors].iter() {
-                    let mut parents_data_clone = parents_data.clone();
                     let data = RoshamboData { choice: choice.clone() };
-                    parents_data_clone.push(data.clone());
                     let node = RegretNode::new(
                         0.0,
                         0.0,
-                        parents_data_clone,
+                        parents_data.clone(),
                         Provider {
                             provider_type: ProviderType::ExpectedValue(
                                 WrappedExpectedValueProvider::new(Box::new(
@@ -416,7 +422,7 @@ mod tests {
                 }
                 return children;
             }
-            return Vec::new();
+            Vec::new()
         }
     }
 
@@ -456,6 +462,31 @@ mod tests {
                 },
             }
         }
+    }
+
+    #[test]
+    fn test_roshambo_children_provider() {
+        let provider = RoshamboChildrenProvider::new();
+        let parents_data = vec![];
+        let children = provider.get_children(parents_data);
+        assert_eq!(children.len(), 3); // Should have three children for Rock, Paper, Scissors
+        for child in children {
+            let expected_value = child.get_expected_value();
+            let probability = child.get_probability();
+            // assert expected value is close to zero
+            assert!((expected_value - 0.0).abs() < 0.01, "Expected value should be close to zero");
+            // assert probability is close to 1/3
+            assert!((probability - 1.0 / 3.0).abs() < 0.01, "Probability should be close to 1/3");
+        }
+    }
+
+    #[test]
+    fn test_roshambo_expected_value_provider() {
+        let provider = RoshamboExpectedValueProvider::new();
+        let parents_data =
+            vec![RoshamboData { choice: Choice::Rock }, RoshamboData { choice: Choice::Paper }];
+        let expected_value = provider.get_expected_value(parents_data);
+        assert_eq!(expected_value, -1.0); // Paper beats Rock
     }
 
     #[test]
