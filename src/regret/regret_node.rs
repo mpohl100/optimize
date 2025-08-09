@@ -188,6 +188,11 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         self.sum_expected_values += self.current_expected_value;
         self.num_expected_values += 1.0;
         self.average_expected_value = self.sum_expected_values / self.num_expected_values;
+
+        // update average values of children
+        for child in &mut self.children {
+            child.update_average_values();
+        }
     }
 
     fn calculate_normalized_probabilities(
@@ -399,6 +404,10 @@ impl<UserData: UserDataTrait> WrappedRegretNode<UserData> {
 
     pub fn populate_children(&mut self) {
         self.node.lock().unwrap().populate_children();
+    }
+
+    pub fn update_average_values(&mut self) {
+        self.node.lock().unwrap().update_average_values();
     }
 
     pub fn get_data_as_string(
