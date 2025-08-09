@@ -359,6 +359,12 @@ mod tests {
 
     struct RoshamboChildrenProvider {}
 
+    impl RoshamboChildrenProvider {
+        pub fn new() -> Self {
+            RoshamboChildrenProvider {}
+        }
+    }
+
     impl ChildrenProvider<RoshamboData> for RoshamboChildrenProvider {
         fn get_children(
             &self,
@@ -377,7 +383,7 @@ mod tests {
                         parents_data,
                         Provider {
                             provider_type: ProviderType::Children(WrappedChildrenProvider::new(
-                                Box::new(RoshamboChildrenProvider {}),
+                                Box::new(RoshamboChildrenProvider::new()),
                             )),
                             user_data: Some(data.clone()),
                         },
@@ -399,7 +405,7 @@ mod tests {
                         Provider {
                             provider_type: ProviderType::ExpectedValue(
                                 WrappedExpectedValueProvider::new(Box::new(
-                                    RoshamboExpectedValueProvider {},
+                                    RoshamboExpectedValueProvider::new(),
                                 )),
                             ),
                             user_data: Some(data.clone()),
@@ -415,6 +421,12 @@ mod tests {
     }
 
     struct RoshamboExpectedValueProvider {}
+
+    impl RoshamboExpectedValueProvider {
+        pub fn new() -> Self {
+            RoshamboExpectedValueProvider {}
+        }
+    }
 
     impl ExpectedValueProvider<RoshamboData> for RoshamboExpectedValueProvider {
         fn get_expected_value(
@@ -462,8 +474,15 @@ mod tests {
         );
 
         node.solve(1000);
-
-        assert!(node.get_average_probability() > 0.0);
-        assert!(node.get_average_expected_value() != 0.0);
+        let children = node.get_children();
+        assert_eq!(children.len(), 3); // Should have three children for Rock, Paper, Scissors
+        for child in children {
+            let expected_value = child.get_average_expected_value();
+            let probability = child.get_average_probability();
+            // assert expected value is close to zero
+            assert!((expected_value - 0.0).abs() < 0.01, "Expected value should be close to zero");
+            // assert probability is close to 1/3
+            assert!((probability - 1.0 / 3.0).abs() < 0.01, "Probability should be close to 1/3");
+        }
     }
 }
