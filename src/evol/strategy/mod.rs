@@ -34,6 +34,10 @@ where
     /// ## Returns
     ///
     /// A vector containing the newly bred individuals.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the breeding process fails.
     fn breed(
         &self,
         parents: &[Pheno],

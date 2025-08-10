@@ -16,14 +16,18 @@ pub struct TrainingSession {
 }
 
 impl TrainingSession {
-    // Constructor
+    /// Creates a new `TrainingSession` with the given parameters, data importer, model directory, and utilities.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provided training parameters are invalid.
     pub fn new(
         params: TrainingParams,
         data_importer: Box<dyn DataImporter>,
-        model_directory: Directory,
+        model_directory: &Directory,
         utils: WrappedUtils,
     ) -> Result<Self, Box<dyn Error>> {
-        validate_params(params.clone())?;
+        validate_params(&params)?;
         let shape = params.shape().clone();
         let pre_shape = params.pre_shape();
         let levels = params.levels();
@@ -40,6 +44,11 @@ impl TrainingSession {
         })
     }
 
+    /// Creates a new `TrainingSession` from an existing neural network, training parameters, and data importer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provided training parameters are invalid.
     pub fn from_network(
         nn: WrappedTrainableNeuralNetwork,
         params: TrainingParams,
@@ -47,11 +56,15 @@ impl TrainingSession {
     ) -> Result<Self, Box<dyn Error>> {
         let mut changed_params = params;
         changed_params.set_shape(nn.shape());
-        validate_params(changed_params.clone())?;
+        validate_params(&changed_params)?;
         Ok(Self { params: changed_params, neural_network: nn, data_importer })
     }
 
-    // Load a model from disk and create a training session
+    /// Loads a model from disk and creates a training session.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the model directory does not exist or if loading the neural network fails.
     pub fn from_disk(
         model_directory: String,
         params: TrainingParams,
@@ -66,7 +79,19 @@ impl TrainingSession {
         Ok(Self { params, neural_network: nn, data_importer })
     }
 
-    // Train method
+    /// Train method
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the training parameters are not valid.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the neural network is not properly initialized.
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_lossless)]
     pub fn train(&mut self) -> Result<f64, Box<dyn Error>> {
         // Prepare the data
         let data = self.data_importer.get_data();
@@ -101,8 +126,9 @@ impl TrainingSession {
 
         // Validation phase
         let mut success_count = 0.0;
-        let num_training_samples =
-            (inputs.len() as f64 * self.params.validation_split()).round() as usize;
+        let inputs_len_f64: f64 = inputs.len() as f64;
+        let num_training_samples: usize =
+            (inputs_len_f64 * self.params.validation_split().round()) as usize;
         let num_verification_samples = inputs.len() - num_training_samples;
         for i in 0..num_verification_samples {
             let sample_idx = num_training_samples + i;
@@ -120,14 +146,20 @@ impl TrainingSession {
                     nb_correct_outputs += 1;
                 }
             }
-            success_count += f64::from(nb_correct_outputs) / target.len() as f64;
+            let nb_correct_outputs_f64: f64 = nb_correct_outputs as f64;
+            let target_len_f64: f64 = target.len() as f64;
+            success_count += nb_correct_outputs_f64 / target_len_f64;
         }
-
+        let num_verification_samples_f64: f64 = num_verification_samples as f64;
         // Return the accuracy as the fraction of successful predictions
-        Ok(success_count / num_verification_samples as f64)
+        Ok(success_count / num_verification_samples_f64)
     }
 
     /// Save the model to disk
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if saving the neural network to disk fails.
     pub fn save_model(
         &mut self,
         model_directory: String,
@@ -142,7 +174,7 @@ impl TrainingSession {
     }
 }
 
-fn validate_params(params: TrainingParams) -> Result<(), Box<dyn Error>> {
+fn validate_params(params: &TrainingParams) -> Result<(), Box<dyn Error>> {
     if !(params.validation_split() >= 0.0 && params.validation_split() <= 1.0) {
         return Err("Number of training to verification ratio must be between 0.0 and 1.0".into());
     }
@@ -227,18 +259,18 @@ mod tests {
         // Create a training session using the mock data importer
         let data_importer = MockDataImporter::new(nn_shape);
 
-        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
         let mut training_session = TrainingSession::new(
             training_params,
             Box::new(data_importer),
-            Directory::Internal("test_session_model".to_string()),
+            &Directory::Internal("test_session_model".to_string()),
             utils.clone(),
         )
         .expect("Failed to create TrainingSession");
 
         // Train the neural network and check the success rate
         let success_rate = training_session.train().expect("Training failed");
-        assert!(success_rate >= 0.9, "Expected success rate >= 0.9, got {}", success_rate);
+        assert!(success_rate >= 0.9, "Expected success rate >= 0.9, got {success_rate}");
     }
 }

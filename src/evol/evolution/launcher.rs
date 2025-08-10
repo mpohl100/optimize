@@ -59,6 +59,13 @@ where
     /// # Returns
     ///
     /// A `Result` containing the best-evolved phenotype and its associated score, or an `Error` if evolution fails.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the mutex guarding the underlying `EvolutionLauncher` is poisoned.
+    ///
+    /// # Errors
+    /// Returns an error if the evolution process fails.
     pub fn evolve(
         &self,
         options: &EvolutionOptions,
@@ -75,7 +82,7 @@ where
 
             fitness.clear();
 
-            for candidate in candidates.iter_mut() {
+            for candidate in &mut candidates {
                 let score = self.challenge.score(candidate);
                 fitness.push(EvolutionResult { pheno: candidate.clone(), score });
             }
@@ -85,7 +92,7 @@ where
             match options.get_log_level() {
                 LogLevel::Minimal => println!("Generation: {generation}"),
                 LogLevel::Verbose => {
-                    for result in fitness.iter() {
+                    for result in &fitness {
                         println!("Generation: {generation} \n");
                         println!("Phenotype: {:?} \n Score: {}", result.pheno, result.score);
                     }

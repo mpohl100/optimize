@@ -1,5 +1,7 @@
 use std::sync::{Arc, Mutex};
 
+use crate::neural::utilities::safer::safe_lock;
+
 pub trait UserDataTrait: Default + Clone {
     // Define the methods that UserData should implement
     fn get_probability(&self) -> f64;
@@ -14,7 +16,7 @@ pub trait ChildrenProvider<UserData: UserDataTrait> {
     fn get_children(
         &self,
         parents_data: Vec<UserData>,
-    ) -> Vec<WrappedRegretNode<UserData>>;
+    ) -> Vec<WrappedRegret<UserData>>;
 }
 
 #[derive(Clone)]
@@ -23,15 +25,17 @@ pub struct WrappedChildrenProvider<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> WrappedChildrenProvider<UserData> {
+    #[must_use]
     pub fn new(provider: Box<dyn ChildrenProvider<UserData>>) -> Self {
         WrappedChildrenProvider { provider: Arc::new(Mutex::new(provider)) }
     }
 
+    #[must_use]
     pub fn get_children(
         &self,
         parents_data: Vec<UserData>,
-    ) -> Vec<WrappedRegretNode<UserData>> {
-        self.provider.lock().unwrap().get_children(parents_data)
+    ) -> Vec<WrappedRegret<UserData>> {
+        safe_lock(&self.provider).get_children(parents_data)
     }
 }
 
@@ -48,15 +52,17 @@ pub struct WrappedExpectedValueProvider<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
+    #[must_use]
     pub fn new(provider: Box<dyn ExpectedValueProvider<UserData>>) -> Self {
         WrappedExpectedValueProvider { provider: Arc::new(Mutex::new(provider)) }
     }
 
+    #[must_use]
     pub fn get_expected_value(
         &self,
         parents_data: Vec<UserData>,
     ) -> f64 {
-        self.provider.lock().unwrap().get_expected_value(parents_data)
+        safe_lock(&self.provider).get_expected_value(parents_data)
     }
 }
 
@@ -79,7 +85,7 @@ pub struct RegretNode<UserData: UserDataTrait> {
     current_expected_value: f64,
     parents_data: Vec<UserData>,
     provider: Provider<UserData>,
-    children: Vec<WrappedRegretNode<UserData>>,
+    children: Vec<WrappedRegret<UserData>>,
     regret: f64,
     sum_probabilities: f64,
     num_probabilities: f64,
@@ -207,8 +213,8 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         if let Some(data) = self.provider.user_data.as_mut() {
             data.set_probability(self.probability);
         }
-        let total_probability_sum =
-            self.children.iter().map(|child| child.get_probability()).sum::<f64>();
+        let total_probability_sum: f64 =
+            self.children.iter().map(WrappedRegret::get_probability).sum();
         for child in &mut self.children {
             child.calculate_normalized_probabilities(total_probability_sum);
         }
@@ -226,7 +232,9 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
                 if total_siblings == 0 {
                     self.add_probability(1.0);
                 } else {
-                    self.add_probability(1.0 / total_siblings as f64);
+                    self.add_probability(
+                        1.0 / f64::from(usize::try_into(total_siblings).unwrap_or(1)),
+                    );
                 }
             } else {
                 let probability = self.regret / sum_regrets;
@@ -304,7 +312,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
     }
 
     #[allow(dead_code)]
-    fn get_children(&self) -> Vec<WrappedRegretNode<UserData>> {
+    fn get_children(&self) -> Vec<WrappedRegret<UserData>> {
         self.children.clone()
     }
 
@@ -315,13 +323,10 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         match self.provider.provider_type {
             ProviderType::Children(ref provider) => {
                 let mut cloned_parents_data = self.parents_data.clone();
-                match self.provider.user_data {
-                    Some(ref user_data) => {
-                        cloned_parents_data.push(user_data.clone());
-                    },
-                    None => {
-                        // If no user data is provided, we just use the parents data
-                    },
+                if let Some(ref user_data) = self.provider.user_data {
+                    cloned_parents_data.push(user_data.clone());
+                } else {
+                    // If no user data is provided, we just use the parents data
                 }
                 self.children = provider.get_children(cloned_parents_data);
                 // populate children of children
@@ -351,28 +356,30 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
 }
 
 #[derive(Clone)]
-pub struct WrappedRegretNode<UserData: UserDataTrait> {
+pub struct WrappedRegret<UserData: UserDataTrait> {
     node: Arc<Mutex<RegretNode<UserData>>>,
 }
 
-impl<UserData: UserDataTrait> WrappedRegretNode<UserData> {
+impl<UserData: UserDataTrait> WrappedRegret<UserData> {
     pub fn new(node: RegretNode<UserData>) -> Self {
-        WrappedRegretNode { node: Arc::new(Mutex::new(node)) }
+        WrappedRegret { node: Arc::new(Mutex::new(node)) }
     }
 
+    #[must_use]
     pub fn get_total_probability(&self) -> f64 {
-        self.node.lock().unwrap().get_total_probability()
+        safe_lock(&self.node).get_total_probability()
     }
 
+    #[must_use]
     pub fn get_expected_value(&self) -> f64 {
-        self.node.lock().unwrap().get_expected_value()
+        safe_lock(&self.node).get_expected_value()
     }
 
     pub fn calculate_regrets(
         &self,
         outer_expected_value: f64,
     ) {
-        self.node.lock().unwrap().calculate_regrets(outer_expected_value);
+        safe_lock(&self.node).calculate_regrets(outer_expected_value);
     }
 
     pub fn calculate_probabilities(
@@ -380,48 +387,50 @@ impl<UserData: UserDataTrait> WrappedRegretNode<UserData> {
         sum_regrets: f64,
         total_siblings: usize,
     ) {
-        self.node.lock().unwrap().calculate_probabilities(sum_regrets, total_siblings);
+        safe_lock(&self.node).calculate_probabilities(sum_regrets, total_siblings);
     }
 
+    #[must_use]
     pub fn get_probability(&self) -> f64 {
-        self.node.lock().unwrap().get_probability()
+        safe_lock(&self.node).get_probability()
     }
 
     pub fn calculate_normalized_probabilities(
         &self,
         total_probability: f64,
     ) {
-        self.node.lock().unwrap().calculate_normalized_probabilities(total_probability);
+        safe_lock(&self.node).calculate_normalized_probabilities(total_probability);
     }
 
+    #[must_use]
     pub fn get_average_probability(&self) -> f64 {
-        self.node.lock().unwrap().get_average_probability()
+        safe_lock(&self.node).get_average_probability()
     }
 
+    #[must_use]
     pub fn get_average_expected_value(&self) -> f64 {
-        self.node.lock().unwrap().get_average_expected_value()
+        safe_lock(&self.node).get_average_expected_value()
     }
 
     pub fn populate_children(&mut self) {
-        self.node.lock().unwrap().populate_children();
+        safe_lock(&self.node).populate_children();
     }
 
     pub fn update_average_values(&mut self) {
-        self.node.lock().unwrap().update_average_values();
+        safe_lock(&self.node).update_average_values();
     }
 
+    #[must_use]
     pub fn get_data_as_string(
         &self,
         indentation: usize,
     ) -> String {
-        self.node.lock().unwrap().get_data_as_string(indentation)
+        safe_lock(&self.node).get_data_as_string(indentation)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::panic;
-
     use super::*;
 
     #[derive(Default, Debug, Clone)]
@@ -449,7 +458,7 @@ mod tests {
             self.probability = probability;
         }
         fn get_data_as_string(&self) -> String {
-            format!("Choice: {:?}", self.choice.to_owned())
+            format!("Choice: {:?}", self.choice.clone())
         }
     }
 
@@ -465,7 +474,7 @@ mod tests {
         fn get_children(
             &self,
             parents_data: Vec<RoshamboData>,
-        ) -> Vec<WrappedRegretNode<RoshamboData>> {
+        ) -> Vec<WrappedRegret<RoshamboData>> {
             let probabilities = [0.4, 0.4, 0.2];
             match parents_data.len().cmp(&1) {
                 std::cmp::Ordering::Less => {
@@ -489,7 +498,7 @@ mod tests {
                             },
                             None,
                         );
-                        children.push(WrappedRegretNode::new(node));
+                        children.push(WrappedRegret::new(node));
                     }
                     children
                 },
@@ -514,7 +523,7 @@ mod tests {
                             },
                             None,
                         );
-                        children.push(WrappedRegretNode::new(node));
+                        children.push(WrappedRegret::new(node));
                     }
                     children
                 },
@@ -536,9 +545,10 @@ mod tests {
             &self,
             parents_data: Vec<RoshamboData>,
         ) -> f64 {
-            if parents_data.len() < 2 {
-                panic!("Expected at least two parents data for expected value calculation");
-            }
+            assert!(
+                parents_data.len() >= 2,
+                "Expected at least two parents data for expected value calculation"
+            );
             let player_1_choice = &parents_data[parents_data.len() - 2].choice;
             let player_2_choice = &parents_data[parents_data.len() - 1].choice;
             match player_1_choice {
@@ -577,7 +587,7 @@ mod tests {
             RoshamboData { choice: Choice::Paper, probability: 0.333 },
         ];
         let expected_value = provider.get_expected_value(parents_data);
-        assert_eq!(expected_value, -1.0); // Paper beats Rock
+        assert!((expected_value + 1.0).abs() < f64::EPSILON, "Paper beats Rock");
     }
 
     #[test]

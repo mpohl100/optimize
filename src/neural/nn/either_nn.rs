@@ -29,6 +29,11 @@ pub struct EitherNeuralNetwork {
 }
 
 impl EitherNeuralNetwork {
+    /// Creates a new `EitherNeuralNetwork` from the given model directory.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the model directory is invalid or if the neural networks cannot be loaded.
     #[must_use]
     pub fn from_disk(
         model_directory: String,
@@ -181,7 +186,7 @@ impl NeuralNetwork for EitherNeuralNetwork {
     }
 
     fn duplicate(&self) -> WrappedNeuralNetwork {
-        let new_model_directory = get_first_free_model_directory(self.model_directory.clone());
+        let new_model_directory = get_first_free_model_directory(&self.model_directory);
         copy_dir_recursive(
             Path::new(&self.model_directory.path()),
             Path::new(&new_model_directory),
@@ -248,7 +253,7 @@ impl TrainableEitherNeuralNetwork {
         let pre_nn =
             WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
                 shape.clone(),
-                Directory::Internal(append_dir(internal_model_directory.clone(), "pre")),
+                &Directory::Internal(append_dir(internal_model_directory.clone(), "pre")),
                 utils.clone(),
             )));
         Self {
@@ -264,6 +269,11 @@ impl TrainableEitherNeuralNetwork {
         }
     }
 
+    /// Creates a new `EitherNeuralNetwork` from the given model directory.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the model directory is invalid or if the neural networks cannot be loaded.
     #[must_use]
     pub fn from_disk(
         model_directory: String,
@@ -330,6 +340,156 @@ impl TrainableEitherNeuralNetwork {
             let mut right_nn = self.right_nn.as_ref().unwrap().clone();
             right_nn.predict(input)
         }
+    }
+
+    fn not_enough_samples(inputs: &[Vec<f64>]) -> bool {
+        inputs.len() < 100
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn train_temp_network(
+        &self,
+        inputs: &[Vec<f64>],
+        targets: &[Vec<f64>],
+        learning_rate: f64,
+        epochs: usize,
+        tolerance: f64,
+        use_adam: bool,
+        validation_split: f64,
+    ) -> (WrappedTrainableNeuralNetwork, f64) {
+        let mut temp_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            self.shape.clone(),
+            None,
+            None,
+            append_dir(self.model_directory.path(), "temp"),
+            self.utils.clone(),
+        ));
+
+        let acc = temp_nn.train(
+            inputs,
+            targets,
+            learning_rate,
+            epochs,
+            tolerance,
+            use_adam,
+            validation_split,
+        );
+
+        (temp_nn, acc)
+    }
+
+    fn no_more_levels(&self) -> bool {
+        self.max_levels <= 0
+    }
+
+    fn save_pre_network(
+        &mut self,
+        nn: &WrappedTrainableNeuralNetwork,
+        dir: &str,
+    ) {
+        self.pre_nn = nn.clone();
+        self.pre_nn
+            .save(append_dir(self.model_directory.path(), dir))
+            .expect("Failed to save pre neural network");
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn split_by_prediction(
+        network: &mut WrappedTrainableNeuralNetwork,
+        inputs: &[Vec<f64>],
+        targets: &[Vec<f64>],
+        tolerance: f64,
+    ) -> ((Vec<Vec<f64>>, Vec<Vec<f64>>), (Vec<Vec<f64>>, Vec<Vec<f64>>)) {
+        let (left_inputs, left_targets): (Vec<_>, Vec<_>) = inputs
+            .iter()
+            .zip(targets.iter())
+            .map(|(input, target)| {
+                let prediction = network.predict(input.clone());
+                (input, target, prediction)
+            })
+            .filter(|(_, target, prediction)| {
+                let mut nb_correct = 0;
+                for (o, t) in prediction.iter().zip(target.iter()) {
+                    if (o - t).abs() < tolerance {
+                        nb_correct += 1;
+                    }
+                }
+                nb_correct == target.len()
+            })
+            .map(|(input, target, _)| (input.clone(), target.clone()))
+            .unzip();
+
+        let (right_inputs, right_targets): (Vec<_>, Vec<_>) = inputs
+            .iter()
+            .zip(targets.iter())
+            .map(|(input, target)| {
+                let prediction = network.predict(input.clone());
+                (input, target, prediction)
+            })
+            .filter(|(_, target, prediction)| {
+                let mut nb_correct = 0;
+                for (o, t) in prediction.iter().zip(target.iter()) {
+                    if (o - t).abs() < tolerance {
+                        nb_correct += 1;
+                    }
+                }
+                nb_correct != target.len()
+            })
+            .map(|(input, target, _)| (input.clone(), target.clone()))
+            .unzip();
+
+        ((left_inputs, left_targets), (right_inputs, right_targets))
+    }
+
+    fn too_few_mispredictions(right_inputs: &[Vec<f64>]) -> bool {
+        right_inputs.len() < 100
+    }
+
+    fn prepare_pre_training_data(
+        left_inputs: &[Vec<f64>],
+        right_inputs: &[Vec<f64>],
+    ) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+        let (left_inputs_pre, left_targets_pre): (Vec<_>, Vec<_>) =
+            left_inputs.iter().map(|input| (input.clone(), vec![1.0, 0.0])).collect();
+
+        let (right_inputs_pre, right_targets_pre): (Vec<_>, Vec<_>) =
+            right_inputs.iter().map(|input| (input.clone(), vec![0.0, 1.0])).collect();
+
+        let pre_inputs = [left_inputs_pre, right_inputs_pre].concat();
+        let pre_targets = [left_targets_pre, right_targets_pre].concat();
+
+        (pre_inputs, pre_targets)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn train_and_save_network(
+        &self,
+        shape: NeuralNetworkShape,
+        inputs: &[Vec<f64>],
+        targets: &[Vec<f64>],
+        dir_name: &str,
+        learning_rate: f64,
+        epochs: usize,
+        tolerance: f64,
+        use_adam: bool,
+        validation_split: f64,
+    ) -> (WrappedTrainableNeuralNetwork, f64) {
+        let model_dir = append_dir(self.model_directory.path(), dir_name);
+        let mut nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            shape,
+            Some(self.max_levels - 1),
+            Some(self.pre_shape.clone()),
+            model_dir.clone(),
+            self.utils.clone(),
+        ));
+
+        let acc =
+            nn.train(inputs, targets, learning_rate, epochs, tolerance, use_adam, validation_split);
+
+        let error_message = format!("Failed to save {dir_name} neural network");
+        nn.save(model_dir).expect(&error_message);
+
+        (nn, acc)
     }
 }
 
@@ -423,19 +583,11 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         use_adam: bool,
         validation_split: f64,
     ) -> f64 {
-        // in case one does not have enough samples, don't train and return zero accuracy
-        if inputs.len() < 100 {
+        if Self::not_enough_samples(inputs) {
             return 0.0;
         }
-        let mut temp_neural_network =
-            new_trainable_neural_network(NeuralNetworkCreationArguments::new(
-                self.shape.clone(),
-                None,
-                None,
-                append_dir(self.model_directory.path(), "temp"),
-                self.utils.clone(),
-            ));
-        let temp_accuracy = temp_neural_network.train(
+
+        let (mut temp_nn, temp_accuracy) = self.train_temp_network(
             inputs,
             targets,
             learning_rate,
@@ -445,119 +597,45 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             validation_split,
         );
 
-        // early return when no more levels are allowed
-        if self.max_levels <= 0 {
-            // If the maximum levels is zero, we don't need to split further
-            self.pre_nn = temp_neural_network.clone();
-            self.pre_nn
-                .save(append_dir(self.model_directory.path(), "pre"))
-                .expect("Failed to save pre neural network");
+        if self.no_more_levels() {
+            self.save_pre_network(&temp_nn, "pre");
             return temp_accuracy;
         }
 
-        let (left_inputs, left_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = inputs
-            .iter()
-            .zip(targets.iter())
-            .map(|(input, target)| {
-                let prediction = temp_neural_network.predict(input.clone());
-                (input, target, prediction)
-            })
-            .filter(|(_, target, prediction)| {
-                // Check if the output matches the target
-                let mut nb_correct_outputs = 0;
-                for (o, t) in prediction.iter().zip(target.iter()) {
-                    if (o - t).abs() < tolerance {
-                        nb_correct_outputs += 1;
-                    }
-                }
-                nb_correct_outputs == target.len()
-            })
-            .map(|(input, target, _)| (input.clone(), target.clone()))
-            .unzip();
+        let ((left_inputs, left_targets), (right_inputs, right_targets)) =
+            TrainableEitherNeuralNetwork::split_by_prediction(
+                &mut temp_nn,
+                inputs,
+                targets,
+                tolerance,
+            );
 
-        let (right_inputs, right_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = inputs
-            .iter()
-            .zip(targets.iter())
-            .map(|(input, target)| {
-                let prediction = temp_neural_network.predict(input.clone());
-                (input, target, prediction)
-            })
-            .filter(|(_, target, prediction)| {
-                // Check if the output matches the target
-                let mut nb_correct_outputs = 0;
-                for (o, t) in prediction.iter().zip(target.iter()) {
-                    if (o - t).abs() < tolerance {
-                        nb_correct_outputs += 1;
-                    }
-                }
-                nb_correct_outputs != target.len()
-            })
-            .map(|(input, target, _)| (input.clone(), target.clone()))
-            .unzip();
-
-        // The number of failed predictions is below 100, so this instance is a leaf network
-        let pre_model_directory = append_dir(self.model_directory.path(), "pre");
-        if right_inputs.len() < 100 {
-            self.pre_nn = temp_neural_network.clone();
-            self.pre_nn.save(pre_model_directory).expect("Failed to save pre neural network");
+        if Self::too_few_mispredictions(&right_inputs) {
+            self.save_pre_network(&temp_nn, "pre");
             return temp_accuracy;
         }
 
-        let (left_inputs_pre, left_targets_pre): (Vec<Vec<f64>>, Vec<Vec<f64>>) = left_inputs
-            .iter()
-            .map(|input| {
-                let target = vec![1.0, 0.0];
-                (input.clone(), target)
-            })
-            .collect();
-        let (right_inputs_pre, right_targets_pre): (Vec<Vec<f64>>, Vec<Vec<f64>>) = right_inputs
-            .iter()
-            .map(|input| {
-                let target = vec![0.0, 1.0];
-                (input.clone(), target)
-            })
-            .collect();
+        let (pre_inputs, pre_targets) =
+            Self::prepare_pre_training_data(&left_inputs, &right_inputs);
 
-        // conactenate all pre inputs
-        let pre_inputs = [left_inputs_pre, right_inputs_pre].concat();
-        // conactenate all pre targets
-        let pre_targets = [left_targets_pre, right_targets_pre].concat();
-
-        // Create the pre neural network
-        let mut pre_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+        let (pre_nn, _) = self.train_and_save_network(
             self.pre_shape.clone(),
-            None,
-            None,
-            pre_model_directory,
-            self.utils.clone(),
-        ));
-
-        // Train the pre neural network
-        pre_nn.train(
             &pre_inputs,
             &pre_targets,
+            "pre",
             learning_rate,
             epochs,
             tolerance,
             use_adam,
             validation_split,
         );
+        self.pre_nn = pre_nn;
 
-        self.pre_nn = pre_nn.clone();
-
-        let left_model_directory = append_dir(self.model_directory.path(), "left");
-        let mut left_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+        let (_, left_accuracy) = self.train_and_save_network(
             self.shape.clone(),
-            Some(self.max_levels - 1),
-            Some(self.pre_shape.clone()),
-            left_model_directory.clone(),
-            self.utils.clone(),
-        ));
-
-        // Train the left neural network
-        let left_accuracy = left_nn.train(
             &left_inputs,
             &left_targets,
+            "left",
             learning_rate,
             epochs,
             tolerance,
@@ -565,31 +643,17 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             validation_split,
         );
 
-        self.left_nn = Some(left_nn.clone());
-        left_nn.save(left_model_directory).expect("Failed to save left neural network");
-
-        // Train the right neural network
-        let right_model_directory = append_dir(self.model_directory.path(), "right");
-        let mut right_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+        let (_, right_accuracy) = self.train_and_save_network(
             self.shape.clone(),
-            Some(self.max_levels - 1),
-            Some(self.pre_shape.clone()),
-            right_model_directory.clone(),
-            self.utils.clone(),
-        ));
-
-        // Train the right neural network
-        let right_accuracy = right_nn.train(
             &right_inputs,
             &right_targets,
+            "right",
             learning_rate,
             epochs,
             tolerance,
             use_adam,
             validation_split,
         );
-        self.right_nn = Some(right_nn.clone());
-        right_nn.save(right_model_directory).expect("Failed to save right neural network");
 
         left_accuracy + right_accuracy
     }
@@ -615,7 +679,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
     }
 
     fn duplicate_trainable(&self) -> WrappedTrainableNeuralNetwork {
-        let new_model_directory = get_first_free_model_directory(self.model_directory.clone());
+        let new_model_directory = get_first_free_model_directory(&self.model_directory);
         copy_dir_recursive(
             Path::new(&self.model_directory.path()),
             Path::new(&new_model_directory),
@@ -663,7 +727,7 @@ mod tests {
 
     #[test]
     fn test_either_neural_network_train() {
-        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
         let mut nn = TrainableEitherNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![
@@ -700,7 +764,7 @@ mod tests {
         // print targets[0]
         println!("{:?}", targets[0]);
         // print prediction
-        println!("{:?}", prediction);
+        println!("{prediction:?}");
         assert_eq!(prediction.len(), 3);
         // assert that the prediction is close to the target
         for (p, t) in prediction.iter().zip(&targets[0]) {

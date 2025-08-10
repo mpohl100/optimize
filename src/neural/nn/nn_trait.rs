@@ -1,4 +1,5 @@
 use crate::neural::nn::shape::NeuralNetworkShape;
+use crate::neural::utilities::safer::safe_lock;
 use crate::neural::{nn::directory::Directory, utilities::util::WrappedUtils};
 use std::sync::{Arc, Mutex};
 
@@ -8,6 +9,10 @@ pub trait NeuralNetwork: std::fmt::Debug {
         input: Vec<f64>,
     ) -> Vec<f64>;
     fn shape(&self) -> NeuralNetworkShape;
+    /// Saves the neural network to the specified user model directory.
+    ///
+    /// # Errors
+    /// Returns an error if saving the model fails due to IO issues or serialization errors.
     fn save(
         &mut self,
         user_model_directory: String,
@@ -35,41 +40,45 @@ impl WrappedNeuralNetwork {
         &mut self,
         input: Vec<f64>,
     ) -> Vec<f64> {
-        self.nn.lock().unwrap().predict(input)
+        safe_lock(&self.nn).predict(input)
     }
 
     #[must_use]
     pub fn shape(&self) -> NeuralNetworkShape {
-        self.nn.lock().unwrap().shape()
+        safe_lock(&self.nn).shape()
     }
 
+    /// Saves the neural network to the specified user model directory.
+    ///
+    /// # Errors
+    /// Returns an error if saving the model fails due to IO issues or serialization errors.
     pub fn save(
         &mut self,
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.nn.lock().unwrap().save(user_model_directory)
+        safe_lock(&self.nn).save(user_model_directory)
     }
 
     pub fn allocate(&self) {
-        self.nn.lock().unwrap().allocate();
+        safe_lock(&self.nn).allocate();
     }
 
     pub fn deallocate(&self) {
-        self.nn.lock().unwrap().deallocate();
+        safe_lock(&self.nn).deallocate();
     }
 
     pub fn set_internal(&mut self) {
-        self.nn.lock().unwrap().set_internal();
+        safe_lock(&self.nn).set_internal();
     }
 
     #[must_use]
     pub fn duplicate(&self) -> Self {
-        self.nn.lock().unwrap().duplicate()
+        safe_lock(&self.nn).duplicate()
     }
 
     #[must_use]
     pub fn get_utils(&self) -> WrappedUtils {
-        self.nn.lock().unwrap().get_utils()
+        safe_lock(&self.nn).get_utils()
     }
 }
 
@@ -123,19 +132,23 @@ impl WrappedTrainableNeuralNetwork {
         &mut self,
         input: Vec<f64>,
     ) -> Vec<f64> {
-        self.nn.lock().unwrap().predict(input)
+        safe_lock(&self.nn).predict(input)
     }
 
     #[must_use]
     pub fn shape(&self) -> NeuralNetworkShape {
-        self.nn.lock().unwrap().shape()
+        safe_lock(&self.nn).shape()
     }
 
+    /// Saves the trainable neural network to the specified user model directory.
+    ///
+    /// # Errors
+    /// Returns an error if saving the model fails due to IO issues or serialization errors.
     pub fn save(
         &mut self,
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.nn.lock().unwrap().save(user_model_directory)
+        safe_lock(&self.nn).save(user_model_directory)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -149,7 +162,7 @@ impl WrappedTrainableNeuralNetwork {
         use_adam: bool,
         validation_split: f64,
     ) -> f64 {
-        self.nn.lock().unwrap().train(
+        safe_lock(&self.nn).train(
             inputs,
             targets,
             learning_rate,
@@ -170,7 +183,7 @@ impl WrappedTrainableNeuralNetwork {
         tolerance: f64,
         batch_size: usize,
     ) {
-        self.nn.lock().unwrap().train_batch(
+        safe_lock(&self.nn).train_batch(
             inputs,
             targets,
             learning_rate,
@@ -182,38 +195,38 @@ impl WrappedTrainableNeuralNetwork {
 
     #[must_use]
     pub fn input_size(&self) -> usize {
-        self.nn.lock().unwrap().input_size()
+        safe_lock(&self.nn).input_size()
     }
 
     #[must_use]
     pub fn output_size(&self) -> usize {
-        self.nn.lock().unwrap().output_size()
+        safe_lock(&self.nn).output_size()
     }
 
     #[must_use]
     pub fn get_model_directory(&self) -> Directory {
-        self.nn.lock().unwrap().get_model_directory()
+        safe_lock(&self.nn).get_model_directory()
     }
 
     pub fn allocate(&self) {
-        self.nn.lock().unwrap().allocate();
+        safe_lock(&self.nn).allocate();
     }
 
     pub fn deallocate(&self) {
-        self.nn.lock().unwrap().deallocate();
+        safe_lock(&self.nn).deallocate();
     }
 
     pub fn set_internal(&mut self) {
-        self.nn.lock().unwrap().set_internal();
+        safe_lock(&self.nn).set_internal();
     }
 
     #[must_use]
     pub fn duplicate_trainable(&self) -> Self {
-        self.nn.lock().unwrap().duplicate_trainable()
+        safe_lock(&self.nn).duplicate_trainable()
     }
 
     #[must_use]
     pub fn get_utils(&self) -> WrappedUtils {
-        self.nn.lock().unwrap().get_utils()
+        safe_lock(&self.nn).get_utils()
     }
 }

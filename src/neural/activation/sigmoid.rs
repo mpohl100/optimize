@@ -14,10 +14,7 @@ impl Sigmoid {
         Self
     }
 
-    fn sigmoid_vec(
-        &self,
-        input: &[f64],
-    ) -> Vec<f64> {
+    fn sigmoid_vec(input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| 1.0 / (1.0 + (-x).exp())).collect()
     }
 }
@@ -33,7 +30,7 @@ impl ActivationTrait for Sigmoid {
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        self.sigmoid_vec(input)
+        Sigmoid::sigmoid_vec(input)
     }
 
     fn backward(
@@ -42,7 +39,7 @@ impl ActivationTrait for Sigmoid {
     ) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(self.sigmoid_vec(grad_output).iter())
+            .zip(Sigmoid::sigmoid_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * output * (1.0 - output))
             .collect()
     }
@@ -62,13 +59,13 @@ mod tests {
         let input = vec![0.0];
         let output = sigmoid.forward(&input);
         // print output
-        println!("{:?}", output);
+        println!("{output:?}");
         assert!((output[0] - 0.5).abs() < 1e-7);
 
         let grad_output = vec![1.0];
         let grad_input = sigmoid.backward(&grad_output);
         // print grad_input
-        println!("{:?}", grad_input);
-        assert!((grad_input[0] - 0.196612).abs() < 1e-7);
+        println!("{grad_input:?}");
+        assert!((grad_input[0] - 0.196_612).abs() < 1e-7);
     }
 }

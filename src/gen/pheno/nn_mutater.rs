@@ -16,36 +16,52 @@ impl<'a> NeuralNetworkMutater<'a> {
         Self { rng }
     }
 
+    /// Mutates the given neural network shape and returns an annotated shape.
+    ///
+    /// # Panics
+    /// This function will panic if the random number generator does not provide enough values,
+    /// or if an invalid random number is generated.
+    #[allow(clippy::cast_lossless)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
     pub fn mutate_shape(
         &mut self,
-        shape: NeuralNetworkShape,
+        shape: &NeuralNetworkShape,
     ) -> AnnotatedNeuralNetworkShape {
-        let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape.clone());
-        let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
+        let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape);
+        let random_number = self
+            .rng
+            .fetch_uniform(0.0, 3.0, 1)
+            .pop_front()
+            .expect("Failed to fetch random number")
+            .round() as i32;
         match random_number {
             0 => {
-                let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                let shape_num_layers: f32 = shape.num_layers() as f32;
+                let position: usize =
+                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
                         as usize;
-                let layers = fetch_added_layers(self.rng, &shape, position);
+                let layers = fetch_added_layers(self.rng, shape, position);
                 mutated_shape.change_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             1 => {
-                let activation = fetch_activation_data(self.rng);
+                let shape_num_layers: f32 = shape.num_layers() as f32;
                 let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
                         as usize;
-                let mut layer = mutated_shape.get_layer(position).clone();
-                layer.activation = activation;
-                mutated_shape.change_layer(position, layer);
+                let layers = fetch_added_layers(self.rng, shape, position);
+                mutated_shape.change_layer(position, layers[0].clone());
+                mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             2 => {
                 if shape.num_layers() == 1 {
                     return mutated_shape;
                 }
+                let shape_num_layers: f32 = shape.num_layers() as f32;
                 let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
+                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
                         as usize;
                 let shape_len = shape.num_layers() - 1;
                 if position == 0 {
@@ -93,14 +109,20 @@ impl<'a> NeuralNetworkMutater<'a> {
     }
 }
 
+/// Fetches a random activation data using the provided RNG.
+///
+/// # Panics
+/// This function will panic if the random number generator does not provide enough values,
+/// or if an invalid random number is generated.
 pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
-    let random_number = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
+    let random_number: i32 = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
     match random_number {
         0 => ActivationData::new(ActivationType::ReLU),
         1 => ActivationData::new(ActivationType::Sigmoid),
         2 => ActivationData::new(ActivationType::Tanh),
         3 => {
-            let random_temperature = f64::from(rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap());
+            let random_temperature: f64 =
+                rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap() as f64;
             ActivationData::new_softmax(random_temperature)
         },
         _ => panic!("Invalid random number generated"),
@@ -115,16 +137,16 @@ fn fetch_added_layers(
 ) -> Vec<LayerShape> {
     let activation = fetch_activation_data(rng);
 
-    let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
+    let random_number: usize = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
 
     let layer = shape.get_layer(position);
-    let closest_power_of_two = (layer.input_size() as f32).log2().floor().exp2();
+    let layer_input_size: f32 = layer.input_size() as f32;
+    let closest_power_of_two = (layer_input_size).log2().floor().exp2();
 
     let begin_size = layer.input_size();
     let end_size = layer.output_size();
 
-    let mut inner_size = match random_number {
-        0 => closest_power_of_two as usize,
+    let mut inner_size: usize = match random_number {
         1 => (closest_power_of_two / 2.0) as usize,
         2 => (closest_power_of_two * 2.0) as usize,
         _ => closest_power_of_two as usize,
@@ -171,7 +193,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -203,7 +225,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -235,7 +257,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -270,7 +292,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -302,7 +324,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -334,7 +356,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -369,7 +391,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -401,7 +423,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -433,7 +455,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -474,7 +496,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -519,7 +541,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -564,7 +586,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 3);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -605,7 +627,7 @@ mod tests {
             }],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -638,7 +660,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -667,7 +689,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 1);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
         assert_eq!(mutated_shape.get_layer(0).input_size(), 196);
@@ -704,7 +726,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::Change);
@@ -745,7 +767,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);
@@ -786,7 +808,7 @@ mod tests {
             ],
         };
         let mut mutater = NeuralNetworkMutater::new(&mut rng);
-        let mutated_shape = mutater.mutate_shape(shape);
+        let mutated_shape = mutater.mutate_shape(&shape);
 
         assert_eq!(mutated_shape.to_neural_network_shape().num_layers(), 2);
         assert_eq!(mutated_shape.get_annotated_layer(0).change_type, LayerChangeType::None);

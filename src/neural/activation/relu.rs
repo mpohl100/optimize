@@ -40,9 +40,8 @@ impl ActivationTrait for ReLU {
         grad_output: &[f64],
     ) -> Vec<f64> {
         // Retrieve the cached input from the forward pass
-        let input = match &self.input_cache {
-            Some(input) => input,
-            None => panic!("ReLU forward must be called before backward."),
+        let Some(input) = &self.input_cache else {
+            panic!("ReLU forward must be called before backward.");
         };
 
         // Compute the gradient for each element: pass the gradient if input > 0, else 0
@@ -68,13 +67,13 @@ mod tests {
         let input = vec![-1.0, 0.0, 1.0];
         let output = relu.forward(&input);
         // print output
-        println!("{:?}", output);
+        println!("{output:?}");
         assert_eq!(output, vec![0.0, 0.0, 1.0]);
 
         let grad_output = vec![-0.5, 0.0, 0.5];
         let grad_input = relu.backward(&grad_output);
         // print grad_input
-        println!("{:?}", grad_input);
+        println!("{grad_input:?}");
         assert_eq!(grad_input, vec![0.0, 0.0, 1.0]);
     }
 }

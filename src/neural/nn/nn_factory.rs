@@ -75,12 +75,16 @@ pub fn new_trainable_neural_network(
         },
         _ => WrappedTrainableNeuralNetwork::new(Box::new(TrainableClassicNeuralNetwork::new(
             neural_network_creation_arguments.shape,
-            Directory::Internal(neural_network_creation_arguments.model_directory),
+            &Directory::Internal(neural_network_creation_arguments.model_directory),
             neural_network_creation_arguments.utils,
         ))),
     }
 }
 
+/// Loads a neural network from disk, inferring its type from the directory structure.
+///
+/// # Panics
+/// Panics if loading a classic neural network from disk fails.
 #[must_use]
 pub fn neural_network_from_disk(
     model_directory: String,
@@ -99,6 +103,10 @@ pub fn neural_network_from_disk(
     ))
 }
 
+/// Loads a trainable neural network from disk, inferring its type from the directory structure.
+///
+/// # Panics
+/// Panics if loading a classic trainable neural network from disk fails.
 #[must_use]
 pub fn trainable_neural_network_from_disk(
     model_directory: String,
@@ -113,8 +121,12 @@ pub fn trainable_neural_network_from_disk(
     ))
 }
 
+/// Returns the first free model directory name by appending an integer suffix.
+///
+/// # Panics
+/// Panics if creating the directory fails.
 #[must_use]
-pub fn get_first_free_model_directory(model_directory: Directory) -> String {
+pub fn get_first_free_model_directory(model_directory: &Directory) -> String {
     let model_directory_orig = model_directory.path();
     // truncate _{integer} from the end of the model_directory
     let mut model_directory = model_directory_orig;
@@ -135,6 +147,10 @@ pub fn get_first_free_model_directory(model_directory: Directory) -> String {
     model_directory
 }
 
+/// Recursively copies a directory from `src` to `dst`.
+///
+/// # Errors
+/// Returns an `io::Error` if reading, creating, or copying any file or directory fails.
 pub fn copy_dir_recursive(
     src: &Path,
     dst: &Path,

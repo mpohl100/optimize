@@ -30,7 +30,7 @@ pub struct AnnotatedNeuralNetworkShape {
 
 impl AnnotatedNeuralNetworkShape {
     #[must_use]
-    pub fn new(layers: NeuralNetworkShape) -> Self {
+    pub fn new(layers: &NeuralNetworkShape) -> Self {
         let annotated_layers = layers
             .layers
             .iter()

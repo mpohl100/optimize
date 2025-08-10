@@ -82,7 +82,7 @@ mod tests {
         assert_eq!(result.len(), 5);
 
         // Check that all elements are within the specified range
-        for &num in result.iter() {
+        for &num in &result {
             assert!((0.0..1.0).contains(&num));
         }
     }
@@ -94,7 +94,7 @@ mod tests {
 
         assert_eq!(result.len(), 3);
 
-        for &num in result.iter() {
+        for &num in &result {
             assert!((-1.0..1.0).contains(&num));
         }
     }
@@ -106,7 +106,7 @@ mod tests {
 
         assert_eq!(result.len(), 10);
 
-        for &num in result.iter() {
+        for &num in &result {
             assert!((-1000.0..1000.0).contains(&num));
         }
     }

@@ -14,10 +14,7 @@ impl Tanh {
         Self
     }
 
-    fn tanh_vec(
-        &self,
-        input: &[f64],
-    ) -> Vec<f64> {
+    fn tanh_vec(input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| x.tanh()).collect()
     }
 }
@@ -33,7 +30,7 @@ impl ActivationTrait for Tanh {
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        self.tanh_vec(input)
+        Tanh::tanh_vec(input)
     }
 
     fn backward(
@@ -42,7 +39,7 @@ impl ActivationTrait for Tanh {
     ) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(self.tanh_vec(grad_output).iter())
+            .zip(Tanh::tanh_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * output.mul_add(-output, 1.0))
             .collect()
     }
@@ -62,13 +59,13 @@ mod tests {
         let input = vec![0.0];
         let output = tanh.forward(&input);
         // print output
-        println!("{:?}", output);
+        println!("{output:?}");
         assert!((output[0] - 0.0).abs() < 1e-7);
 
         let grad_output = vec![1.0];
         let grad_input = tanh.backward(&grad_output);
         // print grad_input
-        println!("{:?}", grad_input);
-        assert!((grad_input[0] - 0.4199743).abs() < 1e-7);
+        println!("{grad_input:?}");
+        assert!((grad_input[0] - 0.419_974_3).abs() < 1e-7);
     }
 }

@@ -24,16 +24,14 @@ impl Directory {
     #[must_use]
     pub fn path(&self) -> String {
         match self {
-            Self::User(path) => path.clone(),
-            Self::Internal(path) => path.clone(),
+            Self::Internal(path) | Self::User(path) => path.clone(),
         }
     }
 
     #[must_use]
     pub fn exists(&self) -> bool {
         match self {
-            Self::User(path) => std::fs::metadata(path).is_ok(),
-            Self::Internal(path) => std::fs::metadata(path).is_ok(),
+            Self::Internal(path) | Self::User(path) => std::fs::metadata(path).is_ok(),
         }
     }
 }

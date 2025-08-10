@@ -77,12 +77,16 @@ where
         let mut children: Vec<Pheno> = Vec::new();
         let winner_previous_generation = parents[0].clone();
 
-        children.push(self.develop(winner_previous_generation.clone(), rng, false)?);
+        children.push(BoundedBreedStrategy::develop(
+            winner_previous_generation.clone(),
+            rng,
+            false,
+        )?);
 
         parents.iter().skip(1).try_for_each(|parent| -> Result<(), Error> {
             let mut child = winner_previous_generation.clone();
             child.crossover(parent);
-            let mutated_child = self.develop(child, rng, true)?;
+            let mutated_child = BoundedBreedStrategy::develop(child, rng, true)?;
             children.push(mutated_child);
             Ok(())
         })?;
@@ -90,7 +94,7 @@ where
         (parents.len()..evol_options.get_num_offspring()).try_for_each(
             |_| -> Result<(), Error> {
                 let child = winner_previous_generation.clone();
-                let mutated_child = self.develop(child, rng, true)?;
+                let mutated_child = BoundedBreedStrategy::develop(child, rng, true)?;
                 children.push(mutated_child);
                 Ok(())
             },
@@ -125,7 +129,6 @@ where
     /// within the specified bounds is achieved. If after 1000 attempts, a valid phenotype
     /// is not obtained, an error is returned.
     fn develop(
-        &self,
         pheno: Pheno,
         rng: &mut RandomNumberGenerator,
         initial_mutate: bool,

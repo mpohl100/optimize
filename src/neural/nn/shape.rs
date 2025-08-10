@@ -40,6 +40,16 @@ impl ActivationData {
         Self { activation_type: ActivationType::Softmax, temperature: Some(temperature) }
     }
 
+    /// Checks if the activation data is valid.
+    ///
+    /// # Returns
+    ///
+    /// * `true` if the activation configuration is valid.
+    /// * `false` otherwise.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `activation_type` is `Softmax` and `temperature` is `None`.
     #[must_use]
     pub fn is_valid(&self) -> bool {
         match self.activation_type {
@@ -120,8 +130,13 @@ impl NeuralNetworkShape {
     }
 
     /// Creates a new `NeuralNetworkShape` with the given layers from disk.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the model directory is invalid or if the YAML
+    /// deserialization fails.
     #[must_use]
-    pub fn from_disk(model_directory: String) -> Option<Self> {
+    pub fn from_disk(model_directory: &str) -> Option<Self> {
         let path = format!("{model_directory}/shape.yaml");
         if !std::path::Path::new(&path).exists() {
             return None;
@@ -131,7 +146,12 @@ impl NeuralNetworkShape {
         Some(shape)
     }
 
-    // Creates a new `NeuralNetworkShape` with the given layers from file.
+    /// Creates a new `NeuralNetworkShape` with the given layers from file.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the file cannot be opened or if the YAML
+    /// deserialization fails.
     #[must_use]
     pub fn from_file(file_name: String) -> Self {
         let file = File::open(file_name).unwrap();
@@ -170,14 +190,19 @@ impl NeuralNetworkShape {
         true
     }
 
+    /// Converts the neural network shape to YAML format.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the internal logic is violated, such as accessing out-of-bounds indices.
     pub fn to_yaml(
         &self,
-        model_directory: String,
+        model_directory: &str,
     ) {
         // Create file in shape.yaml in model_directory and put the yaml there
         // ensure model_directory exists
-        if std::fs::metadata(&model_directory).is_err() {
-            std::fs::create_dir_all(&model_directory).unwrap();
+        if std::fs::metadata(model_directory).is_err() {
+            std::fs::create_dir_all(model_directory).unwrap();
         }
         let path = format!("{model_directory}/shape.yaml");
         let mut file = File::create(path).unwrap();
@@ -218,7 +243,11 @@ impl NeuralNetworkShape {
         self.layers[position] = layer;
     }
 
-    /// Cut out a subnetwork from the neural network shape.
+    /// Cuts out a subnetwork from the neural network shape.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the start or end indices are out of bounds.
     #[must_use]
     pub fn cut_out(
         &self,
@@ -235,6 +264,11 @@ impl NeuralNetworkShape {
         Self { layers }
     }
 
+    /// Merges two neural network shapes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the two shapes are incompatible.
     #[must_use]
     pub fn merge(
         &self,

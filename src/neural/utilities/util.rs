@@ -1,3 +1,5 @@
+use crate::neural::utilities::safer::safe_lock;
+
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -14,6 +16,10 @@ pub struct WrappedThreadPool {
 }
 
 impl WrappedThreadPool {
+    /// Creates a new `WrappedThreadPool` with the specified number of threads.
+    ///
+    /// # Panics
+    /// Panics if the thread pool cannot be built.
     #[must_use]
     pub fn new(num_threads: usize) -> Self {
         let thread_pool = ThreadPoolBuilder::new().num_threads(num_threads).build().unwrap();
@@ -28,7 +34,7 @@ impl WrappedThreadPool {
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
     {
-        self.thread_pool.lock().unwrap().install(f)
+        safe_lock(&self.thread_pool).install(f)
     }
 }
 
@@ -62,28 +68,28 @@ impl Utils {
 
     pub fn allocate(
         &mut self,
-        allocatable: WrappedLayer,
+        allocatable: &WrappedLayer,
     ) -> bool {
         self.layer_alloc_manager.allocate(allocatable)
     }
 
     pub fn deallocate(
         &mut self,
-        allocatable: WrappedLayer,
+        allocatable: &WrappedLayer,
     ) {
         self.layer_alloc_manager.deallocate(allocatable);
     }
 
     pub fn allocate_trainable(
         &mut self,
-        allocatable: WrappedTrainableLayer,
+        allocatable: &WrappedTrainableLayer,
     ) -> bool {
         self.trainable_layer_alloc_manager.allocate(allocatable)
     }
 
     pub fn deallocate_trainable(
         &mut self,
-        allocatable: WrappedTrainableLayer,
+        allocatable: &WrappedTrainableLayer,
     ) {
         self.trainable_layer_alloc_manager.deallocate(allocatable);
     }
@@ -123,40 +129,40 @@ impl WrappedUtils {
 
     pub fn allocate(
         &mut self,
-        allocatable: WrappedLayer,
+        allocatable: &WrappedLayer,
     ) -> bool {
-        self.utils.lock().unwrap().allocate(allocatable)
+        safe_lock(&self.utils).allocate(allocatable)
     }
 
     pub fn deallocate(
         &mut self,
-        allocatable: WrappedLayer,
+        allocatable: &WrappedLayer,
     ) {
-        self.utils.lock().unwrap().deallocate(allocatable);
+        safe_lock(&self.utils).deallocate(allocatable);
     }
 
     pub fn allocate_trainable(
         &mut self,
-        allocatable: WrappedTrainableLayer,
+        allocatable: &WrappedTrainableLayer,
     ) -> bool {
-        self.utils.lock().unwrap().allocate_trainable(allocatable)
+        safe_lock(&self.utils).allocate_trainable(allocatable)
     }
 
     pub fn deallocate_trainable(
         &mut self,
-        allocatable: WrappedTrainableLayer,
+        allocatable: &WrappedTrainableLayer,
     ) {
-        self.utils.lock().unwrap().deallocate_trainable(allocatable);
+        safe_lock(&self.utils).deallocate_trainable(allocatable);
     }
 
     #[must_use]
     pub fn get_max_allocated_size(&self) -> usize {
-        self.utils.lock().unwrap().get_max_allocated_size()
+        safe_lock(&self.utils).get_max_allocated_size()
     }
 
     #[must_use]
     pub fn get_multi_progress(&self) -> Arc<MultiProgress> {
-        self.utils.lock().unwrap().get_multi_progress()
+        safe_lock(&self.utils).get_multi_progress()
     }
 
     pub fn execute<F, R>(
@@ -167,6 +173,6 @@ impl WrappedUtils {
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
     {
-        self.utils.lock().unwrap().execute(f)
+        safe_lock(&self.utils).execute(f)
     }
 }
