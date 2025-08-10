@@ -65,6 +65,12 @@ where
     /// # Returns
     ///
     /// A `Result` containing the best-evolved phenotype and its associated score, or an `Error` if evolution fails.
+    ///
+    /// # Panics
+    /// Panics if the mutex guarding the underlying `ParallelEvolutionLauncher` is poisoned.
+    ///
+    /// # Errors
+    /// Returns an error if the evolution process fails.
     pub fn evolve(
         &self,
         options: &EvolutionOptions,

@@ -171,7 +171,7 @@ fn main() {
             TrainingSession::new(
                 training_params,
                 Box::new(data_importer),
-                Directory::User("internal_model".to_string()),
+                &Directory::User("internal_model".to_string()),
                 utils.clone(),
             )
             .expect("Failed to create TrainingSession")
@@ -180,7 +180,7 @@ fn main() {
         TrainingSession::new(
             training_params,
             Box::new(data_importer),
-            Directory::Internal("internal_model".to_string()),
+            &Directory::Internal("internal_model".to_string()),
             utils.clone(),
         )
         .expect("Failed to create TrainingSession")

@@ -72,28 +72,28 @@ mod tests {
         strategy::BreedStrategy,
     };
 
+    #[derive(Clone, Copy, Debug)]
+    struct MockPhenotype;
+
+    impl Phenotype for MockPhenotype {
+        fn crossover(
+            &mut self,
+            _other: &Self,
+        ) {
+        }
+        fn mutate(
+            &mut self,
+            _rng: &mut RandomNumberGenerator,
+        ) {
+        }
+    }
+
     #[allow(unused)]
     #[test]
     fn test_breed() {
         let mut rng = RandomNumberGenerator::new();
         let evol_options = EvolutionOptions::default();
         let strategy = super::OrdinaryStrategy;
-
-        #[derive(Clone, Copy, Debug)]
-        struct MockPhenotype;
-
-        impl Phenotype for MockPhenotype {
-            fn crossover(
-                &mut self,
-                other: &Self,
-            ) {
-            }
-            fn mutate(
-                &mut self,
-                rng: &mut RandomNumberGenerator,
-            ) {
-            }
-        }
 
         let mut parents = Vec::<MockPhenotype>::new();
 

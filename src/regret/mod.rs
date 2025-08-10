@@ -1,1 +1,1 @@
-pub mod regret_node;
+pub mod solver_node;

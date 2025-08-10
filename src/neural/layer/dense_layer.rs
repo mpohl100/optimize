@@ -86,16 +86,7 @@ impl Allocatable for DenseLayer {
             return;
         }
         // if the layer_path does not exist, create a new matrix and store it
-        if !self.layer_path.exists() {
-            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-            self.biases = Some(vec![0.0; self.rows]);
-            save(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap().clone(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        } else {
+        if self.layer_path.exists() {
             // if the layer_path exists, read the matrix and store it
             let (weights, biases) =
                 read(self.layer_path.path()).expect("Failed to read layer weights and biases");
@@ -109,11 +100,20 @@ impl Allocatable for DenseLayer {
                 self.biases = Some(vec![0.0; self.rows]);
                 save(
                     self.layer_path.path(),
-                    self.weights.as_ref().unwrap().clone(),
+                    self.weights.as_ref().unwrap(),
                     self.biases.as_ref().unwrap(),
                 )
                 .expect("Failed to save layer weights and biases");
             }
+        } else {
+            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
+            self.biases = Some(vec![0.0; self.rows]);
+            save(
+                self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
         }
     }
 
@@ -121,7 +121,7 @@ impl Allocatable for DenseLayer {
         if self.is_allocated() {
             save(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap().clone(),
+                self.weights.as_ref().unwrap(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -195,7 +195,7 @@ impl Layer for DenseLayer {
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        save(path, self.weights.as_ref().unwrap().clone(), self.biases.as_ref().unwrap())
+        save(path, self.weights.as_ref().unwrap(), self.biases.as_ref().unwrap())
     }
 
     fn read(
@@ -366,17 +366,7 @@ impl Allocatable for TrainableDenseLayer {
             return;
         }
         // if the layer_path does not exist, create a new matrix and store it
-        if !self.layer_path.exists() {
-            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-            self.biases = Some(vec![Bias::default(); self.rows]);
-            self.initialize_weights();
-            save_weight(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap().clone(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        } else {
+        if self.layer_path.exists() {
             // if the layer_path exists, read the matrix and store it
             let (weights, biases) = read_weight(self.layer_path.path())
                 .expect("Failed to read layer weights and biases");
@@ -391,11 +381,21 @@ impl Allocatable for TrainableDenseLayer {
                 self.initialize_weights();
                 save_weight(
                     self.layer_path.path(),
-                    self.weights.as_ref().unwrap().clone(),
+                    self.weights.as_ref().unwrap(),
                     self.biases.as_ref().unwrap(),
                 )
                 .expect("Failed to save layer weights and biases");
             }
+        } else {
+            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
+            self.biases = Some(vec![Bias::default(); self.rows]);
+            self.initialize_weights();
+            save_weight(
+                self.layer_path.path(),
+                self.weights.as_ref().unwrap(),
+                self.biases.as_ref().unwrap(),
+            )
+            .expect("Failed to save layer weights and biases");
         }
         self.input_cache = Some(Vec::new());
         self.input_batch_cache = Some(Vec::new());
@@ -405,7 +405,7 @@ impl Allocatable for TrainableDenseLayer {
         if self.is_allocated() {
             save_weight(
                 self.layer_path.path(),
-                self.weights.as_ref().unwrap().clone(),
+                self.weights.as_ref().unwrap(),
                 self.biases.as_ref().unwrap(),
             )
             .expect("Failed to save layer weights and biases");
@@ -514,7 +514,7 @@ impl Layer for TrainableDenseLayer {
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
             biases[i] = bias.value;
         }
-        save(path, weights, &biases)
+        save(path, &weights, &biases)
     }
 
     fn read(
@@ -722,8 +722,9 @@ impl TrainableLayer for TrainableDenseLayer {
                 beta2.mul_add(self.biases.as_ref().unwrap()[i].v, (1.0 - beta2) * grad.powi(2));
 
             // Bias correction
-            let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t as i32));
-            let v_hat = self.biases.as_ref().unwrap()[i].v / (1.0 - beta2.powi(t as i32));
+            let t_i: i32 = i as i32;
+            let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t_i));
+            let v_hat = self.biases.as_ref().unwrap()[i].v / (1.0 - beta2.powi(t_i));
 
             // Adjusted learning rate
             let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
@@ -765,7 +766,7 @@ impl TrainableLayer for TrainableDenseLayer {
         for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
             biases[i] = *bias;
         }
-        save_weight(path, weights, &biases)
+        save_weight(path, &weights, &biases)
     }
 
     fn read_weight(
@@ -839,7 +840,7 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
 
 fn save(
     path: String,
-    weights: WrappedMatrix<f64>,
+    weights: &WrappedMatrix<f64>,
     biases: &[f64],
 ) -> Result<(), Box<dyn Error>> {
     // Ensure the directory exists
@@ -869,7 +870,7 @@ fn save(
 
 fn save_weight(
     path: String,
-    weights: WrappedMatrix<Weight>,
+    weights: &WrappedMatrix<Weight>,
     biases: &[Bias],
 ) -> Result<(), Box<dyn Error>> {
     // Ensure the directory exists
@@ -1074,7 +1075,7 @@ mod tests {
 
     #[test]
     fn test_dense_layer() {
-        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
         let mut layer =
             TrainableDenseLayer::new(3, 2, Directory::Internal("test_model_unit".to_string()), 0);
 

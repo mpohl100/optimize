@@ -65,6 +65,9 @@ impl NeuralNetworkGenerator {
     }
 
     /// Generate a new neural network using a genetic algorithm
+    ///
+    /// # Panics
+    /// Panics if the current winner's shape is not valid or has zero layers.
     pub fn generate(&mut self) {
         let mut rng = RandomNumberGenerator::new();
 
@@ -73,7 +76,7 @@ impl NeuralNetworkGenerator {
         // make sure both shapes are the same
         self.params.set_shape(self.current_winner.shape());
 
-        let starting_value = NeuralNetworkPhenotype::new(self.current_winner.clone());
+        let starting_value = NeuralNetworkPhenotype::new(&self.current_winner);
         let options = self.evolution_params.clone();
         let challenge =
             NeuralNetworkChallenge::new(self.params.clone(), self.data_importer.clone());

@@ -10,6 +10,10 @@ pub struct Softmax {
 
 impl Softmax {
     /// Creates a new Softmax instance with the specified temperature.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `temperature` is not positive.
     #[must_use]
     pub fn new(temperature: f64) -> Self {
         assert!(temperature > 0.0, "Temperature must be positive.");
@@ -78,7 +82,7 @@ mod tests {
         let input = vec![1.0, 2.0, 3.0];
         let output = softmax.forward(&input);
 
-        println!("Softmax output: {:?}", output);
+        println!("Softmax output: {output:?}");
 
         let sum: f64 = output.iter().sum();
         assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
@@ -91,7 +95,7 @@ mod tests {
         let input = vec![1.0, 2.0, 3.0];
         let output = softmax.forward(&input);
 
-        println!("Softmax output with temperature 0.5: {:?}", output);
+        println!("Softmax output with temperature 0.5: {output:?}");
 
         let sum: f64 = output.iter().sum();
         assert!((sum - 1.0).abs() < 1e-7, "Softmax outputs should sum to 1.");
@@ -106,7 +110,7 @@ mod tests {
         let grad_output = vec![0.1, 0.2, 0.7];
         let grad_input = softmax.backward(&grad_output);
 
-        println!("Softmax backward output: {:?}", grad_input);
+        println!("Softmax backward output: {grad_input:?}");
         assert_eq!(
             grad_input.len(),
             input.len(),

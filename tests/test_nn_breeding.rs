@@ -44,7 +44,7 @@ fn test_neural_network_breeding() {
         utils.clone(),
     ));
     let _ = nn.predict(input_data);
-    let nn_phenotype = NeuralNetworkPhenotype::new(nn);
+    let nn_phenotype = NeuralNetworkPhenotype::new(&nn);
     let mut parents = vec![nn_phenotype];
 
     let evol_opts = EvolutionOptions::new(100, LogLevel::None, 4, 10);

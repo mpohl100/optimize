@@ -1,5 +1,7 @@
 use super::allocatable::WrappedAllocatableTrait;
 
+use crate::neural::utilities::safer::safe_lock;
+
 use std::{
     ptr,
     sync::{Arc, Mutex},
@@ -20,7 +22,7 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
 
     pub fn allocate(
         &mut self,
-        allocatable: WrappedType,
+        allocatable: &WrappedType,
     ) -> bool {
         if allocatable.is_allocated() {
             return false;
@@ -32,31 +34,30 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
             self.currently_allocated.push(allocatable.clone());
             self.currently_allocated_size += allocatable.get_size();
             return true;
-        } else {
-            // too much is allocated, try cleaning up and to then do the allocation
-            self.cleanup();
-            if self.currently_allocated_size + allocatable.get_size() <= self.max_allocated_size {
-                // a not yet allocated allocatable can not yet be in use
-                // that is why one does not need to check if it is in use
-                allocatable.allocate();
-                self.currently_allocated.push(allocatable.clone());
-                self.currently_allocated_size += allocatable.get_size();
-                return true;
-            }
+        }
+        // too much is allocated, try cleaning up and to then do the allocation
+        self.cleanup();
+        if self.currently_allocated_size + allocatable.get_size() <= self.max_allocated_size {
+            // a not yet allocated allocatable can not yet be in use
+            // that is why one does not need to check if it is in use
+            allocatable.allocate();
+            self.currently_allocated.push(allocatable.clone());
+            self.currently_allocated_size += allocatable.get_size();
+            return true;
         }
         false
     }
 
     fn deallocate(
         &mut self,
-        allocatable: WrappedType,
+        allocatable: &WrappedType,
     ) {
         if !allocatable.is_allocated() {
             return;
         }
         allocatable.deallocate();
         self.currently_allocated_size -= allocatable.get_size();
-        self.currently_allocated.retain(|x| !ptr::eq(x, &allocatable));
+        self.currently_allocated.retain(|x| !ptr::eq(x, allocatable));
     }
 
     fn cleanup(&mut self) {
@@ -68,7 +69,8 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
             }
         }
         for index in indexes_to_clear {
-            self.deallocate(self.currently_allocated[index].clone());
+            let currently_allocated = self.currently_allocated[index].clone();
+            self.deallocate(&currently_allocated);
         }
     }
 
@@ -89,23 +91,31 @@ impl<WrappedType: WrappedAllocatableTrait> WrappedAllocManager<WrappedType> {
         Self { alloc_manager: Arc::new(Mutex::new(alloc_manager)) }
     }
 
+    /// Attempts to allocate the given allocatable object.
+    ///
+    /// # Panics
+    /// Panics if the mutex guarding the underlying `AllocManager` is poisoned.
     pub fn allocate(
         &mut self,
-        allocatable: WrappedType,
+        allocatable: &WrappedType,
     ) -> bool {
         self.alloc_manager.lock().unwrap().allocate(allocatable)
     }
 
+    /// Deallocates the given allocatable object.
+    ///
+    /// # Panics
+    /// Panics if the mutex guarding the underlying `AllocManager` is poisoned.
     pub fn deallocate(
         &mut self,
-        allocatable: WrappedType,
+        allocatable: &WrappedType,
     ) {
         self.alloc_manager.lock().unwrap().deallocate(allocatable);
     }
 
     #[must_use]
     pub fn get_max_allocated_size(&self) -> usize {
-        self.alloc_manager.lock().unwrap().get_max_allocated_size()
+        safe_lock(&self.alloc_manager).get_max_allocated_size()
     }
 }
 
@@ -205,8 +215,8 @@ mod tests {
     fn test_alloc_manager_only_allocates_once() {
         let mut alloc_manager = AllocManager::new(100);
         let allocatable = WrappedTestAllocatable::new(TestAllocatable::new(50));
-        assert!(alloc_manager.allocate(allocatable.clone()));
-        assert!(!alloc_manager.allocate(allocatable.clone()));
+        assert!(alloc_manager.allocate(&allocatable));
+        assert!(!alloc_manager.allocate(&allocatable));
     }
 
     #[test]
@@ -216,13 +226,13 @@ mod tests {
         let mut allocatable2 = WrappedTestAllocatable::new(TestAllocatable::new(50));
         let mut allocatable3 = WrappedTestAllocatable::new(TestAllocatable::new(50));
         let allocatable4 = WrappedTestAllocatable::new(TestAllocatable::new(50));
-        let mut allocatables = [
+        let mut multiple_allocatables = [
             allocatable1.clone(),
             allocatable2.clone(),
             allocatable3.clone(),
             allocatable4.clone(),
         ];
-        for (index, this_allocatable) in allocatables.iter_mut().enumerate() {
+        for (index, this_allocatable) in multiple_allocatables.iter_mut().enumerate() {
             if index == 1 {
                 allocatable1.free_from_use();
             } else if index == 2 {
@@ -230,7 +240,7 @@ mod tests {
             } else if index == 3 {
                 allocatable3.free_from_use();
             }
-            let result = alloc_manager.allocate(this_allocatable.clone());
+            let result = alloc_manager.allocate(this_allocatable);
             assert!(result);
             this_allocatable.mark_for_use();
         }

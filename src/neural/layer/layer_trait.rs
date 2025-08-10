@@ -1,5 +1,6 @@
 use crate::alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
 use crate::neural::mat::matrix::WrappedMatrix;
+use crate::neural::utilities::safer::safe_lock;
 use crate::neural::utilities::util::WrappedUtils;
 
 use dyn_clone::DynClone;
@@ -44,12 +45,20 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     fn output_size(&self) -> usize;
 
     /// Saves the layer to a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer could not be saved to the specified path.
     fn save(
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer could not be read from the specified path.
     fn read(
         &mut self,
         path: String,
@@ -99,13 +108,13 @@ impl WrappedLayer {
         model_directory: String,
         position_in_nn: usize,
     ) -> Self {
-        let mut layer = self.layer.lock().unwrap();
+        let mut layer = safe_lock(&self.layer);
         let new_layer = layer.duplicate(model_directory, position_in_nn);
         Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
-        self.layer.lock().unwrap().cleanup();
+        safe_lock(&self.layer).cleanup();
     }
 
     pub fn forward(
@@ -113,48 +122,58 @@ impl WrappedLayer {
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().forward(input, utils)
+        safe_lock(&self.layer).forward(input, utils)
     }
 
     pub fn forward_batch(
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().forward_batch(input)
+        safe_lock(&self.layer).forward_batch(input)
     }
 
     #[must_use]
     pub fn input_size(&self) -> usize {
-        self.layer.lock().unwrap().input_size()
+        safe_lock(&self.layer).input_size()
     }
 
     #[must_use]
     pub fn output_size(&self) -> usize {
-        self.layer.lock().unwrap().output_size()
+        safe_lock(&self.layer).output_size()
     }
 
+    /// Saves the layer to a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer could not be saved to the specified path.
     pub fn save(
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().save(path)
+        safe_lock(&self.layer).save(path)
     }
 
+    /// Reads the layer from a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer could not be read from the specified path.
     pub fn read(
         &mut self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().read(path)
+        safe_lock(&self.layer).read(path)
     }
 
     #[must_use]
     pub fn get_weights(&self) -> WrappedMatrix<f64> {
-        self.layer.lock().unwrap().get_weights()
+        safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
     pub fn get_biases(&self) -> Vec<f64> {
-        self.layer.lock().unwrap().get_biases()
+        safe_lock(&self.layer).get_biases()
     }
 }
 
@@ -240,12 +259,20 @@ pub trait TrainableLayer: Layer {
     );
 
     /// Saves the layer to a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer weights could not be saved to the specified path.
     fn save_weight(
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer weights could not be read from the specified path.
     fn read_weight(
         &mut self,
         path: String,
@@ -286,13 +313,13 @@ impl WrappedTrainableLayer {
         model_directory: String,
         position_in_nn: usize,
     ) -> Self {
-        let mut layer = self.layer.lock().unwrap();
+        let mut layer = safe_lock(&self.layer);
         let new_layer = layer.duplicate(model_directory, position_in_nn);
         Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
-        self.layer.lock().unwrap().cleanup();
+        safe_lock(&self.layer).cleanup();
     }
 
     pub fn forward(
@@ -300,48 +327,46 @@ impl WrappedTrainableLayer {
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().forward(input, utils)
+        safe_lock(&self.layer).forward(input, utils)
     }
 
     pub fn forward_batch(
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().forward_batch(input)
+        safe_lock(&self.layer).forward_batch(input)
     }
 
     #[must_use]
     pub fn input_size(&self) -> usize {
-        self.layer.lock().unwrap().input_size()
+        safe_lock(&self.layer).input_size()
     }
 
     #[must_use]
     pub fn output_size(&self) -> usize {
-        self.layer.lock().unwrap().output_size()
+        safe_lock(&self.layer).output_size()
     }
 
-    pub fn save(
-        &self,
-        path: String,
-    ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().save(path)
-    }
-
+    /// Reads the layer from a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer could not be read from the specified path.
     pub fn read(
         &mut self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().read(path)
+        safe_lock(&self.layer).read(path)
     }
 
     #[must_use]
     pub fn get_weights(&self) -> WrappedMatrix<f64> {
-        self.layer.lock().unwrap().get_weights()
+        safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
     pub fn get_biases(&self) -> Vec<f64> {
-        self.layer.lock().unwrap().get_biases()
+        safe_lock(&self.layer).get_biases()
     }
 
     pub fn backward(
@@ -349,14 +374,14 @@ impl WrappedTrainableLayer {
         grad_output: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().backward(grad_output, utils)
+        safe_lock(&self.layer).backward(grad_output, utils)
     }
 
     pub fn backward_batch(
         &mut self,
         grad_output: &[f64],
     ) -> Vec<f64> {
-        self.layer.lock().unwrap().backward_batch(grad_output)
+        safe_lock(&self.layer).backward_batch(grad_output)
     }
 
     pub fn update_weights(
@@ -364,14 +389,14 @@ impl WrappedTrainableLayer {
         learning_rate: f64,
         utils: WrappedUtils,
     ) {
-        self.layer.lock().unwrap().update_weights(learning_rate, utils);
+        safe_lock(&self.layer).update_weights(learning_rate, utils);
     }
 
     pub fn assign_weights(
         &mut self,
         other: Self,
     ) {
-        self.layer.lock().unwrap().assign_weights(other);
+        safe_lock(&self.layer).assign_weights(other);
     }
 
     pub fn adjust_adam(
@@ -383,49 +408,60 @@ impl WrappedTrainableLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        self.layer.lock().unwrap().adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils);
+        safe_lock(&self.layer).adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils);
     }
 
-    pub fn save_weight(
+    /// Saves the layer weights to a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer weights could not be saved to the specified path.
+    pub fn save_weights(
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().save_weight(path)
+        safe_lock(&self.layer).save_weight(path)
     }
+
+    /// Reads the layer weights from a file at the specified path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the layer weights could not be read from the specified path.
     pub fn read_weight(
         &mut self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.layer.lock().unwrap().read_weight(path)
+        safe_lock(&self.layer).read_weight(path)
     }
 }
 
 impl WrappedAllocatableTrait for WrappedTrainableLayer {
     fn allocate(&self) {
-        self.layer.lock().unwrap().allocate();
+        safe_lock(&self.layer).allocate();
     }
 
     fn deallocate(&self) {
-        self.layer.lock().unwrap().deallocate();
+        safe_lock(&self.layer).deallocate();
     }
 
     fn is_allocated(&self) -> bool {
-        self.layer.lock().unwrap().is_allocated()
+        safe_lock(&self.layer).is_allocated()
     }
 
     fn get_size(&self) -> usize {
-        self.layer.lock().unwrap().get_size()
+        safe_lock(&self.layer).get_size()
     }
 
     fn mark_for_use(&mut self) {
-        self.layer.lock().unwrap().mark_for_use();
+        safe_lock(&self.layer).mark_for_use();
     }
 
     fn free_from_use(&mut self) {
-        self.layer.lock().unwrap().free_from_use();
+        safe_lock(&self.layer).free_from_use();
     }
 
     fn is_in_use(&self) -> bool {
-        self.layer.lock().unwrap().is_in_use()
+        safe_lock(&self.layer).is_in_use()
     }
 }

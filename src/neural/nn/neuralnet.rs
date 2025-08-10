@@ -35,6 +35,10 @@ pub struct ClassicNeuralNetwork {
 
 impl ClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the activation type is Softmax and its temperature is not set.
     #[must_use]
     pub fn new(
         shape: NeuralNetworkShape,
@@ -78,13 +82,17 @@ impl ClassicNeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the model directory is valid but the shape cannot be unwrapped.
     #[allow(clippy::question_mark)]
     #[must_use]
     pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> Option<Self> {
-        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
+        let shape = NeuralNetworkShape::from_disk(&model_directory);
         if shape.is_none() {
             return None;
         }
@@ -129,21 +137,21 @@ impl ClassicNeuralNetwork {
     /// Saves the neural network to disk with the internal logic.
     fn save_internal(
         &self,
-        model_directory: String,
+        model_directory: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
         let backup_directory = format!("{model_directory}_backup");
-        if std::fs::metadata(&model_directory).is_ok() {
+        if std::fs::metadata(model_directory).is_ok() {
             // copy the directory to a backup
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(&model_directory)?;
+            std::fs::create_dir_all(model_directory)?;
         } else {
             // create directory if it doesn't exist
-            std::fs::create_dir_all(&model_directory)?;
+            std::fs::create_dir_all(model_directory)?;
         }
 
         let shape = self.shape();
-        shape.to_yaml(model_directory.clone());
+        shape.to_yaml(model_directory);
         self.save_layers(model_directory)?;
 
         // if backup directory exists, remove it
@@ -156,7 +164,7 @@ impl ClassicNeuralNetwork {
 
     /// Retrieves the first free model directory.
     fn get_first_free_model_directory(&self) -> String {
-        get_first_free_model_directory(self.model_directory.clone())
+        get_first_free_model_directory(&self.model_directory)
     }
 
     /// Adds an activation and a layer to the neural network.
@@ -172,7 +180,7 @@ impl ClassicNeuralNetwork {
     /// Saves the layers of the neural network to disk.
     fn save_layers(
         &self,
-        model_directory: String,
+        model_directory: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{model_directory}/layers"))?;
@@ -185,7 +193,7 @@ impl ClassicNeuralNetwork {
     /// Saves the layout of the neural network to disk.
     fn save_layout(&self) {
         let shape = self.shape();
-        shape.to_yaml(self.model_directory.path());
+        shape.to_yaml(&self.model_directory.path());
     }
 
     /// Performs a forward pass through the network with the given input.
@@ -196,7 +204,7 @@ impl ClassicNeuralNetwork {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
-            self.utils.allocate(layer.clone());
+            self.utils.allocate(layer);
             output = layer.forward(&output, self.utils.clone());
             layer.free_from_use();
             // this operation should not change the dimension of output
@@ -228,7 +236,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         }
         self.model_directory = Directory::User(user_model_directory);
         let model_directory = self.model_directory.path();
-        self.save_internal(model_directory)
+        self.save_internal(&model_directory)
     }
 
     fn get_model_directory(&self) -> Directory {
@@ -238,14 +246,14 @@ impl NeuralNetwork for ClassicNeuralNetwork {
     /// Allocates the layers of the neural network.
     fn allocate(&mut self) {
         for layer in &self.layers {
-            self.utils.allocate(layer.clone());
+            self.utils.allocate(layer);
         }
     }
 
     /// Deallocates the layers of the neural network.
     fn deallocate(&mut self) {
         for layer in &self.layers {
-            self.utils.deallocate(layer.clone());
+            self.utils.deallocate(layer);
         }
     }
 
@@ -258,7 +266,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
-        self.save_internal(model_directory.clone()).unwrap();
+        self.save_internal(&model_directory).unwrap();
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -319,10 +327,14 @@ pub struct TrainableClassicNeuralNetwork {
 
 impl TrainableClassicNeuralNetwork {
     /// Creates a new `NeuralNetwork` from the given shape.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the activation type is Softmax and its temperature is not set.
     #[must_use]
     pub fn new(
         shape: NeuralNetworkShape,
-        model_directory: Directory,
+        model_directory: &Directory,
         utils: WrappedUtils,
     ) -> Self {
         let shape_clone = shape.clone();
@@ -364,7 +376,7 @@ impl TrainableClassicNeuralNetwork {
 
     #[must_use]
     pub fn new_dir(
-        model_directory: Directory,
+        model_directory: &Directory,
         utils: WrappedUtils,
     ) -> Self {
         let network = Self {
@@ -383,21 +395,21 @@ impl TrainableClassicNeuralNetwork {
 
     fn save_internal(
         &self,
-        model_directory: String,
+        model_directory: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // remove the directory if it exists
         let backup_directory = format!("{model_directory}_backup");
-        if std::fs::metadata(&model_directory).is_ok() {
+        if std::fs::metadata(model_directory).is_ok() {
             // copy the directory to a backup not move
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(&model_directory)?;
+            std::fs::create_dir_all(model_directory)?;
         } else {
             // create directory if it doesn't exist
-            std::fs::create_dir_all(&model_directory)?;
+            std::fs::create_dir_all(model_directory)?;
         }
 
         let shape = self.shape();
-        shape.to_yaml(model_directory.clone());
+        shape.to_yaml(model_directory);
         self.save_layers(model_directory)?;
 
         // if backup directory exists, remove it
@@ -425,14 +437,14 @@ impl TrainableClassicNeuralNetwork {
     /// Saves the layers of the neural network to disk.
     fn save_layers(
         &self,
-        model_directory: String,
+        model_directory: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // make a layers subdirectory
         if std::fs::metadata(format!("{model_directory}/layers")).is_err() {
             std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         }
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save_weight(format!("{model_directory}/layers/layer_{i}.txt"))?;
+            layer.save_weights(format!("{model_directory}/layers/layer_{i}.txt"))?;
         }
         Ok(())
     }
@@ -444,7 +456,7 @@ impl TrainableClassicNeuralNetwork {
         if std::fs::metadata(self.model_directory.path()).is_err() {
             std::fs::create_dir_all(self.model_directory.path()).unwrap();
         }
-        shape.to_yaml(self.model_directory.path());
+        shape.to_yaml(&self.model_directory.path());
     }
 
     /// Adds an activation and a layer to the neural network.
@@ -465,7 +477,7 @@ impl TrainableClassicNeuralNetwork {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
             layer.mark_for_use();
-            self.utils.allocate_trainable(layer.clone());
+            self.utils.allocate_trainable(layer);
             output = layer.forward(&output, self.utils.clone());
             layer.free_from_use();
             // this operation should not change the dimension of output
@@ -498,7 +510,7 @@ impl TrainableClassicNeuralNetwork {
         {
             grad = activation.backward(&grad);
             layer.mark_for_use();
-            self.utils.allocate_trainable(layer.clone());
+            self.utils.allocate_trainable(layer);
             grad = layer.backward(&grad, self.utils.clone());
             layer.free_from_use();
         }
@@ -519,13 +531,18 @@ impl TrainableClassicNeuralNetwork {
     }
 
     /// Creates a new `NeuralNetwork` from the given model directory.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the model directory is invalid or if the YAML
+    /// deserialization fails.
     #[allow(clippy::question_mark)]
     #[must_use]
     pub fn from_disk(
         model_directory: String,
         utils: WrappedUtils,
     ) -> Option<Self> {
-        let shape = NeuralNetworkShape::from_disk(model_directory.clone());
+        let shape = NeuralNetworkShape::from_disk(&model_directory);
         if shape.is_none() {
             return None;
         }
@@ -569,11 +586,10 @@ impl TrainableClassicNeuralNetwork {
 
     /// Retrieves the first free model directory.
     fn get_first_free_model_directory(&self) -> String {
-        get_first_free_model_directory(self.model_directory.clone())
+        get_first_free_model_directory(&self.model_directory)
     }
 
     fn transform(
-        &self,
         inputs: &[Vec<f64>],
         targets: &[Vec<f64>],
     ) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
@@ -648,7 +664,7 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
         }
         self.model_directory = Directory::User(user_model_directory);
         let model_directory = self.model_directory.path();
-        self.save_internal(model_directory)
+        self.save_internal(&model_directory)
     }
 
     fn get_model_directory(&self) -> Directory {
@@ -658,14 +674,14 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
     /// Allocates the layers of the neural network.
     fn allocate(&mut self) {
         for layer in &self.layers {
-            self.utils.allocate_trainable(layer.clone());
+            self.utils.allocate_trainable(layer);
         }
     }
 
     /// Deallocates the layers of the neural network.
     fn deallocate(&mut self) {
         for layer in &self.layers {
-            self.utils.deallocate_trainable(layer.clone());
+            self.utils.deallocate_trainable(layer);
         }
     }
 
@@ -687,6 +703,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::cast_lossless)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
     fn train(
         &mut self,
         inputs: &[Vec<f64>],
@@ -698,13 +718,17 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         validation_split: f64,
     ) -> f64 {
         // in case one does not have enough samples, don't train and return zero accuracy
-        let (transformed_inputs, transformed_targets) = self.transform(inputs, targets);
+        let (transformed_inputs, transformed_targets) =
+            TrainableClassicNeuralNetwork::transform(inputs, targets);
         assert!(
             (0.0..=1.0).contains(&validation_split),
             "validation_split must be between 0 and 1"
         );
 
-        let split_index = (inputs.len() as f64 * validation_split).round() as usize;
+        let inputs_len: f64 = transformed_inputs.len() as f64;
+
+        let split_index_f64 = (inputs_len * validation_split).round();
+        let split_index: usize = split_index_f64 as usize;
         let (train_inputs, validation_inputs) = transformed_inputs.split_at(split_index);
         let (train_targets, validation_targets) = transformed_targets.split_at(split_index);
 
@@ -735,7 +759,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                success_count += correct_outputs as f64 / target.len() as f64;
+                let correct_outputs_f64: f64 = correct_outputs as f64;
+                let target_len: f64 = target.len() as f64;
+                success_count += correct_outputs_f64 / target_len;
 
                 // Calculate loss gradient
                 let grad_output: Vec<f64> = output
@@ -761,8 +787,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 }
 
                 // Update the progress bar
-                let accuracy = success_count / train_inputs.len() as f64 * 100.0;
-                let loss_display = loss / train_inputs.len() as f64;
+                let train_inputs_len: f64 = train_inputs.len() as f64;
+                let accuracy = success_count / train_inputs_len * 100.0;
+                let loss_display = loss / train_inputs_len;
                 pb.set_position((j + 1) as u64);
                 pb.set_message(format!("Accuracy: {accuracy:.2} %, Loss: {loss_display:.4}"));
             });
@@ -778,7 +805,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                validation_success_count += correct_outputs as f64 / target.len() as f64;
+                let correct_outputs_f64: f64 = correct_outputs as f64;
+                let target_len: f64 = target.len() as f64;
+                validation_success_count += correct_outputs_f64 / target_len;
 
                 validation_loss += output
                     .iter()
@@ -790,13 +819,14 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .sum::<f64>();
             });
 
-            validation_loss /= validation_inputs.len() as f64;
-            let validation_accuracy =
-                validation_success_count / validation_inputs.len() as f64 * 100.0;
+            let validation_inputs_len: f64 = validation_inputs.len() as f64;
+            validation_loss /= validation_inputs_len;
+            let validation_accuracy = validation_success_count / validation_inputs_len * 100.0;
             accuracy = validation_accuracy;
             // Finish the progress bar
-            loss /= train_inputs.len() as f64;
-            let accuracy = success_count / train_inputs.len() as f64 * 100.0;
+            let train_inputs_len: f64 = train_inputs.len() as f64;
+            loss /= train_inputs_len;
+            let accuracy = success_count / train_inputs_len * 100.0;
             let message = format!(
             "Epoch {epoch} finished | Train Acc: {accuracy:.2} %, Train Loss: {loss:.4} | Val Acc: {validation_accuracy:.2} %, Val Loss: {validation_loss:.4}");
             pb.finish_with_message(message);
@@ -806,6 +836,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     }
 
     /// Trains the neural network doing batch back propagation.
+    #[allow(clippy::cast_lossless)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_precision_loss)]
     fn train_batch(
         &mut self,
         inputs: &[Vec<f64>],
@@ -834,7 +868,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    success_count += f64::from(nb_correct_outputs) / target.len() as f64;
+                    let len: f64 = target.len() as f64;
+                    let nb_correct_outputs_f64: f64 = nb_correct_outputs as f64;
+                    success_count += nb_correct_outputs_f64 / len;
 
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
@@ -848,8 +884,9 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     layer.update_weights(learning_rate, self.utils.clone());
                 }
             }
-            let accuracy = success_count / inputs.len() as f64 * 100.0;
-            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs.len() as f64, accuracy);
+            let inputs_len: f64 = inputs.len() as f64;
+            let accuracy = success_count / inputs_len * 100.0;
+            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs_len, accuracy);
             if accuracy < 0.01 && i > 10 {
                 break;
             }
@@ -870,7 +907,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // create a sibling directory with the postfix _clone appendended to model_direcotory path
         let model_directory = self.get_first_free_model_directory();
         // Save the model to the new directory
-        self.save_internal(model_directory.clone()).unwrap();
+        self.save_internal(&model_directory).unwrap();
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
@@ -924,7 +961,7 @@ mod tests {
 
     #[test]
     fn test_neural_network_train() {
-        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
         let mut nn = TrainableClassicNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![
@@ -938,7 +975,7 @@ mod tests {
                     },
                 ],
             },
-            Directory::Internal("internal_model".to_string()),
+            &Directory::Internal("internal_model".to_string()),
             utils.clone(),
         );
 
@@ -954,7 +991,7 @@ mod tests {
         // print targets[0]
         println!("{:?}", targets[0]);
         // print prediction
-        println!("{:?}", prediction);
+        println!("{prediction:?}");
         assert_eq!(prediction.len(), 3);
         // assert that the prediction is close to the target
         for (p, t) in prediction.iter().zip(&targets[0]) {

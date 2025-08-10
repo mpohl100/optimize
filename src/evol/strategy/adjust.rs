@@ -72,7 +72,7 @@ where
         parents.iter().skip(1).try_for_each(|parent| -> Result<(), Error> {
             let mut child = winner_previous_generation.clone();
             child.crossover(parent);
-            let mut mutated_child = self.develop(child, rng)?;
+            let mut mutated_child = AdjustStrategy::develop(child, rng);
             mutated_child.decr_number_mutates();
             children.push(mutated_child);
             Ok(())
@@ -81,7 +81,7 @@ where
         (parents.len()..evol_options.get_num_offspring()).try_for_each(
             |_| -> Result<(), Error> {
                 let child = winner_previous_generation.clone();
-                let mut mutated_child = self.develop(child, rng)?;
+                let mut mutated_child = AdjustStrategy::develop(child, rng);
                 mutated_child.decr_number_mutates();
                 children.push(mutated_child);
                 Ok(())
@@ -113,10 +113,9 @@ where
     /// The development process involves repeated mutations as often as calculated
     /// calculated by the method `calculate_number_of_mutations`.
     fn develop(
-        &self,
         pheno: Pheno,
         rng: &mut crate::evol::rng::RandomNumberGenerator,
-    ) -> Result<Pheno, Error> {
+    ) -> Pheno {
         let mut phenotype = pheno;
         let number_of_mutations = phenotype.get_number_mutates();
         phenotype.mutate(rng);
@@ -124,6 +123,6 @@ where
         for _ in 0..number_of_mutations {
             phenotype.mutate(rng);
         }
-        Ok(phenotype)
+        phenotype
     }
 }

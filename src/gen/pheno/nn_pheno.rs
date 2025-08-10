@@ -29,7 +29,7 @@ impl Clone for NeuralNetworkPhenotype {
 
 impl NeuralNetworkPhenotype {
     #[must_use]
-    pub fn new(nn: WrappedTrainableNeuralNetwork) -> Self {
+    pub fn new(nn: &WrappedTrainableNeuralNetwork) -> Self {
         Self {
             nn: nn.duplicate_trainable(),
             left_half_shape: None,
@@ -89,10 +89,10 @@ impl NeuralNetworkPhenotype {
 
         let mut mutater = NeuralNetworkMutater::new(rng_wrapper);
 
-        let mut mutated_shape = mutater.mutate_shape(previous_shape.clone());
+        let mut mutated_shape = mutater.mutate_shape(&previous_shape);
         let mut i = 0;
         while mutated_shape.to_neural_network_shape() == previous_shape {
-            mutated_shape = mutater.mutate_shape(previous_shape.clone());
+            mutated_shape = mutater.mutate_shape(&previous_shape);
             i += 1;
             if i > 10 {
                 break;
@@ -123,9 +123,9 @@ impl NeuralNetworkPhenotype {
             self.get_nn().shape()
         };
 
-        let random_number = rng_wrapper.fetch_uniform(1.0, 5.0, 1);
+        let random_numbers = rng_wrapper.fetch_uniform(1.0, 5.0, 1);
         // round do to integer
-        let random_number = random_number[0].round() as i32;
+        let random_number: i32 = random_numbers[0].round() as i32;
         let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             previous_shape,
             Some(random_number),

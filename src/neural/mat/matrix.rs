@@ -4,6 +4,8 @@ use std::slice;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::neural::utilities::safer::safe_lock;
+
 use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
@@ -42,7 +44,10 @@ where
         Self { rows, cols, data: vec![T::default(); rows * cols] }
     }
 
-    // Get a mutable reference to an element at (x, y)
+    /// Get a mutable reference to an element at (x, y)
+    ///
+    /// # Errors
+    /// Returns `OutOfRangeError` if `x` or `y` are out of bounds.
     pub fn get_mut(
         &mut self,
         x: usize,
@@ -60,7 +65,10 @@ where
         }
     }
 
-    // Get an immutable reference to an element at (x, y)
+    /// Get an immutable reference to an element at (x, y)
+    ///
+    /// # Errors
+    /// Returns `OutOfRangeError` if `x` or `y` are out of bounds.
     pub fn get(
         &self,
         x: usize,
@@ -142,6 +150,26 @@ impl<T> Matrix<T> {
     }
 }
 
+// Implement IntoIterator for &Matrix<T>
+impl<'a, T> IntoIterator for &'a Matrix<T> {
+    type Item = &'a [T];
+    type IntoIter = RowIter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+// Implement IntoIterator for &mut Matrix<T>
+impl<'a, T> IntoIterator for &'a mut Matrix<T> {
+    type Item = &'a mut [T];
+    type IntoIter = RowIterMut<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 // Implement `Iterator` for `RowIter`
 impl<'a, T> Iterator for RowIter<'a, T> {
     type Item = &'a [T];
@@ -165,7 +193,6 @@ impl<'a, T> Iterator for RowIterMut<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_row < self.matrix.rows {
             let start = self.current_row * self.matrix.cols;
-            let _end = start + self.matrix.cols;
             self.current_row += 1;
             // SAFETY: This is safe because we ensure each slice is disjoint
             Some(unsafe {
@@ -219,33 +246,41 @@ where
         Self { mat: Arc::new(Mutex::new(Matrix::<T>::new(rows, cols))) }
     }
 
+    /// Get a copy of the element at (x, y).
+    ///
+    /// # Errors
+    /// Returns `OutOfRangeError` if `x` or `y` are out of bounds.
     pub fn get(
         &self,
         x: usize,
         y: usize,
     ) -> Result<T, OutOfRangeError> {
-        let mat = self.mat.lock().unwrap();
+        let mat = safe_lock(&self.mat);
         mat.get(x, y).cloned()
     }
 
+    /// Get a copy of the mutable element at (x, y).
+    ///
+    /// # Errors
+    /// Returns `OutOfRangeError` if `x` or `y` are out of bounds.
     pub fn get_mut(
         &self,
         x: usize,
         y: usize,
     ) -> Result<T, OutOfRangeError> {
-        let mut mat = self.mat.lock().unwrap();
+        let mut mat = safe_lock(&self.mat);
         mat.get_mut(x, y).cloned()
     }
 
     #[must_use]
     pub fn rows(&self) -> usize {
-        let mat = self.mat.lock().unwrap();
+        let mat = safe_lock(&self.mat);
         mat.rows()
     }
 
     #[must_use]
     pub fn cols(&self) -> usize {
-        let mat = self.mat.lock().unwrap();
+        let mat = safe_lock(&self.mat);
         mat.cols()
     }
 
@@ -260,7 +295,7 @@ where
         y: usize,
         value: T,
     ) {
-        let mut mat = self.mat.lock().unwrap();
+        let mut mat = safe_lock(&self.mat);
         mat.set_mut_unchecked(x, y, value);
     }
 
@@ -270,7 +305,7 @@ where
         x: usize,
         y: usize,
     ) -> T {
-        let mat = self.mat.lock().unwrap();
+        let mat = safe_lock(&self.mat);
         mat.get_unchecked(x, y).clone()
     }
 }

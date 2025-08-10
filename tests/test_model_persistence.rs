@@ -92,7 +92,7 @@ fn train_model(
     let mut training_session = TrainingSession::new(
         training_params,
         Box::new(data_importer),
-        Directory::Internal(internal_model_directory),
+        &Directory::Internal(internal_model_directory),
         utils.clone(),
     )
     .expect("Failed to create TrainingSession");
