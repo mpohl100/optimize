@@ -940,7 +940,7 @@ fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> 
                             weights.set_mut_unchecked(i, j, figures[0].parse::<f64>()?);
                         } else {
                             return Err("Invalid weight format".into());
-                        };
+                        }
                     }
                 }
             }
@@ -1029,7 +1029,7 @@ fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<d
                             );
                         } else {
                             return Err("Invalid weight format".into());
-                        };
+                        }
                     }
                 }
             }

@@ -132,6 +132,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         }
     }
 
+    #[allow(clippy::format_push_string)]
     pub fn get_data_as_string(
         &self,
         indentation: usize,
