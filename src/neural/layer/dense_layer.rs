@@ -676,6 +676,9 @@ impl TrainableLayer for TrainableDenseLayer {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_wrap)]
     fn adjust_adam(
         &mut self,
         t: usize,
