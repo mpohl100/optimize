@@ -30,17 +30,11 @@ impl<'a> NeuralNetworkMutater<'a> {
         shape: &NeuralNetworkShape,
     ) -> AnnotatedNeuralNetworkShape {
         let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape);
-        let random_number = self
-            .rng
-            .fetch_uniform(0.0, 3.0, 1)
-            .pop_front()
-            .expect("Failed to fetch random number")
-            .round() as i32;
+        let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
         match random_number {
             0 => {
-                let shape_num_layers: f32 = shape.num_layers() as f32;
-                let position: usize =
-                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
+                let position =
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
                         as usize;
                 let layers = fetch_added_layers(self.rng, shape, position);
                 mutated_shape.change_layer(position, layers[0].clone());
@@ -48,9 +42,8 @@ impl<'a> NeuralNetworkMutater<'a> {
             },
             1 => {
                 let activation = fetch_activation_data(self.rng);
-                let shape_num_layers: f32 = shape.num_layers() as f32;
                 let position =
-                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
                         as usize;
                 let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
@@ -63,9 +56,8 @@ impl<'a> NeuralNetworkMutater<'a> {
                 if shape.num_layers() == 1 {
                     return mutated_shape;
                 }
-                let shape_num_layers: f32 = shape.num_layers() as f32;
                 let position =
-                    (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
+                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
                         as usize;
                 let shape_len = shape.num_layers() - 1;
                 if position == 0 {
@@ -121,14 +113,13 @@ impl<'a> NeuralNetworkMutater<'a> {
 #[allow(clippy::cast_possible_truncation)]
 #[allow(clippy::cast_lossless)]
 pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
-    let random_number: i32 = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
+    let random_number = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
     match random_number {
         0 => ActivationData::new(ActivationType::ReLU),
         1 => ActivationData::new(ActivationType::Sigmoid),
         2 => ActivationData::new(ActivationType::Tanh),
         3 => {
-            let random_temperature: f64 =
-                rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap() as f64;
+            let random_temperature = f64::from(rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap());
             ActivationData::new_softmax(random_temperature)
         },
         _ => panic!("Invalid random number generated"),
@@ -147,11 +138,10 @@ fn fetch_added_layers(
 ) -> Vec<LayerShape> {
     let activation = fetch_activation_data(rng);
 
-    let random_number: usize = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
+    let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
 
     let layer = shape.get_layer(position);
-    let layer_input_size: f32 = layer.input_size() as f32;
-    let closest_power_of_two = (layer_input_size).log2().floor().exp2();
+    let closest_power_of_two = (layer.input_size() as f32).log2().floor().exp2();
 
     let begin_size = layer.input_size();
     let end_size = layer.output_size();
