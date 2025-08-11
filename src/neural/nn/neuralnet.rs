@@ -725,10 +725,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             "validation_split must be between 0 and 1"
         );
 
-        let inputs_len: f64 = transformed_inputs.len() as f64;
-
-        let split_index_f64 = (inputs_len * validation_split).round();
-        let split_index: usize = split_index_f64 as usize;
+        let split_index = (inputs.len() as f64 * validation_split).round() as usize;
         let (train_inputs, validation_inputs) = transformed_inputs.split_at(split_index);
         let (train_targets, validation_targets) = transformed_targets.split_at(split_index);
 
@@ -759,9 +756,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                let correct_outputs_f64: f64 = correct_outputs as f64;
-                let target_len: f64 = target.len() as f64;
-                success_count += correct_outputs_f64 / target_len;
+                success_count += correct_outputs as f64 / target.len() as f64;
 
                 // Calculate loss gradient
                 let grad_output: Vec<f64> = output
@@ -787,9 +782,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 }
 
                 // Update the progress bar
-                let train_inputs_len: f64 = train_inputs.len() as f64;
-                let accuracy = success_count / train_inputs_len * 100.0;
-                let loss_display = loss / train_inputs_len;
+                let accuracy = success_count / train_inputs.len() as f64 * 100.0;
+                let loss_display = loss / train_inputs.len() as f64;
                 pb.set_position((j + 1) as u64);
                 pb.set_message(format!("Accuracy: {accuracy:.2} %, Loss: {loss_display:.4}"));
             });
@@ -805,9 +799,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                let correct_outputs_f64: f64 = correct_outputs as f64;
-                let target_len: f64 = target.len() as f64;
-                validation_success_count += correct_outputs_f64 / target_len;
+                validation_success_count += correct_outputs as f64 / target.len() as f64;
 
                 validation_loss += output
                     .iter()
@@ -819,14 +811,13 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .sum::<f64>();
             });
 
-            let validation_inputs_len: f64 = validation_inputs.len() as f64;
-            validation_loss /= validation_inputs_len;
-            let validation_accuracy = validation_success_count / validation_inputs_len * 100.0;
+            validation_loss /= validation_inputs.len() as f64;
+            let validation_accuracy =
+                validation_success_count / validation_inputs.len() as f64 * 100.0;
             accuracy = validation_accuracy;
             // Finish the progress bar
-            let train_inputs_len: f64 = train_inputs.len() as f64;
-            loss /= train_inputs_len;
-            let accuracy = success_count / train_inputs_len * 100.0;
+            loss /= train_inputs.len() as f64;
+            let accuracy = success_count / train_inputs.len() as f64 * 100.0;
             let message = format!(
             "Epoch {epoch} finished | Train Acc: {accuracy:.2} %, Train Loss: {loss:.4} | Val Acc: {validation_accuracy:.2} %, Val Loss: {validation_loss:.4}");
             pb.finish_with_message(message);
@@ -868,10 +859,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    let len: f64 = target.len() as f64;
-                    let nb_correct_outputs_f64: f64 = nb_correct_outputs as f64;
-                    success_count += nb_correct_outputs_f64 / len;
-
+                    success_count += f64::from(nb_correct_outputs) / target.len() as f64;
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
                         let error = output[j] - target[j];
@@ -884,9 +872,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     layer.update_weights(learning_rate, self.utils.clone());
                 }
             }
-            let inputs_len: f64 = inputs.len() as f64;
-            let accuracy = success_count / inputs_len * 100.0;
-            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs_len, accuracy);
+            let accuracy = success_count / inputs.len() as f64 * 100.0;
+            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs.len() as f64, accuracy);
             if accuracy < 0.01 && i > 10 {
                 break;
             }
