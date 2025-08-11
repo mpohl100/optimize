@@ -47,10 +47,14 @@ impl<'a> NeuralNetworkMutater<'a> {
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             1 => {
+                let activation = fetch_activation_data(self.rng);
                 let shape_num_layers: f32 = shape.num_layers() as f32;
                 let position =
                     (self.rng.fetch_uniform(0.0, shape_num_layers, 1).pop_front().unwrap())
                         as usize;
+                let mut layer = mutated_shape.get_layer(position).clone();
+                layer.activation = activation;
+                mutated_shape.change_layer(position, layer);
                 let layers = fetch_added_layers(self.rng, shape, position);
                 mutated_shape.change_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
