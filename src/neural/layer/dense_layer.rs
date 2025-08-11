@@ -725,7 +725,7 @@ impl TrainableLayer for TrainableDenseLayer {
                 beta2.mul_add(self.biases.as_ref().unwrap()[i].v, (1.0 - beta2) * grad.powi(2));
 
             // Bias correction
-            let t_i: i32 = i as i32;
+            let t_i: i32 = t as i32;
             let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t_i));
             let v_hat = self.biases.as_ref().unwrap()[i].v / (1.0 - beta2.powi(t_i));
 
