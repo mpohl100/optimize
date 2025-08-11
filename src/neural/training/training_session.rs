@@ -126,9 +126,8 @@ impl TrainingSession {
 
         // Validation phase
         let mut success_count = 0.0;
-        let inputs_len_f64: f64 = inputs.len() as f64;
-        let num_training_samples: usize =
-            (inputs_len_f64 * self.params.validation_split().round()) as usize;
+        let num_training_samples =
+            (inputs.len() as f64 * self.params.validation_split()).round() as usize;
         let num_verification_samples = inputs.len() - num_training_samples;
         for i in 0..num_verification_samples {
             let sample_idx = num_training_samples + i;
@@ -146,13 +145,10 @@ impl TrainingSession {
                     nb_correct_outputs += 1;
                 }
             }
-            let nb_correct_outputs_f64: f64 = nb_correct_outputs as f64;
-            let target_len_f64: f64 = target.len() as f64;
-            success_count += nb_correct_outputs_f64 / target_len_f64;
+            success_count += f64::from(nb_correct_outputs) / target.len() as f64;
         }
-        let num_verification_samples_f64: f64 = num_verification_samples as f64;
         // Return the accuracy as the fraction of successful predictions
-        Ok(success_count / num_verification_samples_f64)
+        Ok(success_count / num_verification_samples as f64)
     }
 
     /// Save the model to disk
