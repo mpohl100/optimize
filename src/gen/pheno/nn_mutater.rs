@@ -114,6 +114,8 @@ impl<'a> NeuralNetworkMutater<'a> {
 /// # Panics
 /// This function will panic if the random number generator does not provide enough values,
 /// or if an invalid random number is generated.
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_lossless)]
 pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
     let random_number: i32 = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
     match random_number {
@@ -130,6 +132,10 @@ pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
 }
 
 #[allow(clippy::needless_late_init)]
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_lossless)]
+#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_precision_loss)]
 fn fetch_added_layers(
     rng: &mut dyn RngWrapper,
     shape: &NeuralNetworkShape,

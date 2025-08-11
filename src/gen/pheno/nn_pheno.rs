@@ -109,6 +109,7 @@ impl NeuralNetworkPhenotype {
         self.reset_half_shapes();
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn mutate_levels(
         &mut self,
         rng_wrapper: &mut RealRng,
