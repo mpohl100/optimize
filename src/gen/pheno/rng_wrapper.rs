@@ -60,7 +60,7 @@ impl RngWrapper for FakeRng {
                     result.push_back(val);
                 },
                 None => panic!("No more values"),
-            };
+            }
         }
 
         result
