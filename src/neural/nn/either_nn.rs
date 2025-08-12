@@ -603,12 +603,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         }
 
         let ((left_inputs, left_targets), (right_inputs, right_targets)) =
-            Self::split_by_prediction(
-                &mut temp_nn,
-                inputs,
-                targets,
-                tolerance,
-            );
+            Self::split_by_prediction(&mut temp_nn, inputs, targets, tolerance);
 
         if Self::too_few_mispredictions(&right_inputs) {
             self.save_pre_network(&temp_nn, "pre");

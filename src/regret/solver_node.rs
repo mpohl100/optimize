@@ -491,9 +491,7 @@ mod tests {
                             parents_data.clone(),
                             &mut Provider {
                                 provider_type: ProviderType::Children(
-                                    WrappedChildrenProvider::new(Box::new(
-                                        Self::new(),
-                                    )),
+                                    WrappedChildrenProvider::new(Box::new(Self::new())),
                                 ),
                                 user_data: Some(data.clone()),
                             },
