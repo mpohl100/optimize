@@ -135,7 +135,7 @@ mod tests {
     }
 
     impl TestAllocatable {
-        fn new(size: usize) -> Self {
+        const fn new(size: usize) -> Self {
             Self { size, in_use: false, is_allocated: false }
         }
     }
@@ -230,7 +230,7 @@ mod tests {
             allocatable1.clone(),
             allocatable2.clone(),
             allocatable3.clone(),
-            allocatable4.clone(),
+            allocatable4,
         ];
         for (index, this_allocatable) in multiple_allocatables.iter_mut().enumerate() {
             if index == 1 {

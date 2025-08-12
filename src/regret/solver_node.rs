@@ -27,7 +27,7 @@ pub struct WrappedChildrenProvider<UserData: UserDataTrait> {
 impl<UserData: UserDataTrait> WrappedChildrenProvider<UserData> {
     #[must_use]
     pub fn new(provider: Box<dyn ChildrenProvider<UserData>>) -> Self {
-        WrappedChildrenProvider { provider: Arc::new(Mutex::new(provider)) }
+        Self { provider: Arc::new(Mutex::new(provider)) }
     }
 
     #[must_use]
@@ -54,7 +54,7 @@ pub struct WrappedExpectedValueProvider<UserData: UserDataTrait> {
 impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
     #[must_use]
     pub fn new(provider: Box<dyn ExpectedValueProvider<UserData>>) -> Self {
-        WrappedExpectedValueProvider { provider: Arc::new(Mutex::new(provider)) }
+        Self { provider: Arc::new(Mutex::new(provider)) }
     }
 
     #[must_use]
@@ -114,7 +114,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
             },
             |data| data.set_probability(probability),
         );
-        RegretNode {
+        Self {
             probability,
             min_probability,
             current_expected_value: 0.0,
@@ -339,19 +339,19 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         }
     }
 
-    fn get_expected_value(&self) -> f64 {
+    const fn get_expected_value(&self) -> f64 {
         self.current_expected_value
     }
 
-    pub fn get_probability(&self) -> f64 {
+    pub const fn get_probability(&self) -> f64 {
         self.probability
     }
 
-    pub fn get_average_probability(&self) -> f64 {
+    pub const fn get_average_probability(&self) -> f64 {
         self.average_probability
     }
 
-    pub fn get_average_expected_value(&self) -> f64 {
+    pub const fn get_average_expected_value(&self) -> f64 {
         self.average_expected_value
     }
 }
@@ -363,7 +363,7 @@ pub struct WrappedRegret<UserData: UserDataTrait> {
 
 impl<UserData: UserDataTrait> WrappedRegret<UserData> {
     pub fn new(node: RegretNode<UserData>) -> Self {
-        WrappedRegret { node: Arc::new(Mutex::new(node)) }
+        Self { node: Arc::new(Mutex::new(node)) }
     }
 
     #[must_use]
@@ -466,8 +466,8 @@ mod tests {
     struct RoshamboChildrenProvider {}
 
     impl RoshamboChildrenProvider {
-        pub fn new() -> Self {
-            RoshamboChildrenProvider {}
+        pub const fn new() -> Self {
+            Self {}
         }
     }
 
@@ -492,7 +492,7 @@ mod tests {
                             &mut Provider {
                                 provider_type: ProviderType::Children(
                                     WrappedChildrenProvider::new(Box::new(
-                                        RoshamboChildrenProvider::new(),
+                                        Self::new(),
                                     )),
                                 ),
                                 user_data: Some(data.clone()),
@@ -536,8 +536,8 @@ mod tests {
     struct RoshamboExpectedValueProvider {}
 
     impl RoshamboExpectedValueProvider {
-        pub fn new() -> Self {
-            RoshamboExpectedValueProvider {}
+        pub const fn new() -> Self {
+            Self {}
         }
     }
 

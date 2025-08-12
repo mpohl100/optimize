@@ -30,7 +30,7 @@ impl ActivationTrait for Sigmoid {
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        Sigmoid::sigmoid_vec(input)
+        Self::sigmoid_vec(input)
     }
 
     fn backward(
@@ -39,7 +39,7 @@ impl ActivationTrait for Sigmoid {
     ) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(Sigmoid::sigmoid_vec(grad_output).iter())
+            .zip(Self::sigmoid_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * output * (1.0 - output))
             .collect()
     }

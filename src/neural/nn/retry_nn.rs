@@ -604,14 +604,14 @@ mod tests {
             },
             1,
             "internal_model".to_string(),
-            utils.clone(),
+            utils,
         );
 
         let input = vec![1.0, 1.0, 1.0];
         // put input 200 times in inputs
-        let inputs = vec![input.clone(); 500];
+        let inputs = vec![input; 500];
         let target = vec![0.0, 0.0, 0.0];
-        let targets = vec![target.clone(); 500];
+        let targets = vec![target; 500];
 
         nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 

@@ -77,7 +77,7 @@ where
         let mut children: Vec<Pheno> = Vec::new();
         let winner_previous_generation = parents[0].clone();
 
-        children.push(BoundedBreedStrategy::develop(
+        children.push(Self::develop(
             winner_previous_generation.clone(),
             rng,
             false,
@@ -86,7 +86,7 @@ where
         parents.iter().skip(1).try_for_each(|parent| -> Result<(), Error> {
             let mut child = winner_previous_generation.clone();
             child.crossover(parent);
-            let mutated_child = BoundedBreedStrategy::develop(child, rng, true)?;
+            let mutated_child = Self::develop(child, rng, true)?;
             children.push(mutated_child);
             Ok(())
         })?;
@@ -94,7 +94,7 @@ where
         (parents.len()..evol_options.get_num_offspring()).try_for_each(
             |_| -> Result<(), Error> {
                 let child = winner_previous_generation.clone();
-                let mutated_child = BoundedBreedStrategy::develop(child, rng, true)?;
+                let mutated_child = Self::develop(child, rng, true)?;
                 children.push(mutated_child);
                 Ok(())
             },

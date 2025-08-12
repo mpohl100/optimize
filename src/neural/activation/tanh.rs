@@ -30,7 +30,7 @@ impl ActivationTrait for Tanh {
         &mut self,
         input: &[f64],
     ) -> Vec<f64> {
-        Tanh::tanh_vec(input)
+        Self::tanh_vec(input)
     }
 
     fn backward(
@@ -39,7 +39,7 @@ impl ActivationTrait for Tanh {
     ) -> Vec<f64> {
         grad_output
             .iter()
-            .zip(Tanh::tanh_vec(grad_output).iter())
+            .zip(Self::tanh_vec(grad_output).iter())
             .map(|(&grad, &output)| grad * output.mul_add(-output, 1.0))
             .collect()
     }
