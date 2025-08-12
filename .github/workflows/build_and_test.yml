@@ -26,4 +26,4 @@ jobs:
             cargo test --release --verbose || exit 1
             cargo bench || exit 1
             cargo fmt --check || exit 1
-            cargo clippy -- -D warnings -A clippy::multiple_crate_versions|| exit 1
+            cargo clippy -- -A clippy::multiple_crate_versions -D warnings || exit 1
