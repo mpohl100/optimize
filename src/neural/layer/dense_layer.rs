@@ -12,6 +12,8 @@ use crate::neural::utilities::util::WrappedUtils;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
+use num_traits::cast::NumCast;
+
 use fs2::FileExt;
 use rand::Rng;
 use std::error::Error;
@@ -676,9 +678,6 @@ impl TrainableLayer for TrainableDenseLayer {
         }
     }
 
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_possible_wrap)]
     fn adjust_adam(
         &mut self,
         t: usize,
@@ -688,7 +687,7 @@ impl TrainableLayer for TrainableDenseLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        let t_f = t as f64; // convert time step once
+        let t_f: f64 = NumCast::from(t).expect("Failed to convert time step to f64");
         let beta1_pow_t = beta1.powf(t_f);
         let beta2_pow_t = beta2.powf(t_f);
         let weights = self.weights.as_ref().unwrap().clone();
@@ -725,7 +724,7 @@ impl TrainableLayer for TrainableDenseLayer {
                 beta2.mul_add(self.biases.as_ref().unwrap()[i].v, (1.0 - beta2) * grad.powi(2));
 
             // Bias correction
-            let t_i: i32 = t as i32;
+            let t_i: i32 = NumCast::from(t).expect("Failed to convert t to i32");
             let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t_i));
             let v_hat = self.biases.as_ref().unwrap()[i].v / (1.0 - beta2.powi(t_i));
 
