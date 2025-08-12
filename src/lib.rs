@@ -4,6 +4,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![warn(clippy::nursery)]
 #![warn(clippy::cargo)]
+#![allow(clippy::multiple_crate_versions)]
 pub mod alloc;
 pub mod evol;
 pub mod gen;
