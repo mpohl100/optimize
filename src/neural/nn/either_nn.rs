@@ -342,7 +342,7 @@ impl TrainableEitherNeuralNetwork {
         }
     }
 
-    fn not_enough_samples(inputs: &[Vec<f64>]) -> bool {
+    const fn not_enough_samples(inputs: &[Vec<f64>]) -> bool {
         inputs.len() < 100
     }
 
@@ -378,7 +378,7 @@ impl TrainableEitherNeuralNetwork {
         (temp_nn, acc)
     }
 
-    fn no_more_levels(&self) -> bool {
+    const fn no_more_levels(&self) -> bool {
         self.max_levels <= 0
     }
 
@@ -441,7 +441,7 @@ impl TrainableEitherNeuralNetwork {
         ((left_inputs, left_targets), (right_inputs, right_targets))
     }
 
-    fn too_few_mispredictions(right_inputs: &[Vec<f64>]) -> bool {
+    const fn too_few_mispredictions(right_inputs: &[Vec<f64>]) -> bool {
         right_inputs.len() < 100
     }
 
@@ -603,7 +603,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         }
 
         let ((left_inputs, left_targets), (right_inputs, right_targets)) =
-            TrainableEitherNeuralNetwork::split_by_prediction(
+            Self::split_by_prediction(
                 &mut temp_nn,
                 inputs,
                 targets,
@@ -749,14 +749,14 @@ mod tests {
             },
             2,
             "internal_model".to_string(),
-            utils.clone(),
+            utils,
         );
 
         let input = vec![1.0, 1.0, 1.0];
         // put input 200 times in inputs
-        let inputs = vec![input.clone(); 500];
+        let inputs = vec![input; 500];
         let target = vec![0.0, 0.0, 0.0];
-        let targets = vec![target.clone(); 500];
+        let targets = vec![target; 500];
 
         nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 

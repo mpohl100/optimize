@@ -716,7 +716,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     ) -> f64 {
         // in case one does not have enough samples, don't train and return zero accuracy
         let (transformed_inputs, transformed_targets) =
-            TrainableClassicNeuralNetwork::transform(inputs, targets);
+            Self::transform(inputs, targets);
         assert!(
             (0.0..=1.0).contains(&validation_split),
             "validation_split must be between 0 and 1"
@@ -978,14 +978,14 @@ mod tests {
                 ],
             },
             &Directory::Internal("internal_model".to_string()),
-            utils.clone(),
+            utils,
         );
 
         let input = vec![1.0, 1.0, 1.0];
         // put input 200 times in inputs
-        let inputs = vec![input.clone(); 200];
+        let inputs = vec![input; 200];
         let target = vec![0.0, 0.0, 0.0];
-        let targets = vec![target.clone(); 200];
+        let targets = vec![target; 200];
 
         nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
 

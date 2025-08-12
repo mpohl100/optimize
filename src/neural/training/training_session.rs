@@ -214,7 +214,7 @@ mod tests {
     }
 
     impl MockDataImporter {
-        fn new(shape: NeuralNetworkShape) -> Self {
+        const fn new(shape: NeuralNetworkShape) -> Self {
             Self { shape }
         }
     }
@@ -270,7 +270,7 @@ mod tests {
             training_params,
             Box::new(data_importer),
             &Directory::Internal("test_session_model".to_string()),
-            utils.clone(),
+            utils,
         )
         .expect("Failed to create TrainingSession");
 
