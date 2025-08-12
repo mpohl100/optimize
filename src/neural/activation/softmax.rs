@@ -47,10 +47,10 @@ impl ActivationTrait for Softmax {
         &mut self,
         grad_output: &[f64],
     ) -> Vec<f64> {
-        let softmax_output = match &self.cached_output {
-            Some(output) => output.clone(),
-            None => panic!("Softmax forward must be called before backward."),
-        };
+        let softmax_output = self.cached_output.as_ref().map_or_else(
+            || panic!("Softmax forward must be called before backward."),
+            std::clone::Clone::clone,
+        );
 
         let mut grad_input = vec![0.0; grad_output.len()];
         for i in 0..softmax_output.len() {
