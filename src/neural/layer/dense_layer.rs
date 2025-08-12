@@ -337,7 +337,7 @@ impl TrainableDenseLayer {
     }
 
     /// Initialize the weights with random values in the range [-0.5, 0.5]
-    fn initialize_weights(&mut self) {
+    fn initialize_weights(&self) {
         let mut rng = rand::thread_rng();
         // initialize weights from -0.5 to 0.5
         for i in 0..self.weights.as_ref().unwrap().rows() {

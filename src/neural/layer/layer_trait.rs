@@ -108,8 +108,7 @@ impl WrappedLayer {
         model_directory: String,
         position_in_nn: usize,
     ) -> Self {
-        let mut layer = safe_lock(&self.layer);
-        let new_layer = layer.duplicate(model_directory, position_in_nn);
+        let new_layer = safe_lock(&self.layer).duplicate(model_directory, position_in_nn);
         Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
@@ -313,8 +312,7 @@ impl WrappedTrainableLayer {
         model_directory: String,
         position_in_nn: usize,
     ) -> Self {
-        let mut layer = safe_lock(&self.layer);
-        let new_layer = layer.duplicate(model_directory, position_in_nn);
+        let new_layer = safe_lock(&self.layer).duplicate(model_directory, position_in_nn);
         Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
