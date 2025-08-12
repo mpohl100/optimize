@@ -1,4 +1,5 @@
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
+use crate::neural::layer;
 use crate::neural::nn::shape::ActivationData;
 use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::LayerShape;
@@ -7,6 +8,7 @@ use crate::neural::nn::shape::NeuralNetworkShape;
 
 use crate::gen::pheno::rng_wrapper::RngWrapper;
 
+use num_traits::cast::NumCast;
 pub struct NeuralNetworkMutater<'a> {
     rng: &'a mut dyn RngWrapper,
 }
@@ -21,30 +23,34 @@ impl<'a> NeuralNetworkMutater<'a> {
     /// # Panics
     /// This function will panic if the random number generator does not provide enough values,
     /// or if an invalid random number is generated.
-    #[allow(clippy::cast_lossless)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_precision_loss)]
     pub fn mutate_shape(
         &mut self,
         shape: &NeuralNetworkShape,
     ) -> AnnotatedNeuralNetworkShape {
         let mut mutated_shape = AnnotatedNeuralNetworkShape::new(shape);
-        let random_number = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as i32;
+        let random_f64 = self.rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap();
+        let random_number: i32 =
+            NumCast::from(random_f64).expect("Failed to convert random_f64 to i32");
         match random_number {
             0 => {
-                let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
-                        as usize;
+                let num_layers_f32: f32 = NumCast::from(shape.num_layers())
+                    .expect("Failed to convert shape.num_layers() to f32");
+                let position: usize = NumCast::from(
+                    self.rng.fetch_uniform(0.0, num_layers_f32, 1).pop_front().unwrap(),
+                )
+                .expect("Failed to convert position to usize");
                 let layers = fetch_added_layers(self.rng, shape, position);
                 mutated_shape.change_layer(position, layers[0].clone());
                 mutated_shape.add_layer(position + 1, layers[1].clone());
             },
             1 => {
                 let activation = fetch_activation_data(self.rng);
-                let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
-                        as usize;
+                let num_layers_f32: f32 = NumCast::from(shape.num_layers())
+                    .expect("Failed to convert shape.num_layers() to f32");
+                let position: usize = NumCast::from(
+                    self.rng.fetch_uniform(0.0, num_layers_f32, 1).pop_front().unwrap(),
+                )
+                .expect("Failed to convert position to usize");
                 let mut layer = mutated_shape.get_layer(position).clone();
                 layer.activation = activation;
                 mutated_shape.change_layer(position, layer);
@@ -56,9 +62,12 @@ impl<'a> NeuralNetworkMutater<'a> {
                 if shape.num_layers() == 1 {
                     return mutated_shape;
                 }
-                let position =
-                    self.rng.fetch_uniform(0.0, shape.num_layers() as f32, 1).pop_front().unwrap()
-                        as usize;
+                let num_layers_f32: f32 = NumCast::from(shape.num_layers())
+                    .expect("Failed to convert shape.num_layers() to f32");
+                let position: usize = NumCast::from(
+                    self.rng.fetch_uniform(0.0, num_layers_f32, 1).pop_front().unwrap(),
+                )
+                .expect("Failed to convert position to usize");
                 let shape_len = shape.num_layers() - 1;
                 if position == 0 {
                     let input_size = shape.get_layer(0).input_size();
@@ -110,27 +119,26 @@ impl<'a> NeuralNetworkMutater<'a> {
 /// # Panics
 /// This function will panic if the random number generator does not provide enough values,
 /// or if an invalid random number is generated.
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::cast_lossless)]
 pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
-    let random_number = rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap() as i32;
+    let random_f64: f64 = NumCast::from(rng.fetch_uniform(0.0, 4.0, 1).pop_front().unwrap())
+        .expect("Failed to convert random number to f64");
+    let random_number: i32 =
+        NumCast::from(random_f64).expect("Failed to convert random_f64 to i32");
     match random_number {
         0 => ActivationData::new(ActivationType::ReLU),
         1 => ActivationData::new(ActivationType::Sigmoid),
         2 => ActivationData::new(ActivationType::Tanh),
         3 => {
-            let random_temperature = f64::from(rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap());
-            ActivationData::new_softmax(random_temperature)
+            let random_temperature_f64: f64 =
+                NumCast::from(rng.fetch_uniform(0.0, 5.0, 1).pop_front().unwrap())
+                    .expect("Failed to convert random_temperature to f64");
+            ActivationData::new_softmax(random_temperature_f64)
         },
         _ => panic!("Invalid random number generated"),
     }
 }
 
 #[allow(clippy::needless_late_init)]
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::cast_lossless)]
-#[allow(clippy::cast_sign_loss)]
-#[allow(clippy::cast_precision_loss)]
 fn fetch_added_layers(
     rng: &mut dyn RngWrapper,
     shape: &NeuralNetworkShape,
@@ -138,18 +146,25 @@ fn fetch_added_layers(
 ) -> Vec<LayerShape> {
     let activation = fetch_activation_data(rng);
 
-    let random_number = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap() as usize;
+    let random_f64 = rng.fetch_uniform(0.0, 3.0, 1).pop_front().unwrap();
+    let random_number: usize =
+        NumCast::from(random_f64).expect("Failed to convert random_f64 to usize");
 
     let layer = shape.get_layer(position);
-    let closest_power_of_two = (layer.input_size() as f32).log2().floor().exp2();
+    let layer_input_size: f32 =
+        NumCast::from(layer.input_size()).expect("Failed to convert layer.input_size() to f32");
+    let closest_power_of_two = layer_input_size.log2().floor().exp2();
 
     let begin_size = layer.input_size();
     let end_size = layer.output_size();
 
     let mut inner_size: usize = match random_number {
-        1 => (closest_power_of_two / 2.0) as usize,
-        2 => (closest_power_of_two * 2.0) as usize,
-        _ => closest_power_of_two as usize,
+        1 => NumCast::from(closest_power_of_two / 2.0)
+            .expect("Failed to convert closest_power_of_two / 2.0 to usize"),
+        2 => NumCast::from(closest_power_of_two * 2.0)
+            .expect("Failed to convert closest_power_of_two * 2.0 to usize"),
+        _ => NumCast::from(closest_power_of_two)
+            .expect("Failed to convert closest_power_of_two to usize"),
     };
 
     // cap the inner size at an acceptable value
