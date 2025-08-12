@@ -12,7 +12,7 @@ use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
-use num_traits::{Num, NumCast};
+use num_traits::NumCast;
 use rand::prelude::SliceRandom;
 
 use std::path::Path;
