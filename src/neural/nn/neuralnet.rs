@@ -12,6 +12,7 @@ use crate::neural::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
+use num_traits::{Num, NumCast};
 use rand::prelude::SliceRandom;
 
 use std::path::Path;
@@ -703,10 +704,6 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_arguments)]
-    #[allow(clippy::cast_lossless)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_precision_loss)]
     fn train(
         &mut self,
         inputs: &[Vec<f64>],
@@ -725,7 +722,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             "validation_split must be between 0 and 1"
         );
 
-        let split_index = (inputs.len() as f64 * validation_split).round() as usize;
+        let inputs_len: f64 =
+            NumCast::from(inputs.len()).expect("Failed to convert inputs.len() to f64");
+        let split_index: usize = NumCast::from((inputs_len * validation_split).round())
+            .expect("Failed to convert split index to usize");
         let (train_inputs, validation_inputs) = transformed_inputs.split_at(split_index);
         let (train_targets, validation_targets) = transformed_targets.split_at(split_index);
 
@@ -756,8 +756,12 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                success_count += correct_outputs as f64 / target.len() as f64;
+                let correct_outputs_f64: f64 = NumCast::from(correct_outputs)
+                    .expect("Failed to convert correct_outputs to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
 
+                success_count += correct_outputs_f64 / target_len_f64;
                 // Calculate loss gradient
                 let grad_output: Vec<f64> = output
                     .iter()
@@ -782,8 +786,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 }
 
                 // Update the progress bar
-                let accuracy = success_count / train_inputs.len() as f64 * 100.0;
-                let loss_display = loss / train_inputs.len() as f64;
+                let train_inputs_len: f64 = NumCast::from(train_inputs.len())
+                    .expect("Failed to convert train_inputs.len() to f64");
+                let accuracy = success_count / train_inputs_len * 100.0;
+                let loss_display = loss / train_inputs_len;
                 pb.set_position((j + 1) as u64);
                 pb.set_message(format!("Accuracy: {accuracy:.2} %, Loss: {loss_display:.4}"));
             });
@@ -799,7 +805,11 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target.iter())
                     .filter(|(&o, &t)| (o - t).abs() < tolerance)
                     .count();
-                validation_success_count += correct_outputs as f64 / target.len() as f64;
+                let correct_outputs_f64: f64 = NumCast::from(correct_outputs)
+                    .expect("Failed to convert correct_outputs to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
+                validation_success_count += correct_outputs_f64 / target_len_f64;
 
                 validation_loss += output
                     .iter()
@@ -811,13 +821,16 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .sum::<f64>();
             });
 
-            validation_loss /= validation_inputs.len() as f64;
-            let validation_accuracy =
-                validation_success_count / validation_inputs.len() as f64 * 100.0;
+            let validation_inputs_len: f64 = NumCast::from(validation_inputs.len())
+                .expect("Failed to convert validation_inputs.len() to f64");
+            validation_loss /= validation_inputs_len;
+            let validation_accuracy = validation_success_count / validation_inputs_len * 100.0;
             accuracy = validation_accuracy;
             // Finish the progress bar
-            loss /= train_inputs.len() as f64;
-            let accuracy = success_count / train_inputs.len() as f64 * 100.0;
+            let train_inputs_len: f64 = NumCast::from(train_inputs.len())
+                .expect("Failed to convert train_inputs.len() to f64");
+            loss /= train_inputs_len;
+            let accuracy = success_count / train_inputs_len * 100.0;
             let message = format!(
             "Epoch {epoch} finished | Train Acc: {accuracy:.2} %, Train Loss: {loss:.4} | Val Acc: {validation_accuracy:.2} %, Val Loss: {validation_loss:.4}");
             pb.finish_with_message(message);
@@ -859,7 +872,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    success_count += f64::from(nb_correct_outputs) / target.len() as f64;
+                    success_count += (nb_correct_outputs as f64) / target.len() as f64;
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
                         let error = output[j] - target[j];
