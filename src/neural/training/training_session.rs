@@ -7,6 +7,8 @@ use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
 use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
 use crate::neural::utilities::util::WrappedUtils;
 
+use num_traits::NumCast;
+
 use std::error::Error;
 
 pub struct TrainingSession {
@@ -88,10 +90,6 @@ impl TrainingSession {
     /// # Panics
     ///
     /// This function will panic if the neural network is not properly initialized.
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_lossless)]
     pub fn train(&mut self) -> Result<f64, Box<dyn Error>> {
         // Prepare the data
         let data = self.data_importer.get_data();
@@ -126,8 +124,11 @@ impl TrainingSession {
 
         // Validation phase
         let mut success_count = 0.0;
-        let num_training_samples =
-            (inputs.len() as f64 * self.params.validation_split()).round() as usize;
+        let inputs_len_f64: f64 =
+            NumCast::from(inputs.len()).expect("Failed to convert inputs.len() to f64");
+        let num_training_samples: usize =
+            NumCast::from((inputs_len_f64 * self.params.validation_split()).round())
+                .expect("Failed to convert result to usize");
         let num_verification_samples = inputs.len() - num_training_samples;
         for i in 0..num_verification_samples {
             let sample_idx = num_training_samples + i;
@@ -145,10 +146,18 @@ impl TrainingSession {
                     nb_correct_outputs += 1;
                 }
             }
-            success_count += f64::from(nb_correct_outputs) / target.len() as f64;
+            let num_correct_outputs_f64: f64 =
+                NumCast::from(nb_correct_outputs).expect("Failed to convert to f64");
+            let target_len_f64: f64 =
+                NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
+            success_count += num_correct_outputs_f64 / target_len_f64;
         }
         // Return the accuracy as the fraction of successful predictions
-        Ok(success_count / num_verification_samples as f64)
+        let num_verification_samples_f64: f64 =
+            NumCast::from(num_verification_samples).expect("Failed to convert to f64");
+        let accuracy: f64 = NumCast::from(success_count / num_verification_samples_f64)
+            .expect("Failed to convert to f64");
+        Ok(accuracy)
     }
 
     /// Save the model to disk
