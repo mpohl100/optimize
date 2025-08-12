@@ -1,5 +1,4 @@
 use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
-use crate::neural::layer;
 use crate::neural::nn::shape::ActivationData;
 use crate::neural::nn::shape::ActivationType;
 use crate::neural::nn::shape::LayerShape;
