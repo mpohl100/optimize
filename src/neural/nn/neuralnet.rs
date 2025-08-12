@@ -715,8 +715,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         validation_split: f64,
     ) -> f64 {
         // in case one does not have enough samples, don't train and return zero accuracy
-        let (transformed_inputs, transformed_targets) =
-            Self::transform(inputs, targets);
+        let (transformed_inputs, transformed_targets) = Self::transform(inputs, targets);
         assert!(
             (0.0..=1.0).contains(&validation_split),
             "validation_split must be between 0 and 1"

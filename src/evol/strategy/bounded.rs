@@ -77,11 +77,7 @@ where
         let mut children: Vec<Pheno> = Vec::new();
         let winner_previous_generation = parents[0].clone();
 
-        children.push(Self::develop(
-            winner_previous_generation.clone(),
-            rng,
-            false,
-        )?);
+        children.push(Self::develop(winner_previous_generation.clone(), rng, false)?);
 
         parents.iter().skip(1).try_for_each(|parent| -> Result<(), Error> {
             let mut child = winner_previous_generation.clone();
