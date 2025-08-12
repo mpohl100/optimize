@@ -840,10 +840,6 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     }
 
     /// Trains the neural network doing batch back propagation.
-    #[allow(clippy::cast_lossless)]
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::cast_precision_loss)]
     fn train_batch(
         &mut self,
         inputs: &[Vec<f64>],
@@ -872,7 +868,11 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    success_count += (nb_correct_outputs as f64) / target.len() as f64;
+                    let nb_correct_outputs_f64: f64 =
+                        NumCast::from(nb_correct_outputs).expect("Failed to convert to f64");
+                    let target_len_f64: f64 =
+                        NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
+                    success_count += nb_correct_outputs_f64 / target_len_f64;
                     let mut grad_output = Vec::new();
                     for j in 0..output.len() {
                         let error = output[j] - target[j];
@@ -885,8 +885,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     layer.update_weights(learning_rate, self.utils.clone());
                 }
             }
-            let accuracy = success_count / inputs.len() as f64 * 100.0;
-            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs.len() as f64, accuracy);
+            let inputs_len: f64 =
+                NumCast::from(inputs.len()).expect("Failed to convert inputs.len() to f64");
+            let accuracy = success_count / inputs_len * 100.0;
+            println!("Epoch {}: Loss {}, Accuracy {}%\r", i, loss / inputs_len, accuracy);
             if accuracy < 0.01 && i > 10 {
                 break;
             }
