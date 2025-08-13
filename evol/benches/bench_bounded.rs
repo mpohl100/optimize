@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use learn::evol::{
+use evol::{
     evolution::{Challenge, EvolutionLauncher, EvolutionOptions, LogLevel},
     phenotype::Phenotype,
     rng::RandomNumberGenerator,

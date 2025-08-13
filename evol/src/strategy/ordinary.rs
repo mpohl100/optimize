@@ -4,9 +4,9 @@
 //! parent is considered as the winner of the previous generation, and the remaining
 //! parents are used to create new individuals through crossover and mutation.
 use super::BreedStrategy;
-use crate::evol::evolution;
-use crate::evol::phenotype::Phenotype;
-use crate::evol::rng;
+use crate::evolution;
+use crate::phenotype::Phenotype;
+use crate::rng;
 use std::fmt::Error;
 
 /// # `OrdinaryStrategy`
@@ -67,7 +67,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::evol::{
+    use crate::{
         evolution::options::EvolutionOptions, phenotype::Phenotype, rng::RandomNumberGenerator,
         strategy::BreedStrategy,
     };

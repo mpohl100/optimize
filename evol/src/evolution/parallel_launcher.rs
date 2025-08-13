@@ -4,8 +4,8 @@ use super::{
     challenge::Challenge,
     options::{EvolutionOptions, LogLevel},
 };
-use crate::evol::evolution::EvolutionResult;
-use crate::evol::{phenotype::Phenotype, rng::RandomNumberGenerator, strategy::BreedStrategy};
+use crate::evolution::EvolutionResult;
+use crate::{phenotype::Phenotype, rng::RandomNumberGenerator, strategy::BreedStrategy};
 
 use rayon::prelude::*;
 use std::sync::Arc;

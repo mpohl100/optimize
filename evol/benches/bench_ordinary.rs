@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use learn::evol::{
+use evol::{
     evolution::{EvolutionOptions, LogLevel},
     rng::RandomNumberGenerator,
     strategy::{BreedStrategy, OrdinaryStrategy},
@@ -16,7 +16,7 @@ fn bench_ordinary(c: &mut Criterion) {
     #[derive(Debug, Copy, Clone)]
     struct MockPhenotype;
 
-    impl learn::evol::phenotype::Phenotype for MockPhenotype {
+    impl evol::phenotype::Phenotype for MockPhenotype {
         fn crossover(
             &mut self,
             other: &Self,
