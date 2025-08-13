@@ -1,15 +1,15 @@
-use learn::evol::rng::RandomNumberGenerator;
-use learn::neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+use evol::rng::RandomNumberGenerator;
+use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
+use neural::nn::shape::NeuralNetworkShape;
+use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 
-use learn::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
-use learn::gen::strategy::nn_strategy::NeuralNetworkStrategy;
+use gen::pheno::nn_pheno::NeuralNetworkPhenotype;
+use gen::strategy::nn_strategy::NeuralNetworkStrategy;
 
-use learn::evol::evolution::EvolutionOptions;
-use learn::evol::evolution::LogLevel;
-use learn::evol::strategy::BreedStrategy;
-use learn::neural::utilities::util::{Utils, WrappedUtils};
+use evol::evolution::EvolutionOptions;
+use evol::evolution::LogLevel;
+use evol::strategy::BreedStrategy;
+use neural::utilities::util::{Utils, WrappedUtils};
 
 #[test]
 fn test_neural_network_breeding() {

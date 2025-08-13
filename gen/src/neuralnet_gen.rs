@@ -1,17 +1,17 @@
-use crate::neural::nn::nn_factory::new_trainable_neural_network;
-use crate::neural::nn::nn_factory::trainable_neural_network_from_disk;
-use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
-use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
-use crate::neural::training::data_importer::DataImporter;
+use neural::nn::nn_factory::new_trainable_neural_network;
+use neural::nn::nn_factory::trainable_neural_network_from_disk;
+use neural::nn::nn_factory::NeuralNetworkCreationArguments;
+use neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
+use neural::training::data_importer::DataImporter;
+use neural::training::training_params::TrainingParams;
+use neural::utilities::util::WrappedUtils;
 
-use crate::evol::evolution::EvolutionOptions;
-use crate::evol::evolution::ParallelEvolutionLauncher;
-use crate::evol::rng::RandomNumberGenerator;
+use evol::evolution::EvolutionOptions;
+use evol::evolution::ParallelEvolutionLauncher;
+use evol::rng::RandomNumberGenerator;
 
-use crate::gen::challenge::nn_challenge::NeuralNetworkChallenge;
-use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
-use crate::neural::training::training_params::TrainingParams;
-use crate::neural::utilities::util::WrappedUtils;
+use crate::challenge::nn_challenge::NeuralNetworkChallenge;
+use crate::pheno::nn_pheno::NeuralNetworkPhenotype;
 
 use super::strategy::nn_strategy::NeuralNetworkStrategy;
 

@@ -1,10 +1,10 @@
-use learn::evol::evolution::{EvolutionOptions, LogLevel};
-use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
-use learn::neural::training::data_importer::{DataImporter, SessionData};
-use learn::neural::training::training_params::TrainingParams;
-use learn::neural::utilities::util::{Utils, WrappedUtils};
+use evol::evolution::{EvolutionOptions, LogLevel};
+use gen::neuralnet_gen::NeuralNetworkGenerator;
+use neural::nn::shape::NeuralNetworkShape;
+use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+use neural::training::data_importer::{DataImporter, SessionData};
+use neural::training::training_params::TrainingParams;
+use neural::utilities::util::{Utils, WrappedUtils};
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]

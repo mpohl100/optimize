@@ -1,11 +1,11 @@
-use super::annotated_nn_shape::AnnotatedNeuralNetworkShape;
-use crate::neural::nn::shape::ActivationData;
-use crate::neural::nn::shape::ActivationType;
-use crate::neural::nn::shape::LayerShape;
-use crate::neural::nn::shape::LayerType;
-use crate::neural::nn::shape::NeuralNetworkShape;
+use neural::nn::shape::ActivationData;
+use neural::nn::shape::ActivationType;
+use neural::nn::shape::AnnotatedNeuralNetworkShape;
+use neural::nn::shape::LayerShape;
+use neural::nn::shape::LayerType;
+use neural::nn::shape::NeuralNetworkShape;
 
-use crate::gen::pheno::rng_wrapper::RngWrapper;
+use crate::pheno::rng_wrapper::RngWrapper;
 
 use num_traits::cast::NumCast;
 pub struct NeuralNetworkMutater<'a> {
@@ -186,8 +186,8 @@ fn fetch_added_layers(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gen::pheno::annotated_nn_shape::LayerChangeType;
-    use crate::gen::pheno::rng_wrapper::FakeRng;
+    use crate::pheno::rng_wrapper::FakeRng;
+    use neural::nn::shape::LayerChangeType;
 
     // --------------------------------------------------------------------------------------------------------
     // Test adding a layer

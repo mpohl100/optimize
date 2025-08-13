@@ -1,4 +1,4 @@
-use crate::evol::rng::RandomNumberGenerator;
+use evol::rng::RandomNumberGenerator;
 
 use std::collections::VecDeque;
 
