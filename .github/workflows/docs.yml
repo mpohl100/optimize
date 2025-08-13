@@ -31,8 +31,30 @@ jobs:
         run: cargo clean --doc
       - name: Build docs
         run: cargo doc --no-deps
-      - name: Add redirect
-        run: echo '<meta http-equiv="refresh" content="0;url=learn/index.html">' > target/doc/index.html
+      - name: Create workspace docs index
+        run: |
+          cat > target/doc/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Workspace Docs</title>
+          </head>
+          <body>
+            <h1>Workspace Documentation</h1>
+            <ul>
+              <li><a href="alloc/index.html">alloc</a></li>
+              <li><a href="app/index.html">app</a></li>
+              <li><a href="gen/index.html">gen</a></li>
+              <li><a href="neural/index.html">neural</a></li>
+              <li><a href="regret/index.html">regret</a></li>
+              <li><a href="utils/index.html">utils</a></li>
+              <li><a href="evol/index.html">evol</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
+
       - name: Remove lock file
         run: rm target/doc/.lock
       - name: Upload artifact
