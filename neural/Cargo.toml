@@ -20,3 +20,6 @@ indicatif = "0.17"
 once_cell = "1.18"
 fs2 = "0.4"
 num-traits = "0.2"
+
+alloc = { path = "../alloc" }
+utils = { path = "../utils" }

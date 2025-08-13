@@ -1,5 +1,5 @@
 use super::activate::ActivationTrait;
-use crate::neural::nn::shape::ActivationData;
+use crate::nn::shape::ActivationData;
 
 /// Softmax activation function.
 #[derive(Debug, Clone)]

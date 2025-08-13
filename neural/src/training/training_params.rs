@@ -1,4 +1,4 @@
-use crate::neural::nn::shape::NeuralNetworkShape;
+use crate::nn::shape::NeuralNetworkShape;
 
 #[derive(Clone)]
 pub struct TrainingParams {

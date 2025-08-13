@@ -4,7 +4,7 @@ use std::slice;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use crate::neural::utilities::safer::safe_lock;
+use utils::safer::safe_lock;
 
 use rayon::prelude::*;
 

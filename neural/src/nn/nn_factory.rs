@@ -1,6 +1,6 @@
 use std::{fs, io, path::Path};
 
-use crate::neural::utilities::util::WrappedUtils;
+use crate::utilities::util::WrappedUtils;
 
 use super::{
     directory::Directory,

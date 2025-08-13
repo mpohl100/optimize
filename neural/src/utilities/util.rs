@@ -1,11 +1,9 @@
-use crate::neural::utilities::safer::safe_lock;
+use utils::safer::safe_lock;
 
 use std::sync::{Arc, Mutex};
 
-use crate::{
-    alloc::alloc_manager::{AllocManager, WrappedAllocManager},
-    neural::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer},
-};
+use crate::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer};
+use alloc::alloc_manager::{AllocManager, WrappedAllocManager};
 
 use indicatif::MultiProgress;
 use rayon::ThreadPoolBuilder;

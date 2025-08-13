@@ -1,7 +1,7 @@
-use crate::alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
-use crate::neural::mat::matrix::WrappedMatrix;
-use crate::neural::utilities::safer::safe_lock;
-use crate::neural::utilities::util::WrappedUtils;
+use crate::mat::matrix::WrappedMatrix;
+use crate::utilities::util::WrappedUtils;
+use alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
+use utils::safer::safe_lock;
 
 use dyn_clone::DynClone;
 use std::error::Error;

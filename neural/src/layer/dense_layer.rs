@@ -3,11 +3,11 @@ use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
-use crate::alloc::allocatable::Allocatable;
-pub use crate::neural::mat::matrix::Matrix;
-use crate::neural::mat::matrix::WrappedMatrix;
-use crate::neural::nn::directory::Directory;
-use crate::neural::utilities::util::WrappedUtils;
+pub use crate::mat::matrix::Matrix;
+use crate::mat::matrix::WrappedMatrix;
+use crate::nn::directory::Directory;
+use crate::utilities::util::WrappedUtils;
+use alloc::allocatable::Allocatable;
 
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -1071,7 +1071,7 @@ fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<d
 
 #[cfg(test)]
 mod tests {
-    use crate::neural::utilities::util::Utils;
+    use crate::utilities::util::Utils;
 
     use super::*;
 

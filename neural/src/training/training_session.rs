@@ -1,11 +1,11 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
-use crate::neural::nn::directory::Directory;
-use crate::neural::nn::nn_factory::new_trainable_neural_network;
-use crate::neural::nn::nn_factory::trainable_neural_network_from_disk;
-use crate::neural::nn::nn_factory::NeuralNetworkCreationArguments;
-use crate::neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
-use crate::neural::utilities::util::WrappedUtils;
+use crate::nn::directory::Directory;
+use crate::nn::nn_factory::new_trainable_neural_network;
+use crate::nn::nn_factory::trainable_neural_network_from_disk;
+use crate::nn::nn_factory::NeuralNetworkCreationArguments;
+use crate::nn::nn_trait::WrappedTrainableNeuralNetwork;
+use crate::utilities::util::WrappedUtils;
 
 use num_traits::NumCast;
 
@@ -202,10 +202,10 @@ fn validate_params(params: &TrainingParams) -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::neural::nn::shape::NeuralNetworkShape;
-    use crate::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
-    use crate::neural::training::data_importer::{DataImporter, SessionData};
-    use crate::neural::utilities::util::Utils;
+    use crate::nn::shape::NeuralNetworkShape;
+    use crate::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+    use crate::training::data_importer::{DataImporter, SessionData};
+    use crate::utilities::util::Utils;
 
     // Mock DataImporter implementation for testing
     #[derive(Clone)]

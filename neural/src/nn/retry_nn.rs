@@ -7,16 +7,16 @@ use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
 use super::shape::NeuralNetworkShape;
 
-use crate::gen::pheno::annotated_nn_shape::AnnotatedNeuralNetworkShape;
-use crate::neural::nn::directory::Directory;
-use crate::neural::nn::neuralnet::ClassicNeuralNetwork;
-use crate::neural::nn::neuralnet::TrainableClassicNeuralNetwork;
-use crate::neural::nn::nn_factory::get_first_free_model_directory;
-use crate::neural::nn::nn_trait::NeuralNetwork;
-use crate::neural::nn::nn_trait::TrainableNeuralNetwork;
-use crate::neural::nn::shape::LayerShape;
-use crate::neural::nn::shape::LayerType;
-use crate::neural::utilities::util::WrappedUtils;
+use crate::nn::directory::Directory;
+use crate::nn::neuralnet::ClassicNeuralNetwork;
+use crate::nn::neuralnet::TrainableClassicNeuralNetwork;
+use crate::nn::nn_factory::get_first_free_model_directory;
+use crate::nn::nn_trait::NeuralNetwork;
+use crate::nn::nn_trait::TrainableNeuralNetwork;
+use crate::nn::shape::AnnotatedNeuralNetworkShape;
+use crate::nn::shape::LayerShape;
+use crate::nn::shape::LayerType;
+use crate::utilities::util::WrappedUtils;
 
 #[derive(Debug)]
 pub struct RetryNeuralNetwork {
@@ -581,7 +581,7 @@ impl Drop for TrainableRetryNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::neural::{
+    use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
     };
