@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::neural::utilities::safer::safe_lock;
+use utils::safer::safe_lock;
 
 pub trait UserDataTrait: Default + Clone {
     // Define the methods that UserData should implement
