@@ -10,6 +10,7 @@ categories = ["science", "machine-learning"]
 
 [dependencies]
 clap = { version = "4.0", features = ["derive"] }
+csv = "1.1"
 
 evol = { path = "../evol" }
 neural = { path = "../neural" }

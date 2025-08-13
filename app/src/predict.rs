@@ -1,8 +1,8 @@
-use learn::neural::nn::nn_factory::neural_network_from_disk;
-use learn::neural::training::data_importer::{DataImporter, SessionData};
+use neural::nn::nn_factory::neural_network_from_disk;
+use neural::training::data_importer::{DataImporter, SessionData};
 
 use clap::Parser;
-use learn::neural::utilities::util::{Utils, WrappedUtils};
+use neural::utilities::util::{Utils, WrappedUtils};
 
 /// Command line arguments
 #[derive(Parser)]
