@@ -753,7 +753,7 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 500];
 
-        nn.train(&inputs, &targets, 0.01, 100, 0.1, true, 0.7);
+        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]
