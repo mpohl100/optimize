@@ -2,11 +2,12 @@ use super::rng_wrapper::RngWrapper;
 use super::{
     nn_mutater::fetch_activation_data, nn_mutater::NeuralNetworkMutater, rng_wrapper::RealRng,
 };
-use crate::evol::rng::RandomNumberGenerator;
-use crate::evol::strategy::Adjust;
-use crate::neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
-use crate::neural::nn::shape::NeuralNetworkShape;
-use crate::{evol::phenotype::Phenotype, neural::nn::nn_trait::WrappedTrainableNeuralNetwork};
+use evol::phenotype::Phenotype;
+use evol::rng::RandomNumberGenerator;
+use evol::strategy::Adjust;
+use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
+use neural::nn::nn_trait::WrappedTrainableNeuralNetwork;
+use neural::nn::shape::NeuralNetworkShape;
 
 #[derive(Debug)]
 pub struct NeuralNetworkPhenotype {

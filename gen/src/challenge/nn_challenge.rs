@@ -1,8 +1,8 @@
-use crate::evol::evolution::challenge::Challenge;
-use crate::gen::pheno::nn_pheno::NeuralNetworkPhenotype;
-use crate::neural::training::data_importer::DataImporter;
-use crate::neural::training::training_params::TrainingParams;
-use crate::neural::training::training_session::TrainingSession;
+use crate::pheno::nn_pheno::NeuralNetworkPhenotype;
+use evol::evolution::challenge::Challenge;
+use neural::training::data_importer::DataImporter;
+use neural::training::training_params::TrainingParams;
+use neural::training::training_session::TrainingSession;
 
 #[derive(Clone)]
 pub struct NeuralNetworkChallenge {
