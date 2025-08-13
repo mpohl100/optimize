@@ -71,7 +71,7 @@
 
 use std::fmt::Debug;
 
-use crate::evol::rng::RandomNumberGenerator;
+use crate::rng::RandomNumberGenerator;
 
 pub trait Phenotype
 where

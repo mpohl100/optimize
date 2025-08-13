@@ -8,7 +8,7 @@ pub mod ordinary;
 
 use std::fmt::{Debug, Error};
 
-use crate::evol::{
+use crate::{
     evolution::options::EvolutionOptions, phenotype::Phenotype, rng::RandomNumberGenerator,
 };
 

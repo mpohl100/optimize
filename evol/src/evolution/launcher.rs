@@ -4,7 +4,7 @@ use super::{
     challenge::Challenge,
     options::{EvolutionOptions, LogLevel},
 };
-use crate::evol::{phenotype::Phenotype, rng::RandomNumberGenerator, strategy::BreedStrategy};
+use crate::{phenotype::Phenotype, rng::RandomNumberGenerator, strategy::BreedStrategy};
 
 /// Represents the result of an evolution, containing a phenotype and its associated score.
 #[derive(Debug, Clone, PartialEq, PartialOrd)]

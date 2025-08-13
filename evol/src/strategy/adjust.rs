@@ -6,7 +6,7 @@
 //! Furthermore depending on how well the fitness of the winner has increased compared to the previous generation, the number of mutate calls is adjusted.
 //! If the increase was significant the number of mutate calls is decreased, otherwise it is increased.
 use super::BreedStrategy;
-use crate::evol::phenotype::Phenotype;
+use crate::phenotype::Phenotype;
 use std::{fmt::Error, marker::PhantomData};
 
 pub trait Adjust<Pheno: Phenotype> {
@@ -60,8 +60,8 @@ where
     fn breed(
         &self,
         parents: &[Pheno],
-        evol_options: &crate::evol::evolution::options::EvolutionOptions,
-        rng: &mut crate::evol::rng::RandomNumberGenerator,
+        evol_options: &crate::evolution::options::EvolutionOptions,
+        rng: &mut crate::rng::RandomNumberGenerator,
     ) -> Result<Vec<Pheno>, Error> {
         let mut children: Vec<Pheno> = Vec::new();
         let winner_previous_generation = parents[0].clone();
@@ -114,7 +114,7 @@ where
     /// calculated by the method `calculate_number_of_mutations`.
     fn develop(
         pheno: Pheno,
-        rng: &mut crate::evol::rng::RandomNumberGenerator,
+        rng: &mut crate::rng::RandomNumberGenerator,
     ) -> Pheno {
         let mut phenotype = pheno;
         let number_of_mutations = phenotype.get_number_mutates();

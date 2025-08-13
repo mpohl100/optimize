@@ -1,4 +1,4 @@
-use learn::evol::{
+use evol::{
     evolution::{Challenge, EvolutionLauncher, EvolutionOptions},
     phenotype::Phenotype,
     rng::RandomNumberGenerator,
