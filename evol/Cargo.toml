@@ -31,19 +31,3 @@ harness = false
 [[bench]]
 name = "bench_bounded"
 harness = false
-
-[[bin]]
-name = "train"
-path = "src/train.rs"
-
-[[bin]]
-name = "nn_generator"
-path = "src/nn_generator.rs"
-
-[[bin]]
-name = "evaluate"
-path = "src/evaluate.rs"
-
-[[bin]]
-name = "predict"
-path = "src/predict.rs"
