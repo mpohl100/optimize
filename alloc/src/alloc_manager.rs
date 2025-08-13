@@ -1,6 +1,6 @@
 use super::allocatable::WrappedAllocatableTrait;
 
-use crate::neural::utilities::safer::safe_lock;
+use utils::safer::safe_lock;
 
 use std::{
     ptr,
@@ -124,9 +124,9 @@ mod tests {
     use std::sync::Arc;
     use std::sync::Mutex;
 
-    use crate::alloc::alloc_manager::AllocManager;
-    use crate::alloc::allocatable::Allocatable;
-    use crate::alloc::allocatable::WrappedAllocatableTrait;
+    use crate::alloc_manager::AllocManager;
+    use crate::allocatable::Allocatable;
+    use crate::allocatable::WrappedAllocatableTrait;
 
     struct TestAllocatable {
         size: usize,
