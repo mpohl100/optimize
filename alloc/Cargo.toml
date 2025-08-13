@@ -1,8 +1,8 @@
 [package]
-name = "learn"
+name = "alloc"
 version = "0.1.0"
 edition = "2021"
-description = "A machine learning library written in Rust."
+description = "The allocation part of the learn project"
 license = "MIT"
 repository = "https://github.com/mpohl100/ml_rust"
 keywords = ["machine-learning", "rust", "neural-networks"]

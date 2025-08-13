@@ -1,2 +1,2 @@
 [workspace]
-members = ["alloc", "app", "evol", "gen", "regret", "neural", "tests"]
+members = ["alloc", "app", "evol", "gen", "regret", "neural"]
