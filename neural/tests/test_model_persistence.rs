@@ -80,12 +80,12 @@ fn train_model(
             // Train the neural network and check the success rate
             let success_rate = training_session.train().expect("Training failed");
             // print the success rate
-            println!("Success rate: {}", success_rate);
+            println!("Success rate: {success_rate}");
             training_session.save_model(model_directory.clone()).expect("Failed to save model");
             return;
         },
         Err(e) => {
-            println!("Failed to load model: {}", e);
+            println!("Failed to load model: {e}");
         },
     }
 
@@ -100,7 +100,7 @@ fn train_model(
     // Train the neural network and check the success rate
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
-    println!("Success rate: {}", success_rate);
+    println!("Success rate: {success_rate}");
     training_session.save_model(model_directory.clone()).expect("Failed to save model");
 }
 
@@ -133,13 +133,13 @@ fn already_trained_model_is_loaded() {
     // Check if the model directory exists
     assert!(std::path::Path::new(&model_directory).exists());
     // Check that backup directory is removed
-    assert!(!std::path::Path::new(&format!("{}_backup", model_directory)).exists());
+    assert!(!std::path::Path::new(&format!("{model_directory}_backup")).exists());
 
     // Clean up
     std::fs::remove_dir_all(&model_directory).unwrap();
     // Remove the backup directory if it exists
-    if std::path::Path::new(&format!("{}_backup", model_directory)).exists() {
-        std::fs::remove_dir_all(format!("{}_backup", model_directory)).unwrap();
+    if std::path::Path::new(&format!("{model_directory}_backup")).exists() {
+        std::fs::remove_dir_all(format!("{model_directory}_backup")).unwrap();
     }
 }
 
@@ -172,9 +172,9 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     // Check if the new model directory exists
     assert!(std::path::Path::new(&new_model_directory).exists());
     // Check that the backup directory is removed
-    assert!(!std::path::Path::new(&format!("{}_backup", model_directory)).exists());
+    assert!(!std::path::Path::new(&format!("{model_directory}_backup")).exists());
     // Check that the backup directory is removed
-    assert!(!std::path::Path::new(&format!("{}_backup", new_model_directory)).exists());
+    assert!(!std::path::Path::new(&format!("{new_model_directory}_backup")).exists());
     // Clean up
     std::fs::remove_dir_all(&new_model_directory).unwrap();
 }
