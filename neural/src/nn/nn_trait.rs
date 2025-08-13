@@ -1,7 +1,7 @@
-use crate::neural::nn::shape::NeuralNetworkShape;
-use crate::neural::utilities::safer::safe_lock;
-use crate::neural::{nn::directory::Directory, utilities::util::WrappedUtils};
+use crate::nn::shape::NeuralNetworkShape;
+use crate::{nn::directory::Directory, utilities::util::WrappedUtils};
 use std::sync::{Arc, Mutex};
+use utils::safer::safe_lock;
 
 pub trait NeuralNetwork: std::fmt::Debug {
     fn predict(

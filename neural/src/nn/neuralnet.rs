@@ -1,14 +1,14 @@
-use crate::alloc::allocatable::WrappedAllocatableTrait;
-use crate::neural::activation::{
+use crate::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
-use crate::neural::layer::dense_layer::DenseLayer;
-use crate::neural::layer::dense_layer::TrainableDenseLayer;
-use crate::neural::layer::layer_trait::WrappedLayer;
-use crate::neural::layer::layer_trait::WrappedTrainableLayer;
-use crate::neural::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
-use crate::neural::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
-use crate::neural::utilities::util::WrappedUtils;
+use crate::layer::dense_layer::DenseLayer;
+use crate::layer::dense_layer::TrainableDenseLayer;
+use crate::layer::layer_trait::WrappedLayer;
+use crate::layer::layer_trait::WrappedTrainableLayer;
+use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
+use crate::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
+use crate::utilities::util::WrappedUtils;
+use alloc::allocatable::WrappedAllocatableTrait;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -955,7 +955,7 @@ impl Drop for TrainableClassicNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::neural::{
+    use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
     };

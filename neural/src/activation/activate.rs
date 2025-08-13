@@ -1,4 +1,4 @@
-use crate::neural::nn::shape::ActivationData;
+use crate::nn::shape::ActivationData;
 
 use dyn_clone::DynClone;
 

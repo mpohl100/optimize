@@ -1,12 +1,12 @@
-use learn::neural::nn::directory::Directory;
-use learn::neural::nn::neuralnet::ClassicNeuralNetwork;
-use learn::neural::nn::nn_trait::NeuralNetwork;
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
-use learn::neural::training::data_importer::{DataImporter, SessionData};
-use learn::neural::training::training_params::TrainingParams;
-use learn::neural::training::training_session::TrainingSession;
-use learn::neural::utilities::util::{Utils, WrappedUtils};
+use neural::nn::directory::Directory;
+use neural::nn::neuralnet::ClassicNeuralNetwork;
+use neural::nn::nn_trait::NeuralNetwork;
+use neural::nn::shape::NeuralNetworkShape;
+use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+use neural::training::data_importer::{DataImporter, SessionData};
+use neural::training::training_params::TrainingParams;
+use neural::training::training_session::TrainingSession;
+use neural::utilities::util::{Utils, WrappedUtils};
 
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
