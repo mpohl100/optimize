@@ -6,8 +6,8 @@
 //! ## Example
 //!
 //! ```rust
-//! use learn::evol::phenotype::Phenotype;
-//! use learn::evol::rng::RandomNumberGenerator;
+//! use evol::phenotype::Phenotype;
+//! use evol::rng::RandomNumberGenerator;
 //!
 //! #[derive(Clone, Debug)]
 //! struct MyPhenotype {
@@ -48,8 +48,8 @@
 //! To use the `Phenotype` trait, implement it for your custom phenotype type.
 //!
 //! ```rust
-//! use learn::evol::phenotype::Phenotype;
-//! use learn::evol::rng::RandomNumberGenerator;
+//! use evol::phenotype::Phenotype;
+//! use evol::rng::RandomNumberGenerator;
 //!
 //! #[derive(Clone, Debug)]
 //! struct MyPhenotype {
@@ -92,8 +92,8 @@ where
     /// ## Example
     ///
     /// ```rust
-    /// use learn::evol::phenotype::Phenotype;
-    /// use learn::evol::rng::RandomNumberGenerator;
+    /// use evol::phenotype::Phenotype;
+    /// use evol::rng::RandomNumberGenerator;
     ///
     /// #[derive(Clone, Debug)]
     /// struct MyPhenotype {
@@ -132,8 +132,8 @@ where
     /// ## Example
     ///
     /// ```rust
-    /// use learn::evol::phenotype::Phenotype;
-    /// use learn::evol::rng::RandomNumberGenerator;
+    /// use evol::phenotype::Phenotype;
+    /// use evol::rng::RandomNumberGenerator;
     ///
     /// #[derive(Clone, Debug)]
     /// struct MyPhenotype {
