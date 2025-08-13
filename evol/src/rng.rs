@@ -6,7 +6,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use learn::evol::rng::RandomNumberGenerator;
+//! use evol::rng::RandomNumberGenerator;
 //!
 //! let mut rng = RandomNumberGenerator::new();
 //! let random_numbers = rng.fetch_uniform(0.0, 1.0, 5);
@@ -43,7 +43,7 @@ impl RandomNumberGenerator {
     /// # Examples
     ///
     /// ```rust
-    /// use learn::evol::rng::RandomNumberGenerator;
+    /// use evol::rng::RandomNumberGenerator;
     ///
     /// let mut rng = RandomNumberGenerator::new();
     /// let random_numbers = rng.fetch_uniform(0.0, 1.0, 5);
