@@ -1,17 +1,17 @@
-use learn::evol::evolution::EvolutionOptions;
-use learn::evol::evolution::LogLevel;
-use learn::gen::neuralnet_gen::NeuralNetworkGenerator;
-use learn::neural::nn::shape::ActivationData;
-use learn::neural::nn::shape::ActivationType;
-use learn::neural::nn::shape::LayerShape;
-use learn::neural::nn::shape::LayerType;
-use learn::neural::nn::shape::NeuralNetworkShape;
-use learn::neural::training::data_importer::{DataImporter, SessionData};
+use evol::evolution::EvolutionOptions;
+use evol::evolution::LogLevel;
+use gen::neuralnet_gen::NeuralNetworkGenerator;
+use neural::nn::shape::ActivationData;
+use neural::nn::shape::ActivationType;
+use neural::nn::shape::LayerShape;
+use neural::nn::shape::LayerType;
+use neural::nn::shape::NeuralNetworkShape;
+use neural::training::data_importer::{DataImporter, SessionData};
 
 use clap::Parser;
-use learn::neural::training::training_params::TrainingParams;
-use learn::neural::utilities::util::Utils;
-use learn::neural::utilities::util::WrappedUtils;
+use neural::training::training_params::TrainingParams;
+use neural::utilities::util::Utils;
+use neural::utilities::util::WrappedUtils;
 
 /// Command line arguments
 #[derive(Parser)]
