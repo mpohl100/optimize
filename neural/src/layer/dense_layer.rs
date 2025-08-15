@@ -3,11 +3,12 @@ use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
-pub use crate::mat::matrix::Matrix;
-use crate::mat::matrix::WrappedMatrix;
 use crate::nn::directory::Directory;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::Allocatable;
+
+pub use matrix::mat::Matrix;
+use matrix::mat::WrappedMatrix;
 
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;

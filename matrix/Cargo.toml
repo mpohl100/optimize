@@ -1,11 +1,11 @@
 [package]
-name = "neural"
+name = "matrix"
 version = "0.1.0"
 edition = "2021"
-description = "The neural network part of the project"
+description = "The matrix part of the project"
 license = "MIT"
 repository = "https://github.com/mpohl100/ml_rust"
-keywords = ["machine-learning", "rust", "neural-networks"]
+keywords = ["machine-learning", "rust", "matrices"]
 categories = ["science", "machine-learning"]
 readme = "../README.md"
 
@@ -22,4 +22,3 @@ num-traits = "0.2"
 
 alloc = { path = "../alloc" }
 utils = { path = "../utils" }
-matrix = { path = "../matrix" }

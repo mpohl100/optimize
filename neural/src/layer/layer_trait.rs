@@ -1,6 +1,6 @@
-use crate::mat::matrix::WrappedMatrix;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
+use matrix::mat::WrappedMatrix;
 use utils::safer::safe_lock;
 
 use dyn_clone::DynClone;
