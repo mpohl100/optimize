@@ -3,7 +3,7 @@ use crate::mat::{OutOfRangeError, WrappedMatrix};
 use num_traits::NumCast;
 use utils::safer::safe_lock;
 
-struct SumMatrix {
+pub struct SumMatrix {
     matrix: WrappedMatrix<i64>,
     row_sum: Vec<i64>,
 }
@@ -171,6 +171,5 @@ mod tests {
         assert!(sum_matrix.get_ratio(0, 0).is_err());
         assert!(sum_matrix.get_ratio(0, 1).is_err());
         assert!(sum_matrix.get_ratio(0, 2).is_err());
-        
     }
 }
