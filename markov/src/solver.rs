@@ -2,6 +2,7 @@ use matrix::{mat::WrappedMatrix, sum_mat::SumMatrix};
 use regret::solver_node::Provider;
 use regret::solver_node::ProviderType;
 use regret::solver_node::WrappedChildrenProvider;
+use regret::solver_node::WrappedProvider;
 use regret::solver_node::WrappedRegret;
 use regret::solver_node::{ChildrenProvider, ExpectedValueProvider, RegretNode, UserDataTrait};
 
@@ -105,16 +106,15 @@ impl<State: StateTrait> ChildrenProvider<MarkovUserData<State>> for MarkovChildr
                     );
                     let new_children_provider =
                         Box::new(Self::new(self.all_states.clone(), self.expected_value_calc_func));
+                    let provider = Provider::new(
+                        ProviderType::Children(WrappedChildrenProvider::new(new_children_provider)),
+                        Some(data.clone()),
+                    );
                     let node = RegretNode::new(
                         probability,
                         min_probability,
                         parents_data.clone(),
-                        &mut Provider {
-                            provider_type: ProviderType::Children(WrappedChildrenProvider::new(
-                                new_children_provider,
-                            )),
-                            user_data: Some(data.clone()),
-                        },
+                        WrappedProvider::new(provider),
                         None,
                     );
                     WrappedRegret::new(node)
