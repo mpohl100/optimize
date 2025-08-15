@@ -537,7 +537,7 @@ mod tests {
                     {
                         let data =
                             RoshamboData { choice: choice.clone(), probability: probabilities[i] };
-                        let mut provider = Provider::new(
+                        let provider = Provider::new(
                             ProviderType::ExpectedValue(WrappedExpectedValueProvider::new(
                                 Box::new(RoshamboExpectedValueProvider::new()),
                             )),

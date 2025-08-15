@@ -2,6 +2,7 @@ use matrix::{mat::WrappedMatrix, sum_mat::SumMatrix};
 use regret::solver_node::Provider;
 use regret::solver_node::ProviderType;
 use regret::solver_node::WrappedChildrenProvider;
+use regret::solver_node::WrappedExpectedValueProvider;
 use regret::solver_node::WrappedProvider;
 use regret::solver_node::WrappedRegret;
 use regret::solver_node::{ChildrenProvider, ExpectedValueProvider, RegretNode, UserDataTrait};
@@ -13,7 +14,7 @@ pub trait StateTrait: Default + Clone + Eq {
 }
 
 #[derive(Clone)]
-struct MarkovUserData<State: StateTrait> {
+struct MarkovUserData<State: StateTrait + 'static> {
     state: State,
     all_states: Vec<State>,
     expected_value_calc_func: fn(&State) -> f64,
@@ -71,7 +72,7 @@ impl<State: StateTrait> UserDataTrait for MarkovUserData<State> {
 }
 
 #[derive(Clone)]
-struct MarkovChildrenProvider<State: StateTrait> {
+struct MarkovChildrenProvider<State: StateTrait + 'static> {
     all_states: Vec<State>,
     expected_value_calc_func: fn(&State) -> f64,
     _marker: std::marker::PhantomData<State>,
@@ -86,7 +87,9 @@ impl<State: StateTrait> MarkovChildrenProvider<State> {
     }
 }
 
-impl<State: StateTrait> ChildrenProvider<MarkovUserData<State>> for MarkovChildrenProvider<State> {
+impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
+    for MarkovChildrenProvider<State>
+{
     fn get_children(
         &self,
         parents_data: Vec<MarkovUserData<State>>,
@@ -108,7 +111,7 @@ impl<State: StateTrait> ChildrenProvider<MarkovUserData<State>> for MarkovChildr
                         Box::new(Self::new(self.all_states.clone(), self.expected_value_calc_func));
                     let provider = Provider::new(
                         ProviderType::Children(WrappedChildrenProvider::new(new_children_provider)),
-                        Some(data.clone()),
+                        Some(data),
                     );
                     let node = RegretNode::new(
                         probability,
@@ -120,10 +123,33 @@ impl<State: StateTrait> ChildrenProvider<MarkovUserData<State>> for MarkovChildr
                     WrappedRegret::new(node)
                 })
                 .collect(),
-            std::cmp::Ordering::Equal => {
-                // Handle the case where there is one parent
-                vec![]
-            },
+            std::cmp::Ordering::Equal => self
+                .all_states
+                .iter()
+                .map(|state| {
+                    let data = MarkovUserData::new(
+                        state.clone(),
+                        self.all_states.clone(),
+                        self.expected_value_calc_func,
+                    );
+                    let new_expected_value_provider =
+                        Box::new(MarkovExpectedValueProvider::new(self.expected_value_calc_func));
+                    let provider = Provider::new(
+                        ProviderType::ExpectedValue(WrappedExpectedValueProvider::new(
+                            new_expected_value_provider,
+                        )),
+                        Some(data),
+                    );
+                    let node = RegretNode::new(
+                        probability,
+                        min_probability,
+                        parents_data.clone(),
+                        WrappedProvider::new(provider),
+                        None,
+                    );
+                    WrappedRegret::new(node)
+                })
+                .collect(),
             std::cmp::Ordering::Greater => {
                 // Handle the case where there are multiple parents
                 vec![]
@@ -132,8 +158,14 @@ impl<State: StateTrait> ChildrenProvider<MarkovUserData<State>> for MarkovChildr
     }
 }
 
-struct MarkovExpectedValueProvider<State: StateTrait> {
+struct MarkovExpectedValueProvider<State: StateTrait + 'static> {
     expected_value_calc_func: fn(&State) -> f64,
+}
+
+impl<State: StateTrait + 'static> MarkovExpectedValueProvider<State> {
+    fn new(expected_value_calc_func: fn(&State) -> f64) -> Self {
+        Self { expected_value_calc_func }
+    }
 }
 
 impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
@@ -149,7 +181,7 @@ impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
 }
 
 #[derive(Clone)]
-pub struct MarkovSolver<State: StateTrait> {
+pub struct MarkovSolver<State: StateTrait + 'static> {
     transition_matrix: SumMatrix,
     states: Vec<State>,
     expected_value_calc_func: fn(&State) -> f64,
@@ -165,7 +197,22 @@ impl<State: StateTrait> MarkovSolver<State> {
     }
 
     pub fn solve(&self) {
-        // Implement the solution logic here
+        let mut node = RegretNode::new(
+            1.0,
+            0.01,
+            vec![],
+            WrappedProvider::new(Provider::new(
+                ProviderType::Children(WrappedChildrenProvider::new(Box::new(
+                    MarkovChildrenProvider::new(self.states.clone(), self.expected_value_calc_func),
+                ))),
+                None,
+            )),
+            Some(1.0),
+        );
+
+        node.solve(1000);
+
+        // TODO add average probabilities * 100000 to transformation matrix
     }
 
     /// Get the transition probability from one state to another.
