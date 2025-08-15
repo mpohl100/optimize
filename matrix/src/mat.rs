@@ -231,7 +231,7 @@ impl<T: Send> Matrix<T> {
 
 #[derive(Debug, Clone)]
 pub struct WrappedMatrix<T: Default + Clone> {
-    mat: Arc<Mutex<Matrix<T>>>,
+    pub mat: Arc<Mutex<Matrix<T>>>,
 }
 
 impl<T> WrappedMatrix<T>
