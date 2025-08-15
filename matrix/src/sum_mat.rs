@@ -9,11 +9,13 @@ pub struct SumMatrix {
 }
 
 impl SumMatrix {
+    #[must_use]
     pub fn new(matrix: WrappedMatrix<i64>) -> Self {
         let row_sum = safe_lock(&matrix.mat).iter().map(|row| row.iter().sum()).collect::<Vec<_>>();
         Self { matrix, row_sum }
     }
 
+    #[must_use]
     pub fn get_row_sum(
         &self,
         row: usize,
@@ -21,6 +23,7 @@ impl SumMatrix {
         self.row_sum[row]
     }
 
+    /// Set the value at the specified row and column without checking bounds.
     pub fn set_val_unchecked(
         &mut self,
         row: usize,
@@ -33,6 +36,11 @@ impl SumMatrix {
         self.row_sum[row] += delta;
     }
 
+    /// Set the value at the specified row and column.
+    ///
+    /// # Errors
+    ///
+    /// - "Index out of bounds" if the row or column is out of range.
     pub fn set_val(
         &mut self,
         row: usize,
@@ -46,6 +54,11 @@ impl SumMatrix {
         Ok(())
     }
 
+    /// Get the value at the specified row and column.
+    ///
+    /// # Errors
+    ///
+    /// - "Index out of bounds" if the row or column is out of range.
     pub fn get_val(
         &self,
         row: usize,
@@ -54,6 +67,8 @@ impl SumMatrix {
         self.matrix.get(row, col)
     }
 
+    /// Get the value at the specified row and column without checking bounds.
+    #[must_use]
     pub fn get_val_unchecked(
         &self,
         row: usize,
@@ -62,6 +77,16 @@ impl SumMatrix {
         self.matrix.get_unchecked(row, col)
     }
 
+    /// Get the ratio of a value in the matrix to the sum of its row.
+    ///
+    /// # Panics
+    ///
+    /// If the numcast fails
+    ///
+    /// # Errors
+    ///
+    /// - "Index out of bounds" if the row or column is out of range.
+    /// - "Division by zero" if the sum of the row is zero.
     pub fn get_ratio(
         &self,
         row: usize,
