@@ -12,10 +12,43 @@ pub trait UserDataTrait: Default + Clone + std::fmt::Debug {
     fn get_data_as_string(&self) -> String;
 }
 
+#[derive(Debug, Clone)]
+pub struct WrappedUserData<UserData: UserDataTrait> {
+    user_data: Arc<Mutex<UserData>>,
+}
+
+impl<UserData: UserDataTrait> WrappedUserData<UserData> {
+    #[must_use]
+    pub fn new(user_data: UserData) -> Self {
+        Self { user_data: Arc::new(Mutex::new(user_data)) }
+    }
+
+    #[must_use]
+    pub fn get_user_data(&self) -> UserData {
+        safe_lock(&self.user_data).clone()
+    }
+
+    pub fn set_probability(
+        &self,
+        probability: f64,
+    ) {
+        let mut data = safe_lock(&self.user_data);
+        data.set_probability(probability);
+    }
+
+    fn get_probability(&self) -> f64 {
+        safe_lock(&self.user_data).get_probability()
+    }
+
+    fn get_data_as_string(&self) -> String {
+        safe_lock(&self.user_data).get_data_as_string()
+    }
+}
+
 pub trait ChildrenProvider<UserData: UserDataTrait>: std::fmt::Debug {
     fn get_children(
         &self,
-        parents_data: Vec<UserData>,
+        parents_data: Vec<WrappedUserData<UserData>>,
     ) -> Vec<WrappedRegret<UserData>>;
 }
 
@@ -33,7 +66,7 @@ impl<UserData: UserDataTrait> WrappedChildrenProvider<UserData> {
     #[must_use]
     pub fn get_children(
         &self,
-        parents_data: Vec<UserData>,
+        parents_data: Vec<WrappedUserData<UserData>>,
     ) -> Vec<WrappedRegret<UserData>> {
         safe_lock(&self.provider).get_children(parents_data)
     }
@@ -42,7 +75,7 @@ impl<UserData: UserDataTrait> WrappedChildrenProvider<UserData> {
 pub trait ExpectedValueProvider<UserData: UserDataTrait>: std::fmt::Debug {
     fn get_expected_value(
         &self,
-        parents_data: Vec<UserData>,
+        parents_data: Vec<WrappedUserData<UserData>>,
     ) -> f64;
 }
 
@@ -60,7 +93,7 @@ impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
     #[must_use]
     pub fn get_expected_value(
         &self,
-        parents_data: Vec<UserData>,
+        parents_data: Vec<WrappedUserData<UserData>>,
     ) -> f64 {
         safe_lock(&self.provider).get_expected_value(parents_data)
     }
@@ -75,13 +108,13 @@ pub enum ProviderType<UserData: UserDataTrait> {
 #[derive(Debug, Clone)]
 pub struct Provider<UserData: UserDataTrait> {
     pub provider_type: ProviderType<UserData>,
-    pub user_data: Option<UserData>,
+    pub user_data: Option<WrappedUserData<UserData>>,
 }
 
 impl<UserData: UserDataTrait> Provider<UserData> {
     pub fn new(
         provider_type: ProviderType<UserData>,
-        user_data: Option<UserData>,
+        user_data: Option<WrappedUserData<UserData>>,
     ) -> Self {
         Self { provider_type, user_data }
     }
@@ -102,7 +135,7 @@ impl<UserData: UserDataTrait> WrappedProvider<UserData> {
         safe_lock(&self.provider).provider_type.clone()
     }
 
-    pub fn get_user_data(&self) -> Option<UserData> {
+    pub fn get_user_data(&self) -> Option<WrappedUserData<UserData>> {
         safe_lock(&self.provider).user_data.clone()
     }
 }
@@ -112,7 +145,7 @@ pub struct RegretNode<UserData: UserDataTrait> {
     probability: f64,
     min_probability: f64,
     current_expected_value: f64,
-    parents_data: Vec<UserData>,
+    parents_data: Vec<WrappedUserData<UserData>>,
     provider: WrappedProvider<UserData>,
     children: Vec<WrappedRegret<UserData>>,
     regret: f64,
@@ -129,7 +162,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
     pub fn new(
         probability: f64,
         min_probability: f64,
-        parents_data: Vec<UserData>,
+        parents_data: Vec<WrappedUserData<UserData>>,
         provider: WrappedProvider<UserData>,
         fixed_probability: Option<f64>,
     ) -> Self {
@@ -352,7 +385,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         self.children.clone()
     }
 
-    pub fn get_user_data(&self) -> Option<UserData> {
+    pub fn get_user_data(&self) -> Option<WrappedUserData<UserData>> {
         self.provider.get_user_data()
     }
 
@@ -422,7 +455,7 @@ impl<UserData: UserDataTrait> WrappedRegret<UserData> {
     }
 
     #[must_use]
-    pub fn get_user_data(&self) -> Option<UserData> {
+    pub fn get_user_data(&self) -> Option<WrappedUserData<UserData>> {
         safe_lock(&self.node).get_user_data()
     }
 
@@ -530,7 +563,7 @@ mod tests {
     impl ChildrenProvider<RoshamboData> for RoshamboChildrenProvider {
         fn get_children(
             &self,
-            parents_data: Vec<RoshamboData>,
+            parents_data: Vec<WrappedUserData<RoshamboData>>,
         ) -> Vec<WrappedRegret<RoshamboData>> {
             let probabilities = [0.4, 0.4, 0.2];
             match parents_data.len().cmp(&1) {
@@ -539,8 +572,10 @@ mod tests {
                     for (i, choice) in
                         [Choice::Rock, Choice::Paper, Choice::Scissors].iter().enumerate()
                     {
-                        let data =
-                            RoshamboData { choice: choice.clone(), probability: probabilities[i] };
+                        let data = WrappedUserData::new(RoshamboData {
+                            choice: choice.clone(),
+                            probability: probabilities[i],
+                        });
                         let node = RegretNode::new(
                             probabilities[i],
                             0.01,
@@ -562,8 +597,10 @@ mod tests {
                     for (i, choice) in
                         [Choice::Rock, Choice::Paper, Choice::Scissors].iter().enumerate()
                     {
-                        let data =
-                            RoshamboData { choice: choice.clone(), probability: probabilities[i] };
+                        let data = WrappedUserData::new(RoshamboData {
+                            choice: choice.clone(),
+                            probability: probabilities[i],
+                        });
                         let provider = Provider::new(
                             ProviderType::ExpectedValue(WrappedExpectedValueProvider::new(
                                 Box::new(RoshamboExpectedValueProvider::new()),
@@ -598,14 +635,14 @@ mod tests {
     impl ExpectedValueProvider<RoshamboData> for RoshamboExpectedValueProvider {
         fn get_expected_value(
             &self,
-            parents_data: Vec<RoshamboData>,
+            parents_data: Vec<WrappedUserData<RoshamboData>>,
         ) -> f64 {
             assert!(
                 parents_data.len() >= 2,
                 "Expected at least two parents data for expected value calculation"
             );
-            let player_1_choice = &parents_data[parents_data.len() - 2].choice;
-            let player_2_choice = &parents_data[parents_data.len() - 1].choice;
+            let player_1_choice = &parents_data[parents_data.len() - 2].get_user_data().choice;
+            let player_2_choice = &parents_data[parents_data.len() - 1].get_user_data().choice;
             match player_1_choice {
                 Choice::Rock => match player_2_choice {
                     Choice::Rock => 0.0,     // Tie
@@ -638,8 +675,8 @@ mod tests {
     fn test_roshambo_expected_value_provider() {
         let provider = RoshamboExpectedValueProvider::new();
         let parents_data = vec![
-            RoshamboData { choice: Choice::Rock, probability: 0.333 },
-            RoshamboData { choice: Choice::Paper, probability: 0.333 },
+            WrappedUserData::new(RoshamboData { choice: Choice::Rock, probability: 0.333 }),
+            WrappedUserData::new(RoshamboData { choice: Choice::Paper, probability: 0.333 }),
         ];
         let expected_value = provider.get_expected_value(parents_data);
         assert!((expected_value + 1.0).abs() < f64::EPSILON, "Paper beats Rock");
