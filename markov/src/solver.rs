@@ -9,11 +9,11 @@ use regret::solver_node::{ChildrenProvider, ExpectedValueProvider, RegretNode, U
 
 use num_traits::cast::NumCast;
 
-pub trait StateTrait: Default + Clone + Eq {
+pub trait StateTrait: Default + Clone + Eq + std::fmt::Debug {
     fn get_data_as_string(&self) -> String;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct MarkovUserData<State: StateTrait + 'static> {
     state: State,
     all_states: Vec<State>,
@@ -71,7 +71,7 @@ impl<State: StateTrait> UserDataTrait for MarkovUserData<State> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct MarkovChildrenProvider<State: StateTrait + 'static> {
     all_states: Vec<State>,
     expected_value_calc_func: fn(&State) -> f64,
@@ -97,7 +97,7 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
         let all_states_len_f64: f64 = NumCast::from(self.all_states.len()).unwrap();
         let probability = 1.0 / all_states_len_f64;
         let min_probability = 1e-4;
-        match parents_data.len().cmp(&1) {
+        match parents_data.len().cmp(&2) {
             std::cmp::Ordering::Less => self
                 .all_states
                 .iter()
@@ -158,6 +158,7 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
     }
 }
 
+#[derive(Debug, Clone)]
 struct MarkovExpectedValueProvider<State: StateTrait + 'static> {
     expected_value_calc_func: fn(&State) -> f64,
 }
@@ -175,8 +176,12 @@ impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
         &self,
         parents_data: Vec<MarkovUserData<State>>,
     ) -> f64 {
-        let state = parents_data.last().expect("Expected at least one parent data").get_state();
-        (self.expected_value_calc_func)(&state)
+        let state_last =
+            parents_data.last().expect("Expected at least one parent data").get_state();
+        let state_prev = parents_data[parents_data.len() - 2].get_state();
+        let last_expected_value = (self.expected_value_calc_func)(&state_last);
+        let prev_expected_value = (self.expected_value_calc_func)(&state_prev);
+        last_expected_value - prev_expected_value
     }
 }
 
@@ -196,7 +201,16 @@ impl<State: StateTrait> MarkovSolver<State> {
         Self { transition_matrix: SumMatrix::new(mat), states, expected_value_calc_func }
     }
 
-    pub fn solve(&self) {
+    /// Solves the Markov process for the given number of iterations.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the conversion from probability to `i64` fails,
+    /// or if a state is not found in the list of states.
+    pub fn solve(
+        &mut self,
+        iterations: usize,
+    ) {
         let mut node = RegretNode::new(
             1.0,
             0.01,
@@ -210,9 +224,36 @@ impl<State: StateTrait> MarkovSolver<State> {
             Some(1.0),
         );
 
-        node.solve(1000);
+        node.solve(iterations);
 
-        // TODO add average probabilities * 100000 to transformation matrix
+        println!("{}", node.get_data_as_string(0));
+
+        // add average probabilities * 100000 to transformation matrix
+        for (i, first_child) in node.get_children().iter().enumerate() {
+            for (j, second_child) in first_child.get_children().iter().enumerate() {
+                let probability: i64 =
+                    NumCast::from(second_child.get_average_probability() * 100_000.0).unwrap();
+                let state_index = self
+                    .states
+                    .iter()
+                    .position(|s| s == &first_child.get_user_data().unwrap().get_state())
+                    .unwrap();
+                let next_state_index = self
+                    .states
+                    .iter()
+                    .position(|s| s == &second_child.get_user_data().unwrap().get_state())
+                    .unwrap();
+                self.transition_matrix.set_val_unchecked(
+                    state_index,
+                    next_state_index,
+                    probability,
+                );
+            }
+        }
+    }
+
+    const fn get_transition_matrix(&self) -> &SumMatrix {
+        &self.transition_matrix
     }
 
     /// Get the transition probability from one state to another.
@@ -228,5 +269,55 @@ impl<State: StateTrait> MarkovSolver<State> {
         let from_index = self.states.iter().position(|s| s == from).unwrap();
         let to_index = self.states.iter().position(|s| s == to).unwrap();
         self.transition_matrix.get_ratio(from_index, to_index).unwrap_or(0.0)
+    }
+}
+
+// add a tests module
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    struct TestState {
+        value: i32,
+    }
+
+    impl TestState {
+        fn new(value: i32) -> Self {
+            Self { value }
+        }
+
+        fn get_value(&self) -> i32 {
+            self.value
+        }
+    }
+
+    impl StateTrait for TestState {
+        fn get_data_as_string(&self) -> String {
+            self.value.to_string()
+        }
+    }
+
+    #[test]
+    fn test_get_transition_probability() {
+        let state_1 = TestState::new(1);
+        let state_2 = TestState::new(2);
+        let states = vec![state_1, state_2];
+
+        let expected_value_calc_func = |state: &TestState| match state.get_value() {
+            1 => 1.0,
+            2 => -1.0,
+            _ => 0.0,
+        };
+
+        let mut solver = MarkovSolver::new(states, expected_value_calc_func);
+
+        solver.solve(1000);
+
+        let transition_mat = solver.get_transition_matrix();
+        println!("Transition Matrix 0 to 0: {:?}", transition_mat.get_ratio(0, 0));
+        println!("Transition Matrix 0 to 1: {:?}", transition_mat.get_ratio(0, 1));
+        println!("Transition Matrix 1 to 0: {:?}", transition_mat.get_ratio(1, 0));
+        println!("Transition Matrix 1 to 1: {:?}", transition_mat.get_ratio(1, 1));
     }
 }
