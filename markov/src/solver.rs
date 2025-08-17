@@ -17,41 +17,22 @@ pub trait StateTrait: Default + Clone + Eq + std::fmt::Debug {
 #[derive(Debug, Clone)]
 struct MarkovUserData<State: StateTrait + 'static> {
     state: State,
-    all_states: Vec<State>,
-    expected_value_calc_func: fn(&State) -> f64,
     probability: f64,
 }
 
 impl<State: StateTrait> Default for MarkovUserData<State> {
     fn default() -> Self {
-        Self {
-            state: State::default(),
-            all_states: Vec::new(),
-            expected_value_calc_func: |_| 0.0,
-            probability: 0.0,
-        }
+        Self { state: State::default(), probability: 0.0 }
     }
 }
 
 impl<State: StateTrait> MarkovUserData<State> {
-    fn new(
-        state: State,
-        all_states: Vec<State>,
-        expected_value_calc_func: fn(&State) -> f64,
-    ) -> Self {
-        Self { state, all_states, expected_value_calc_func, probability: 0.0 }
+    const fn new(state: State) -> Self {
+        Self { state, probability: 0.0 }
     }
 
     fn get_state(&self) -> State {
         self.state.clone()
-    }
-
-    fn get_expected_value(&self) -> f64 {
-        (self.expected_value_calc_func)(&self.state)
-    }
-
-    fn get_all_states(&self) -> Vec<State> {
-        self.all_states.clone()
     }
 }
 
@@ -103,11 +84,7 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
                 .all_states
                 .iter()
                 .map(|state| {
-                    let data = WrappedUserData::new(MarkovUserData::new(
-                        state.clone(),
-                        self.all_states.clone(),
-                        self.expected_value_calc_func,
-                    ));
+                    let data = WrappedUserData::new(MarkovUserData::new(state.clone()));
                     let new_children_provider =
                         Box::new(Self::new(self.all_states.clone(), self.expected_value_calc_func));
                     let provider = Provider::new(
@@ -128,11 +105,7 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
                 .all_states
                 .iter()
                 .map(|state| {
-                    let data = WrappedUserData::new(MarkovUserData::new(
-                        state.clone(),
-                        self.all_states.clone(),
-                        self.expected_value_calc_func,
-                    ));
+                    let data = WrappedUserData::new(MarkovUserData::new(state.clone()));
                     let new_expected_value_provider =
                         Box::new(MarkovExpectedValueProvider::new(self.expected_value_calc_func));
                     let provider = Provider::new(
@@ -184,8 +157,8 @@ impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
             .get_state();
         let state_prev = parents_data[parents_data.len() - 2].get_user_data().get_state();
         let last_expected_value = (self.expected_value_calc_func)(&state_last);
-        let _prev_expected_value = (self.expected_value_calc_func)(&state_prev);
-        last_expected_value
+        let prev_expected_value = (self.expected_value_calc_func)(&state_prev);
+        last_expected_value - prev_expected_value
     }
 }
 
@@ -233,8 +206,8 @@ impl<State: StateTrait> MarkovSolver<State> {
         println!("{}", node.get_data_as_string(0));
 
         // add average probabilities * 100000 to transformation matrix
-        for (i, first_child) in node.get_children().iter().enumerate() {
-            for (j, second_child) in first_child.get_children().iter().enumerate() {
+        for first_child in &node.get_children() {
+            for second_child in &first_child.get_children() {
                 let probability: i64 =
                     NumCast::from(second_child.get_average_probability() * 100_000.0).unwrap();
                 let state_index = self
@@ -260,6 +233,7 @@ impl<State: StateTrait> MarkovSolver<State> {
         }
     }
 
+    #[allow(dead_code)]
     const fn get_transition_matrix(&self) -> &SumMatrix {
         &self.transition_matrix
     }
@@ -307,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_transition_probability() {
+    fn test_get_transition_probability_goes_to_zero_state() {
         let state_1 = TestState::new(1);
         let state_2 = TestState::new(2);
         let states = vec![state_1, state_2];
@@ -327,5 +301,60 @@ mod tests {
         println!("Transition Matrix 0 to 1: {:?}", transition_mat.get_ratio(0, 1));
         println!("Transition Matrix 1 to 0: {:?}", transition_mat.get_ratio(1, 0));
         println!("Transition Matrix 1 to 1: {:?}", transition_mat.get_ratio(1, 1));
+
+        // assert the ratios with an epsilon of 1e-4
+        let epsilon = 1e-4;
+        assert!((transition_mat.get_ratio(0, 0).unwrap() - 1.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(0, 1).unwrap() - 0.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 0).unwrap() - 1.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 1).unwrap() - 0.0).abs() < epsilon);
+    }
+
+    #[test]
+    fn test_get_transition_probability_goes_to_both_states() {
+        let state_1 = TestState::new(1);
+        let state_2 = TestState::new(2);
+        let states = vec![state_1, state_2];
+
+        let expected_value_calc_func = |_state: &TestState| 1.0;
+
+        let mut solver = MarkovSolver::new(states, expected_value_calc_func);
+
+        solver.solve(1000);
+
+        let transition_mat = solver.get_transition_matrix();
+
+        // assert the ratios with an epsilon of 1e-4
+        let epsilon = 1e-4;
+        assert!((transition_mat.get_ratio(0, 0).unwrap() - 0.5).abs() < epsilon);
+        assert!((transition_mat.get_ratio(0, 1).unwrap() - 0.5).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 0).unwrap() - 0.5).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 1).unwrap() - 0.5).abs() < epsilon);
+    }
+
+    #[test]
+    fn test_get_transition_probability_goes_to_one_state() {
+        let state_1 = TestState::new(1);
+        let state_2 = TestState::new(2);
+        let states = vec![state_1, state_2];
+
+        let expected_value_calc_func = |state: &TestState| match state.get_value() {
+            1 => -1.0,
+            2 => 1.0,
+            _ => 0.0,
+        };
+
+        let mut solver = MarkovSolver::new(states, expected_value_calc_func);
+
+        solver.solve(1000);
+
+        let transition_mat = solver.get_transition_matrix();
+
+        // assert the ratios with an epsilon of 1e-4
+        let epsilon = 1e-4;
+        assert!((transition_mat.get_ratio(0, 0).unwrap() - 0.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(0, 1).unwrap() - 1.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 0).unwrap() - 0.0).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 1).unwrap() - 1.0).abs() < epsilon);
     }
 }
