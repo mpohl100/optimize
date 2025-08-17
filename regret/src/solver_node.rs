@@ -343,10 +343,11 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
 
     fn calculate_expected_value(&mut self) -> f64 {
         // Calculate the expected value based on the current probabilities
-        if self.get_total_probability() < self.min_probability {
-            self.current_expected_value = 0.0;
-            return 0.0;
-        }
+        // TODO fix this later
+        // if self.get_total_probability() < self.min_probability {
+        //     self.current_expected_value = 0.0;
+        //     return 0.0;
+        // }
 
         self.current_expected_value = match self.provider.get_provider_type() {
             ProviderType::ExpectedValue(ref provider) => {
