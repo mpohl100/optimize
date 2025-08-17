@@ -112,7 +112,8 @@ pub struct Provider<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> Provider<UserData> {
-    pub fn new(
+    #[must_use]
+    pub const fn new(
         provider_type: ProviderType<UserData>,
         user_data: Option<WrappedUserData<UserData>>,
     ) -> Self {
@@ -131,10 +132,12 @@ impl<UserData: UserDataTrait> WrappedProvider<UserData> {
         Self { provider: Arc::new(Mutex::new(provider)) }
     }
 
+    #[must_use]
     pub fn get_provider_type(&self) -> ProviderType<UserData> {
         safe_lock(&self.provider).provider_type.clone()
     }
 
+    #[must_use]
     pub fn get_user_data(&self) -> Option<WrappedUserData<UserData>> {
         safe_lock(&self.provider).user_data.clone()
     }
@@ -143,7 +146,7 @@ impl<UserData: UserDataTrait> WrappedProvider<UserData> {
 #[derive(Clone)]
 pub struct RegretNode<UserData: UserDataTrait> {
     probability: f64,
-    min_probability: f64,
+    _min_probability: f64,
     current_expected_value: f64,
     parents_data: Vec<WrappedUserData<UserData>>,
     provider: WrappedProvider<UserData>,
@@ -159,6 +162,7 @@ pub struct RegretNode<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> RegretNode<UserData> {
+    #[must_use]
     pub fn new(
         probability: f64,
         min_probability: f64,
@@ -178,11 +182,11 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         );
         Self {
             probability,
-            min_probability,
+            _min_probability: min_probability,
             current_expected_value: 0.0,
             parents_data,
             children: Vec::new(),
-            provider: provider.clone(),
+            provider,
             regret: 0.0,
             sum_probabilities: 0.0,
             num_probabilities: 0.0,
@@ -195,6 +199,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
     }
 
     #[allow(clippy::format_push_string)]
+    #[must_use]
     pub fn get_data_as_string(
         &self,
         indentation: usize,
@@ -356,7 +361,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
                     self.provider
                         .get_user_data()
                         .as_ref()
-                        .map_or_else(|| Vec::new(), |data| vec![data.clone()]),
+                        .map_or_else(Vec::new, |data| vec![data.clone()]),
                 );
                 provider.get_expected_value(cloned_parents_data)
             },
@@ -382,10 +387,12 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         parent_probability * self.probability
     }
 
+    #[must_use]
     pub fn get_children(&self) -> Vec<WrappedRegret<UserData>> {
         self.children.clone()
     }
 
+    #[must_use]
     pub fn get_user_data(&self) -> Option<WrappedUserData<UserData>> {
         self.provider.get_user_data()
     }
@@ -416,14 +423,17 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         self.current_expected_value
     }
 
+    #[must_use]
     pub const fn get_probability(&self) -> f64 {
         self.probability
     }
 
+    #[must_use]
     pub const fn get_average_probability(&self) -> f64 {
         self.average_probability
     }
 
+    #[must_use]
     pub const fn get_average_expected_value(&self) -> f64 {
         self.average_expected_value
     }
