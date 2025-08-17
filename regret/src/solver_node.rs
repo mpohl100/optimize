@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use utils::safer::safe_lock;
 
-pub trait UserDataTrait: Default + Clone {
+pub trait UserDataTrait: Default + Clone + std::fmt::Debug {
     // Define the methods that UserData should implement
     fn get_probability(&self) -> f64;
     fn set_probability(
@@ -12,14 +12,14 @@ pub trait UserDataTrait: Default + Clone {
     fn get_data_as_string(&self) -> String;
 }
 
-pub trait ChildrenProvider<UserData: UserDataTrait> {
+pub trait ChildrenProvider<UserData: UserDataTrait>: std::fmt::Debug {
     fn get_children(
         &self,
         parents_data: Vec<UserData>,
     ) -> Vec<WrappedRegret<UserData>>;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedChildrenProvider<UserData: UserDataTrait> {
     provider: Arc<Mutex<Box<dyn ChildrenProvider<UserData>>>>,
 }
@@ -39,14 +39,14 @@ impl<UserData: UserDataTrait> WrappedChildrenProvider<UserData> {
     }
 }
 
-pub trait ExpectedValueProvider<UserData: UserDataTrait> {
+pub trait ExpectedValueProvider<UserData: UserDataTrait>: std::fmt::Debug {
     fn get_expected_value(
         &self,
         parents_data: Vec<UserData>,
     ) -> f64;
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedExpectedValueProvider<UserData: UserDataTrait> {
     provider: Arc<Mutex<Box<dyn ExpectedValueProvider<UserData>>>>,
 }
@@ -66,13 +66,13 @@ impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ProviderType<UserData: UserDataTrait> {
     Children(WrappedChildrenProvider<UserData>),
     ExpectedValue(WrappedExpectedValueProvider<UserData>),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Provider<UserData: UserDataTrait> {
     pub provider_type: ProviderType<UserData>,
     pub user_data: Option<UserData>,
@@ -87,7 +87,7 @@ impl<UserData: UserDataTrait> Provider<UserData> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedProvider<UserData: UserDataTrait> {
     provider: Arc<Mutex<Provider<UserData>>>,
 }
@@ -177,6 +177,13 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
             " ".repeat(indentation),
             self.average_expected_value
         ));
+        // put the current provider type
+        result.push_str(&format!(
+            "{}Provider Type: {:?}\n",
+            " ".repeat(indentation),
+            self.provider.get_provider_type()
+        ));
+
         // then push the provider user_data.get_data_as_string
         if let Some(data) = self.provider.get_user_data().as_ref() {
             // put indentation and newline
@@ -322,7 +329,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
             ProviderType::Children(ref _provider) => self
                 .children
                 .iter()
-                .map(|child| child.get_expected_value() * child.get_probability())
+                .map(|child| child.calculate_expected_value() * child.get_probability())
                 .sum::<f64>(),
         };
         self.current_expected_value
@@ -341,9 +348,12 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
         parent_probability * self.probability
     }
 
-    #[allow(dead_code)]
-    fn get_children(&self) -> Vec<WrappedRegret<UserData>> {
+    pub fn get_children(&self) -> Vec<WrappedRegret<UserData>> {
         self.children.clone()
+    }
+
+    pub fn get_user_data(&self) -> Option<UserData> {
+        self.provider.get_user_data()
     }
 
     fn populate_children(&mut self) {
@@ -391,6 +401,7 @@ pub struct WrappedRegret<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> WrappedRegret<UserData> {
+    #[must_use]
     pub fn new(node: RegretNode<UserData>) -> Self {
         Self { node: Arc::new(Mutex::new(node)) }
     }
@@ -403,6 +414,21 @@ impl<UserData: UserDataTrait> WrappedRegret<UserData> {
     #[must_use]
     pub fn get_expected_value(&self) -> f64 {
         safe_lock(&self.node).get_expected_value()
+    }
+
+    #[must_use]
+    pub fn calculate_expected_value(&self) -> f64 {
+        safe_lock(&self.node).calculate_expected_value()
+    }
+
+    #[must_use]
+    pub fn get_user_data(&self) -> Option<UserData> {
+        safe_lock(&self.node).get_user_data()
+    }
+
+    #[must_use]
+    pub fn get_children(&self) -> Vec<Self> {
+        safe_lock(&self.node).get_children()
     }
 
     pub fn calculate_regrets(
@@ -471,7 +497,7 @@ mod tests {
         Scissors,
     }
 
-    #[derive(Default, Clone)]
+    #[derive(Debug, Default, Clone)]
     struct RoshamboData {
         choice: Choice,
         probability: f64,
@@ -492,6 +518,7 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Clone)]
     struct RoshamboChildrenProvider {}
 
     impl RoshamboChildrenProvider {
@@ -559,6 +586,7 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Clone)]
     struct RoshamboExpectedValueProvider {}
 
     impl RoshamboExpectedValueProvider {
