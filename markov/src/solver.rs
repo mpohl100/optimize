@@ -258,6 +258,8 @@ impl<State: StateTrait> MarkovSolver<State> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::thread_rng;
+    use rand_distr::{Distribution, Normal};
 
     #[derive(Debug, Default, Clone, PartialEq, Eq)]
     struct TestState {
@@ -356,5 +358,93 @@ mod tests {
         assert!((transition_mat.get_ratio(0, 1).unwrap() - 1.0).abs() < epsilon);
         assert!((transition_mat.get_ratio(1, 0).unwrap() - 0.0).abs() < epsilon);
         assert!((transition_mat.get_ratio(1, 1).unwrap() - 1.0).abs() < epsilon);
+    }
+
+    #[test]
+    fn test_get_transition_probability_approximates() {
+        let state_1 = TestState::new(1);
+        let state_2 = TestState::new(2);
+        let states = vec![state_1, state_2];
+
+        // in case of 1 return a random number normally distributed around average 1.0 with std dev 2.0
+        // in case of 2 return a random number normally distributed around average 0.5 with std dev 4.0
+        // Create a random number generator
+        let expected_value_calc_func = |state: &TestState| {
+            let mut rng = thread_rng();
+            match state.get_value() {
+                1 => {
+                    // Create a normal distribution with mean = 1.0 and std dev = 2.0
+                    let normal = Normal::new(1.0, 2.0).unwrap();
+                    normal.sample(&mut rng)
+                },
+                2 => {
+                    // Create a normal distribution with mean = 0.5 and std dev = 4.0
+                    let normal = Normal::new(0.0, 4.0).unwrap();
+                    normal.sample(&mut rng)
+                },
+                _ => 0.0,
+            }
+        };
+
+        let mut solver = MarkovSolver::new(states, expected_value_calc_func);
+
+        solver.solve(1000);
+
+        let transition_mat = solver.get_transition_matrix();
+        println!("Transition Matrix 0 to 0: {:?}", transition_mat.get_ratio(0, 0));
+        println!("Transition Matrix 0 to 1: {:?}", transition_mat.get_ratio(0, 1));
+        println!("Transition Matrix 1 to 0: {:?}", transition_mat.get_ratio(1, 0));
+        println!("Transition Matrix 1 to 1: {:?}", transition_mat.get_ratio(1, 1));
+
+        // assert the ratios with an epsilon of 1e-1
+        let epsilon = 1e-1;
+        assert!((transition_mat.get_ratio(0, 0).unwrap() - 0.536).abs() < epsilon);
+        assert!((transition_mat.get_ratio(0, 1).unwrap() - 0.464).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 0).unwrap() - 0.556).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 1).unwrap() - 0.444).abs() < epsilon);
+    }
+
+    #[test]
+    fn test_get_transition_probability_approximates_2() {
+        let state_1 = TestState::new(1);
+        let state_2 = TestState::new(2);
+        let states = vec![state_1, state_2];
+
+        // in case of 1 return a random number normally distributed around average 1.0 with std dev 2.0
+        // in case of 2 return a random number normally distributed around average 0.5 with std dev 4.0
+        // Create a random number generator
+        let expected_value_calc_func = |state: &TestState| {
+            let mut rng = thread_rng();
+            match state.get_value() {
+                1 => {
+                    // Create a normal distribution with mean = 1.0 and std dev = 2.0
+                    let normal = Normal::new(1.0, 2.0).unwrap();
+                    normal.sample(&mut rng)
+                },
+                2 => {
+                    // Create a normal distribution with mean = 0.0 and std dev = 2.0
+                    let normal = Normal::new(0.0, 2.0).unwrap();
+                    normal.sample(&mut rng)
+                },
+                _ => 0.0,
+            }
+        };
+
+        let mut solver = MarkovSolver::new(states, expected_value_calc_func);
+
+        solver.solve(1000);
+
+        let transition_mat = solver.get_transition_matrix();
+        println!("Transition Matrix 0 to 0: {:?}", transition_mat.get_ratio(0, 0));
+        println!("Transition Matrix 0 to 1: {:?}", transition_mat.get_ratio(0, 1));
+        println!("Transition Matrix 1 to 0: {:?}", transition_mat.get_ratio(1, 0));
+        println!("Transition Matrix 1 to 1: {:?}", transition_mat.get_ratio(1, 1));
+
+        // assert the ratios with an epsilon of 1e-1
+        let epsilon = 1e-1;
+        assert!((transition_mat.get_ratio(0, 0).unwrap() - 0.6).abs() < epsilon);
+        assert!((transition_mat.get_ratio(0, 1).unwrap() - 0.4).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 0).unwrap() - 0.6).abs() < epsilon);
+        assert!((transition_mat.get_ratio(1, 1).unwrap() - 0.4).abs() < epsilon);
     }
 }
