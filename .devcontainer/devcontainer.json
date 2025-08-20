@@ -2,7 +2,8 @@
     "name": "Ubuntu Rust Dev Container for localize",
     "build": {"dockerfile": "Dockerfile"},
     "containerEnv":{
-      "EXECUTE_BIN_BASH": "0"
+      "EXECUTE_BIN_BASH": "0",
+      "RUN_POSTCREATE": "true"
     },
     "customizations": {
         "vscode": {
@@ -19,5 +20,5 @@
               }          
         }
     },
-    "postCreateCommand": "cargo install cargo-tarpaulin"
+    "postCreateCommand": "[ \"$RUN_POSTCREATE\" != \"false\" ] && cargo install cargo-tarpaulin || true"
 }
