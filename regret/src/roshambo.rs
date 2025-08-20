@@ -13,10 +13,14 @@ use crate::user_data::{UserDataTrait, WrappedUserData};
 
 /// Enum representing choices in Rock-Paper-Scissors.
 #[derive(Default, Debug, Clone)]
+/// Enum representing choices in Rock-Paper-Scissors.
 pub enum Choice {
+    /// The Rock move.
     #[default]
     Rock,
+    /// The Paper move.
     Paper,
+    /// The Scissors move.
     Scissors,
 }
 
@@ -48,11 +52,12 @@ impl UserDataTrait for RoshamboData {
 }
 
 /// Children provider for Rock-Paper-Scissors.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct RoshamboChildrenProvider {}
 
 impl RoshamboChildrenProvider {
     /// Creates a new children provider for Rock-Paper-Scissors.
+    #[must_use]
     pub const fn new() -> Self {
         Self {}
     }
@@ -123,11 +128,12 @@ impl ChildrenProvider<RoshamboData> for RoshamboChildrenProvider {
 }
 
 /// Expected value provider for Rock-Paper-Scissors.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct RoshamboExpectedValueProvider {}
 
 impl RoshamboExpectedValueProvider {
     /// Creates a new expected value provider for Rock-Paper-Scissors.
+    #[must_use]
     pub const fn new() -> Self {
         Self {}
     }

@@ -50,11 +50,13 @@ impl<UserData: UserDataTrait> WrappedUserData<UserData> {
     }
 
     /// Gets the probability of the inner user data.
+    #[must_use]
     pub fn get_probability(&self) -> f64 {
         safe_lock(&self.user_data).get_probability()
     }
 
     /// Gets the string representation of the inner user data.
+    #[must_use]
     pub fn get_data_as_string(&self) -> String {
         safe_lock(&self.user_data).get_data_as_string()
     }
