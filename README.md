@@ -15,6 +15,10 @@ And the following activation functions:
 2) Tanh
 3) ReLU
 
+## Test Coverage
+
+This repository includes automated test coverage measurement for all Rust crates. Coverage reports are automatically generated for every pull request and posted as comments. See [docs/COVERAGE.md](docs/COVERAGE.md) for detailed information about the coverage workflow.
+
 ## The train executable
 This repository offers the binary named "train", which fits the input data to a neural network shaped by your configuration.
 It takes the following parameters:
