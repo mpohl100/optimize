@@ -10,6 +10,7 @@
                 "ms-vscode.git",  // Include Git extension
                 "rust-lang.rust-analyzer",
                 "GitHub.copilot",
+                "GitHub.copilot-chat",
                 "arjun.swagger-viewer"
               ],
               "settings": {
