@@ -68,6 +68,7 @@ jobs:
               --exclude-files "target/*" \
               --exclude-files "*/tests/*" \
               --exclude-files "*/benches/*" \
+              --timeout 300 \
               || true
             
             # Rename the output file to be crate-specific
