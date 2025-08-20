@@ -1,8 +1,8 @@
-#[cfg(test)]
+#![cfg(test)]
 use crate::provider::ChildrenProvider;
 use crate::provider::ExpectedValueProvider;
 use crate::provider::{Provider, ProviderType, WrappedChildrenProvider, WrappedProvider};
-use crate::regret_node::{RegretNode, WrappedRegret};
+use crate::regret_node::RegretNode;
 use crate::roshambo::*;
 use crate::user_data::WrappedUserData;
 
