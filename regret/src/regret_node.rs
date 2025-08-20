@@ -346,7 +346,6 @@ pub struct WrappedRegret<UserData: UserDataTrait> {
 }
 
 impl<UserData: UserDataTrait> WrappedRegret<UserData> {
-    #[must_use]
     /// Creates a new wrapped regret node.
     #[must_use]
     pub fn new(node: RegretNode<UserData>) -> Self {
