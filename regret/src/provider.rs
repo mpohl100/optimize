@@ -1,3 +1,9 @@
+//! # Provider Module
+//!
+//! This module defines traits and wrappers for children and expected value providers
+//! used in regret minimization trees. It also provides types for associating providers
+//! with user data and for thread-safe access.
+
 use crate::regret_node::WrappedRegret;
 use crate::user_data::{UserDataTrait, WrappedUserData};
 use std::sync::{Arc, Mutex};

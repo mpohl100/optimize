@@ -1,12 +1,14 @@
 use matrix::{mat::WrappedMatrix, sum_mat::SumMatrix};
-use regret::solver_node::Provider;
-use regret::solver_node::ProviderType;
-use regret::solver_node::WrappedChildrenProvider;
-use regret::solver_node::WrappedExpectedValueProvider;
-use regret::solver_node::WrappedProvider;
-use regret::solver_node::WrappedRegret;
-use regret::solver_node::WrappedUserData;
-use regret::solver_node::{ChildrenProvider, ExpectedValueProvider, RegretNode, UserDataTrait};
+use regret::provider::Provider;
+use regret::provider::ProviderType;
+use regret::provider::WrappedChildrenProvider;
+use regret::provider::WrappedExpectedValueProvider;
+use regret::provider::WrappedProvider;
+use regret::provider::{ChildrenProvider, ExpectedValueProvider};
+use regret::regret_node::RegretNode;
+use regret::regret_node::WrappedRegret;
+use regret::user_data::UserDataTrait;
+use regret::user_data::WrappedUserData;
 
 use num_traits::cast::NumCast;
 
