@@ -50,7 +50,7 @@ jobs:
                   LINES=$(jq -r '.files | map(.coverable) | add // 0' "coverage/${crate}-report.json")
                   COVERED=$(jq -r '.files | map(.covered) | add // 0' "coverage/${crate}-report.json")
                   if [ "$LINES" -gt 0 ]; then
-                    PERCENT=$(printf "%.2f" "$(echo "$COVERED * 100 / $LINES" | bc -l)")
+                    PERCENT=$(( (100 * COVERED) / LINES ))
                     echo "| $crate | $COVERED/$LINES | ${PERCENT}% |" >> coverage/summary.md
                     TOTAL_LINES=$((TOTAL_LINES + LINES))
                     TOTAL_COVERED=$((TOTAL_COVERED + COVERED))
@@ -63,7 +63,7 @@ jobs:
             sed -i '3i| Crate | Lines Covered | Coverage % |' coverage/summary.md
             sed -i '4i|-------|---------------|------------|' coverage/summary.md
             if [ "$TOTAL_LINES" -gt 0 ]; then
-              TOTAL_PERCENT=$(printf "%.2f" "$(echo "$TOTAL_COVERED * 100 / $TOTAL_LINES" | bc -l)")
+              TOTAL_PERCENT=$(( (100 * TOTAL_COVERED) / TOTAL_LINES ))
               echo "" >> coverage/summary.md
               echo "**Total Coverage: $TOTAL_COVERED/$TOTAL_LINES (${TOTAL_PERCENT}%)**" >> coverage/summary.md
             fi
