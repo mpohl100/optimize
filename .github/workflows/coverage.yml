@@ -39,7 +39,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y bc jq
 
       - name: Generate coverage report (in devcontainer)
-        uses: devcontainers/ci@v0.3.21
+        uses: devcontainers/ci@v0.3
         with:
           runCmd: |
             mkdir -p coverage
