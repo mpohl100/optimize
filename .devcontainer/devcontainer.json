@@ -18,5 +18,6 @@
                 "git.path": "/usr/bin/git"  // Set Git path (if necessary)
               }          
         }
-    }
+    },
+    "postCreateCommand": "cargo install cargo-tarpaulin"
 }
