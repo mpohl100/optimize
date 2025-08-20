@@ -1,3 +1,7 @@
+//! Crate-level documentation for the regret library.
+//!
+//! This crate provides modules for regret minimization algorithms and related utilities.
+
 #![warn(clippy::all)]
 #![warn(clippy::style)]
 #![warn(clippy::pedantic)]
