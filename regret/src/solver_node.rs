@@ -1,15 +1,15 @@
-//! # Regret Solver Node Module
-//!
-//! This module provides abstractions and implementations for regret minimization algorithms,
-//! supporting tree-based structures with user-defined data and providers for children and expected values.
-//!
-//! ## Traits
-//!
-//! - [`UserDataTrait`]: Defines the interface for user data used in regret nodes, requiring probability management and string representation.
-//! - [`ChildrenProvider`]: Trait for types that can generate child nodes given parent data.
-//! - [`ExpectedValueProvider`]: Trait for types that can compute expected values given parent data.
-//!
-//! ## Wrappers
+//! This file has been split into multiple modules:
+//! - user_data.rs: UserDataTrait and WrappedUserData
+//! - provider.rs: Provider traits, enums, and wrappers
+//! - regret_node.rs: RegretNode and WrappedRegret
+//! - roshambo.rs: Rock-Paper-Scissors example types and providers
+//! - tests.rs: Unit tests
+//! See lib.rs for module re-exports.
+
+pub use crate::user_data::*;
+pub use crate::provider::*;
+pub use crate::regret_node::*;
+pub use crate::roshambo::*;
 //!
 //! - [`WrappedUserData`]: Thread-safe wrapper around user data implementing `UserDataTrait`.
 //! - [`WrappedChildrenProvider`]: Thread-safe wrapper for a boxed `ChildrenProvider`.

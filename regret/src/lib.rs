@@ -11,4 +11,9 @@
     clippy::missing_errors_doc,
     clippy::missing_panics_doc
 )]
+pub mod provider;
+pub mod regret_node;
+pub mod roshambo;
 pub mod solver_node;
+pub mod tests;
+pub mod user_data;
