@@ -1,3 +1,9 @@
+//! # Rock-Paper-Scissors Example Module
+//!
+//! This module provides example types and providers for the Rock-Paper-Scissors game,
+//! demonstrating how to use custom user data, children providers, and expected value providers
+//! with the regret minimization framework.
+
 use crate::provider::{
     ChildrenProvider, ExpectedValueProvider, Provider, ProviderType, WrappedChildrenProvider,
     WrappedExpectedValueProvider, WrappedProvider,

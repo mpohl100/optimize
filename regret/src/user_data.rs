@@ -1,3 +1,9 @@
+//! # User Data Module
+//!
+//! This module defines the trait for user-defined data used in regret nodes,
+//! and provides a thread-safe wrapper for such data. Implement `UserDataTrait`
+//! for your domain-specific data to use with the regret minimization framework.
+
 use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
