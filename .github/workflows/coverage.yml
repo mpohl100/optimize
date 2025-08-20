@@ -39,54 +39,53 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y bc jq
 
       - name: Generate coverage report (in devcontainer)
-        run: |
-          docker exec $(docker ps -qf "ancestor=ml_rust_devcontainer_image") bash -c "
-            mkdir -p /workspaces/ml_rust/coverage
-            cd /workspaces/ml_rust
-            WORKSPACE_MEMBERS=\$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[].name')
-            echo 'Coverage Report' > coverage/summary.md
-            echo '==============' >> coverage/summary.md
-            echo '' >> coverage/summary.md
+        uses: devcontainers/ci@v0.3.21
+        with:
+          runCmd: |
+            mkdir -p coverage
+            WORKSPACE_MEMBERS=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[].name')
+            echo "Coverage Report" > coverage/summary.md
+            echo "==============" >> coverage/summary.md
+            echo "" >> coverage/summary.md
             TOTAL_LINES=0
             TOTAL_COVERED=0
-            for crate in \$WORKSPACE_MEMBERS; do
-              echo 'Generating coverage for crate: '\$crate
+            for crate in $WORKSPACE_MEMBERS; do
+              echo "Generating coverage for crate: $crate"
               cargo tarpaulin \
-                --package \"\$crate\" \
+                --package "$crate" \
                 --out Json \
                 --output-dir coverage \
                 --skip-clean \
-                --exclude-files \"target/*\" \
-                --exclude-files \"*/tests/*\" \
-                --exclude-files \"*/benches/*\" \
+                --exclude-files "target/*" \
+                --exclude-files "*/tests/*" \
+                --exclude-files "*/benches/*" \
                 --timeout 300 \
                 || true
-              if [ -f \"coverage/tarpaulin-report.json\" ]; then
-                mv \"coverage/tarpaulin-report.json\" \"coverage/\${crate}-report.json\"
-                if [ -f \"coverage/\${crate}-report.json\" ]; then
-                  LINES=\$(jq -r '.files | map(.coverable) | add // 0' \"coverage/\${crate}-report.json\")
-                  COVERED=\$(jq -r '.files | map(.covered) | add // 0' \"coverage/\${crate}-report.json\")
-                  if [ \"\$LINES\" -gt 0 ]; then
-                    PERCENT=\$(echo \"scale=2; \$COVERED * 100 / \$LINES\" | bc -l)
-                    echo \"| \$crate | \$COVERED/\$LINES | \${PERCENT}% |\" >> coverage/summary.md
-                    TOTAL_LINES=\$((TOTAL_LINES + LINES))
-                    TOTAL_COVERED=\$((TOTAL_COVERED + COVERED))
+              if [ -f "coverage/tarpaulin-report.json" ]; then
+                mv "coverage/tarpaulin-report.json" "coverage/${crate}-report.json"
+                if [ -f "coverage/${crate}-report.json" ]; then
+                  LINES=$(jq -r '.files | map(.coverable) | add // 0' "coverage/${crate}-report.json")
+                  COVERED=$(jq -r '.files | map(.covered) | add // 0' "coverage/${crate}-report.json")
+                  if [ "$LINES" -gt 0 ]; then
+                    PERCENT=$(echo "scale=2; $COVERED * 100 / $LINES" | bc -l)
+                    echo "| $crate | $COVERED/$LINES | ${PERCENT}% |" >> coverage/summary.md
+                    TOTAL_LINES=$((TOTAL_LINES + LINES))
+                    TOTAL_COVERED=$((TOTAL_COVERED + COVERED))
                   else
-                    echo \"| \$crate | 0/0 | N/A |\" >> coverage/summary.md
+                    echo "| $crate | 0/0 | N/A |" >> coverage/summary.md
                   fi
                 fi
               fi
             done
             sed -i '3i| Crate | Lines Covered | Coverage % |' coverage/summary.md
             sed -i '4i|-------|---------------|------------|' coverage/summary.md
-            if [ \"\$TOTAL_LINES\" -gt 0 ]; then
-              TOTAL_PERCENT=\$(echo \"scale=2; \$TOTAL_COVERED * 100 / \$TOTAL_LINES\" | bc -l)
-              echo '' >> coverage/summary.md
-              echo \"**Total Coverage: \$TOTAL_COVERED/\$TOTAL_LINES (\${TOTAL_PERCENT}%)**\" >> coverage/summary.md
+            if [ "$TOTAL_LINES" -gt 0 ]; then
+              TOTAL_PERCENT=$(echo "scale=2; $TOTAL_COVERED * 100 / $TOTAL_LINES" | bc -l)
+              echo "" >> coverage/summary.md
+              echo "**Total Coverage: $TOTAL_COVERED/$TOTAL_LINES (${TOTAL_PERCENT}%)**" >> coverage/summary.md
             fi
-            echo '' >> coverage/summary.md
-            echo \"Generated at: \$(date)\" >> coverage/summary.md
-          "
+            echo "" >> coverage/summary.md
+            echo "Generated at: $(date)" >> coverage/summary.md
 
       - name: Install Node.js
         uses: actions/setup-node@v4
