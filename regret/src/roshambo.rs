@@ -164,7 +164,7 @@ impl ExpectedValueProvider<RoshamboData> for RoshamboExpectedValueProvider {
             },
             Choice::Scissors => match player_2_choice {
                 Choice::Rock => -1.0,    // Rock beats Scissors
-                Choice::Paper => 1.0,    // Paper beats Rock
+                Choice::Paper => 1.0,    // Scissors beats Paper
                 Choice::Scissors => 0.0, // Tie
             },
         }
