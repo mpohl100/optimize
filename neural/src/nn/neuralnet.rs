@@ -238,7 +238,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
             let internal_path = if workspace.is_empty() {
                 user_model_directory
             } else {
-                format!("{}/{}", workspace, user_model_directory)
+                format!("{workspace}/{user_model_directory}")
             };
             // Don't add current directory to past_internal when in test mode to avoid cleanup
             // since we want to keep the saved model for testing
@@ -680,7 +680,7 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
             let internal_path = if workspace.is_empty() {
                 user_model_directory
             } else {
-                format!("{}/{}", workspace, user_model_directory)
+                format!("{workspace}/{user_model_directory}")
             };
             // Don't add current directory to past_internal when in test mode to avoid cleanup
             // since we want to keep the saved model for testing
@@ -990,16 +990,17 @@ mod tests {
 
     #[test]
     fn test_neural_network_train() {
-        use std::sync::atomic::{AtomicUsize, Ordering};
         use std::path::Path;
-        
+        use std::sync::atomic::{AtomicUsize, Ordering};
+
         // Helper to generate unique workspace names for tests
         static TEST_COUNTER: AtomicUsize = AtomicUsize::new(100); // Start at 100 to avoid conflicts
-        
+
         let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
-        let workspace = format!("/tmp/test_workspace_unit_{}", counter);
-        let utils = WrappedUtils::new(Utils::new_with_test_mode(1_000_000_000, 4, workspace.clone()));
-        
+        let workspace = format!("/tmp/test_workspace_unit_{counter}");
+        let utils =
+            WrappedUtils::new(Utils::new_with_test_mode(1_000_000_000, 4, workspace.clone()));
+
         let mut nn = TrainableClassicNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![
@@ -1035,13 +1036,7 @@ mod tests {
         for (p, t) in prediction.iter().zip(&targets[0]) {
             assert!((p - t).abs() < 1e-4);
         }
-        
-        // Clean up workspace
-        if !workspace.is_empty() && Path::new(&workspace).exists() {
-            let _ = std::fs::remove_dir_all(&workspace);
-        }
-    }
-}
+
         // Clean up workspace
         if !workspace.is_empty() && Path::new(&workspace).exists() {
             let _ = std::fs::remove_dir_all(&workspace);

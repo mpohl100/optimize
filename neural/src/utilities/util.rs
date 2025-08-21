@@ -140,7 +140,7 @@ impl Utils {
     }
 
     #[must_use]
-    pub fn is_test_mode(&self) -> bool {
+    pub const fn is_test_mode(&self) -> bool {
         self.test_mode
     }
 
