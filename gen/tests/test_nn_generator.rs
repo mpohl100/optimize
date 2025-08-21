@@ -6,6 +6,25 @@ use neural::training::data_importer::{DataImporter, SessionData};
 use neural::training::training_params::TrainingParams;
 use neural::utilities::util::{Utils, WrappedUtils};
 
+use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Helper to generate unique workspace names for tests
+static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+fn create_test_utils() -> WrappedUtils {
+    let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let workspace = format!("/tmp/test_workspace_gen_{}", counter);
+    WrappedUtils::new(Utils::new_with_test_mode(1000000000, 4, workspace))
+}
+
+fn cleanup_workspace(utils: &WrappedUtils) {
+    let workspace = utils.get_workspace();
+    if !workspace.is_empty() && Path::new(&workspace).exists() {
+        let _ = std::fs::remove_dir_all(&workspace);
+    }
+}
+
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
 struct MockDataImporter {
@@ -35,6 +54,7 @@ impl DataImporter for MockDataImporter {
 #[test]
 fn test_neural_network_generator() {
     let model_directory = "tests/test_model_generation".to_string();
+    let utils = create_test_utils();
 
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
@@ -61,8 +81,6 @@ fn test_neural_network_generator() {
 
     let evolution_params = EvolutionOptions::new(2, LogLevel::Verbose, 3, 4);
 
-    let utils = WrappedUtils::new(Utils::new(1000000000, 4));
-
     let mut nn_generator = NeuralNetworkGenerator::new(
         training_params,
         evolution_params,
@@ -74,6 +92,11 @@ fn test_neural_network_generator() {
     nn_generator.generate();
     nn_generator.save();
 
-    // clear directory
-    std::fs::remove_dir_all(nn_generator.get_model_directory()).unwrap();
+    // Verify that the model was saved in the workspace
+    let workspace = utils.get_workspace();
+    let expected_path = format!("{}/{}", workspace, model_directory);
+    assert!(Path::new(&expected_path).exists());
+
+    // Clean up workspace
+    cleanup_workspace(&utils);
 }
