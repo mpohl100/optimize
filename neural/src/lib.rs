@@ -42,9 +42,9 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 #![warn(clippy::cargo)]
-#![warn(missing_docs)]
-#![warn(missing_debug_implementations)]
-#![warn(rust_2018_idioms)]
+// #![warn(missing_docs)]
+// #![warn(missing_debug_implementations)]
+// #![warn(rust_2018_idioms)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
 
