@@ -61,7 +61,7 @@ fn train_model(
     println!("train_model called with model_directory: {}", model_directory);
     println!("train_model utils test_mode: {}", utils.is_test_mode());
     println!("train_model utils workspace: {}", utils.get_workspace());
-    
+
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
@@ -133,7 +133,11 @@ fn new_model_is_persisted() {
     let utils = create_test_utils();
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string(), utils.clone());
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_1_internal".to_string(),
+        utils.clone(),
+    );
 
     // Assert
     // Check if the model directory exists (should be in workspace)
@@ -150,11 +154,19 @@ fn already_trained_model_is_loaded() {
     // Arrange
     let model_directory = "tests/test_model_persistence_2".to_string();
     let utils = create_test_utils();
-    
-    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string(), utils.clone());
+
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_2_internal".to_string(),
+        utils.clone(),
+    );
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string(), utils.clone());
+    train_model(
+        model_directory.clone(),
+        "tests/test_model_persistence_3_internal".to_string(),
+        utils.clone(),
+    );
 
     // Assert
     // Check if the model directory exists (should be in workspace)
@@ -174,14 +186,18 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     let model_directory = "tests/test_model_persistence_3".to_string();
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
     let utils = create_test_utils();
-    
+
     {
         // Arrange
-        train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string(), utils.clone());
+        train_model(
+            model_directory.clone(),
+            "tests/test_model_persistence_3_internal".to_string(),
+            utils.clone(),
+        );
 
         let workspace = utils.get_workspace();
         let expected_model_path = format!("{}/{}", workspace, model_directory);
-        
+
         let mut ordinary_model =
             ClassicNeuralNetwork::from_disk(expected_model_path, utils.clone()).unwrap();
         ordinary_model.allocate();
@@ -208,7 +224,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     assert!(!std::path::Path::new(&model_backup_path).exists());
     let new_model_backup_path = format!("{}/{}_backup", workspace, new_model_directory);
     assert!(!std::path::Path::new(&new_model_backup_path).exists());
-    
+
     // Clean up workspace
     cleanup_workspace(&utils);
 }
