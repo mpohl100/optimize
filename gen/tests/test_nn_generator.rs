@@ -14,7 +14,7 @@ static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 fn create_test_utils() -> WrappedUtils {
     let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
-    let workspace = format!("/tmp/test_workspace_gen_{}", counter);
+    let workspace = format!("/tmp/test_workspace_gen_{counter}");
     WrappedUtils::new(Utils::new_with_test_mode(1000000000, 4, workspace))
 }
 
@@ -94,7 +94,7 @@ fn test_neural_network_generator() {
 
     // Verify that the model was saved in the workspace
     let workspace = utils.get_workspace();
-    let expected_path = format!("{}/{}", workspace, model_directory);
+    let expected_path = format!("{workspace}/{model_directory}");
     assert!(Path::new(&expected_path).exists());
 
     // Clean up workspace

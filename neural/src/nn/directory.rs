@@ -35,7 +35,7 @@ impl Directory {
                 if workspace.is_empty() {
                     path.clone()
                 } else {
-                    format!("{}/{}", workspace, path)
+                    format!("{workspace}/{path}")
                 }
             },
             Self::User(path) => path.clone(),

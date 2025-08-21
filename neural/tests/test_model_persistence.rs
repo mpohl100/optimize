@@ -16,7 +16,7 @@ static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 fn create_test_utils() -> WrappedUtils {
     let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
-    let workspace = format!("/tmp/test_workspace_{}", counter);
+    let workspace = format!("/tmp/test_workspace_{counter}");
     WrappedUtils::new(Utils::new_with_test_mode(1000000000, 4, workspace))
 }
 
@@ -58,7 +58,7 @@ fn train_model(
     internal_model_directory: String,
     utils: WrappedUtils,
 ) {
-    println!("train_model called with model_directory: {}", model_directory);
+    println!("train_model called with model_directory: {model_directory}");
     println!("train_model utils test_mode: {}", utils.is_test_mode());
     println!("train_model utils workspace: {}", utils.get_workspace());
 
@@ -142,7 +142,7 @@ fn new_model_is_persisted() {
     // Assert
     // Check if the model directory exists (should be in workspace)
     let workspace = utils.get_workspace();
-    let expected_path = format!("{}/{}", workspace, model_directory);
+    let expected_path = format!("{workspace}/{model_directory}");
     assert!(std::path::Path::new(&expected_path).exists());
 
     // Clean up workspace
@@ -171,10 +171,10 @@ fn already_trained_model_is_loaded() {
     // Assert
     // Check if the model directory exists (should be in workspace)
     let workspace = utils.get_workspace();
-    let expected_path = format!("{}/{}", workspace, model_directory);
+    let expected_path = format!("{workspace}/{model_directory}");
     assert!(std::path::Path::new(&expected_path).exists());
     // Check that backup directory is removed (should be in workspace)
-    let backup_path = format!("{}/{}_backup", workspace, model_directory);
+    let backup_path = format!("{workspace}/{model_directory}_backup");
     assert!(!std::path::Path::new(&backup_path).exists());
 
     // Clean up workspace
@@ -196,7 +196,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
         );
 
         let workspace = utils.get_workspace();
-        let expected_model_path = format!("{}/{}", workspace, model_directory);
+        let expected_model_path = format!("{workspace}/{model_directory}");
 
         let mut ordinary_model =
             ClassicNeuralNetwork::from_disk(expected_model_path, utils.clone()).unwrap();
@@ -204,7 +204,7 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
         // Act
         ordinary_model.save(new_model_directory.clone()).expect("Failed to save model");
 
-        let expected_new_model_path = format!("{}/{}", workspace, new_model_directory);
+        let expected_new_model_path = format!("{workspace}/{new_model_directory}");
         let mut trainable_ordinary_model =
             ClassicNeuralNetwork::from_disk(expected_new_model_path, utils.clone()).unwrap();
 
@@ -217,12 +217,12 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
     // Assert
     // Check if the new model directory exists (should be in workspace)
     let workspace = utils.get_workspace();
-    let expected_new_model_path = format!("{}/{}", workspace, new_model_directory);
+    let expected_new_model_path = format!("{workspace}/{new_model_directory}");
     assert!(std::path::Path::new(&expected_new_model_path).exists());
     // Check that the backup directories are removed (should be in workspace)
-    let model_backup_path = format!("{}/{}_backup", workspace, model_directory);
+    let model_backup_path = format!("{workspace}/{model_directory}_backup");
     assert!(!std::path::Path::new(&model_backup_path).exists());
-    let new_model_backup_path = format!("{}/{}_backup", workspace, new_model_directory);
+    let new_model_backup_path = format!("{workspace}/{new_model_directory}_backup");
     assert!(!std::path::Path::new(&new_model_backup_path).exists());
 
     // Clean up workspace
