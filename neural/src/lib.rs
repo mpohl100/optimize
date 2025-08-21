@@ -16,7 +16,7 @@
 //!
 //! The library is organized into several modules:
 //!
-//! - [`activation`]: Activation functions (ReLU, Sigmoid, Tanh, etc.)
+//! - [`activation`]: Activation functions (`ReLU`, `Sigmoid`, `Tanh`, etc.)
 //! - [`layer`]: Neural network layer implementations
 //! - [`nn`]: Complete neural network structures and builders
 //! - [`training`]: Training algorithms and data management
