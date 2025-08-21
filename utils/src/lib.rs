@@ -1,6 +1,6 @@
 //! # Utility Functions Library
 //!
-//! Common utility functions and helpers used across the ml_rust project.
+//! Common utility functions and helpers used across the `ml_rust` project.
 //! Provides safe abstractions and convenience functions for common operations.
 //!
 //! ## Overview
