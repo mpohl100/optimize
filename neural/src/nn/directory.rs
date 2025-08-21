@@ -29,7 +29,10 @@ impl Directory {
     }
 
     #[must_use]
-    pub fn path_with_workspace(&self, workspace: &str) -> String {
+    pub fn path_with_workspace(
+        &self,
+        workspace: &str,
+    ) -> String {
         match self {
             Self::Internal(path) => {
                 if workspace.is_empty() {
