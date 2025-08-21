@@ -1,2 +1,47 @@
 [workspace]
-members = ["alloc", "app", "evol", "gen", "regret", "neural", "matrix", "markov"]
+resolver = "2"
+members = ["alloc", "app", "evol", "gen", "regret", "neural", "matrix", "markov", "utils"]
+
+[workspace.dependencies]
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0"
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Numerical computing
+num-traits = "0.2"
+
+# Random number generation
+rand = "0.9"
+rand_distr = "0.5"
+
+# CLI applications
+clap = { version = "4.0", features = ["derive"] }
+
+# Parallel processing
+rayon = "1.11"
+
+# File system operations
+walkdir = "2.0"
+
+# Testing utilities
+approx = "0.5"
+proptest = "1.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Progress bars
+indicatif = "0.18"
+
+# CSV handling
+csv = "1.3"
+
+# File locking
+fs2 = "0.4"
