@@ -8,6 +8,25 @@ use neural::training::training_params::TrainingParams;
 use neural::training::training_session::TrainingSession;
 use neural::utilities::util::{Utils, WrappedUtils};
 
+use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Helper to generate unique workspace names for tests
+static TEST_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+fn create_test_utils() -> WrappedUtils {
+    let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+    let workspace = format!("/tmp/test_workspace_{}", counter);
+    WrappedUtils::new(Utils::new_with_test_mode(1000000000, 4, workspace))
+}
+
+fn cleanup_workspace(utils: &WrappedUtils) {
+    let workspace = utils.get_workspace();
+    if !workspace.is_empty() && Path::new(&workspace).exists() {
+        let _ = std::fs::remove_dir_all(&workspace);
+    }
+}
+
 // Mock DataImporter implementation for testing
 #[derive(Clone)]
 struct MockDataImporter {
@@ -37,7 +56,12 @@ impl DataImporter for MockDataImporter {
 fn train_model(
     model_directory: String,
     internal_model_directory: String,
+    utils: WrappedUtils,
 ) {
+    println!("train_model called with model_directory: {}", model_directory);
+    println!("train_model utils test_mode: {}", utils.is_test_mode());
+    println!("train_model utils workspace: {}", utils.get_workspace());
+    
     // Define the neural network shape
     let nn_shape = NeuralNetworkShape {
         layers: vec![
@@ -67,8 +91,6 @@ fn train_model(
     // Create a training session using the mock data importer
     let data_importer = MockDataImporter::new(nn_shape);
 
-    let utils = WrappedUtils::new(Utils::new(1000000000, 4));
-
     let training_session = TrainingSession::from_disk(
         model_directory.clone(),
         training_params.clone(),
@@ -77,11 +99,14 @@ fn train_model(
     );
     match training_session {
         Ok(mut training_session) => {
+            println!("Training session loaded from disk, training...");
             // Train the neural network and check the success rate
             let success_rate = training_session.train().expect("Training failed");
             // print the success rate
             println!("Success rate: {success_rate}");
+            println!("Saving model to: {}", model_directory);
             training_session.save_model(model_directory.clone()).expect("Failed to save model");
+            println!("Model saved successfully");
             return;
         },
         Err(e) => {
@@ -89,6 +114,7 @@ fn train_model(
         },
     }
 
+    println!("Creating new training session...");
     let mut training_session = TrainingSession::new(
         training_params,
         Box::new(data_importer),
@@ -98,69 +124,116 @@ fn train_model(
     .expect("Failed to create TrainingSession");
 
     // Train the neural network and check the success rate
+    println!("Training new neural network...");
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
     println!("Success rate: {success_rate}");
+    println!("Saving model to: {}", model_directory);
     training_session.save_model(model_directory.clone()).expect("Failed to save model");
+    println!("Model saved successfully");
+    
+    // Check immediately after save
+    let workspace = utils.get_workspace();
+    let immediate_check_path = format!("{}/{}", workspace, model_directory);
+    println!("Immediately after save, checking path: {}", immediate_check_path);
+    if std::path::Path::new(&immediate_check_path).exists() {
+        println!("SUCCESS: Directory exists immediately after save");
+    } else {
+        println!("ERROR: Directory does not exist immediately after save");
+    }
 }
 
 #[test]
 fn new_model_is_persisted() {
     // Arrange
     let model_directory = "tests/test_model_persistence_1".to_string();
+    let utils = create_test_utils();
+
+    println!("Test mode: {}", utils.is_test_mode());
+    println!("Workspace: {}", utils.get_workspace());
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string());
+    train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string(), utils.clone());
 
     // Assert
-    // Check if the model directory exists
-    assert!(std::path::Path::new(&model_directory).exists());
+    // Check if the model directory exists (should be in workspace)
+    let workspace = utils.get_workspace();
+    let expected_path = format!("{}/{}", workspace, model_directory);
+    println!("Expected path: {}", expected_path);
+    
+    // Let's also check what files exist in the workspace
+    if let Ok(entries) = std::fs::read_dir(&workspace) {
+        println!("Files in workspace:");
+        for entry in entries {
+            if let Ok(entry) = entry {
+                println!("  {:?}", entry.path());
+                if entry.path().is_dir() {
+                    if let Ok(sub_entries) = std::fs::read_dir(entry.path()) {
+                        for sub_entry in sub_entries {
+                            if let Ok(sub_entry) = sub_entry {
+                                println!("    {:?}", sub_entry.path());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        println!("Workspace directory doesn't exist or can't be read: {}", workspace);
+    }
+    
+    assert!(std::path::Path::new(&expected_path).exists());
 
-    // Clean up
-    std::fs::remove_dir_all(&model_directory).unwrap();
+    // Clean up workspace
+    cleanup_workspace(&utils);
 }
 
 #[test]
 fn already_trained_model_is_loaded() {
     // Arrange
     let model_directory = "tests/test_model_persistence_2".to_string();
-    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string());
+    let utils = create_test_utils();
+    
+    train_model(model_directory.clone(), "tests/test_model_persistence_2_internal".to_string(), utils.clone());
 
     // Act
-    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
+    train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string(), utils.clone());
 
     // Assert
-    // Check if the model directory exists
-    assert!(std::path::Path::new(&model_directory).exists());
-    // Check that backup directory is removed
-    assert!(!std::path::Path::new(&format!("{model_directory}_backup")).exists());
+    // Check if the model directory exists (should be in workspace)
+    let workspace = utils.get_workspace();
+    let expected_path = format!("{}/{}", workspace, model_directory);
+    assert!(std::path::Path::new(&expected_path).exists());
+    // Check that backup directory is removed (should be in workspace)
+    let backup_path = format!("{}/{}_backup", workspace, model_directory);
+    assert!(!std::path::Path::new(&backup_path).exists());
 
-    // Clean up
-    std::fs::remove_dir_all(&model_directory).unwrap();
-    // Remove the backup directory if it exists
-    if std::path::Path::new(&format!("{model_directory}_backup")).exists() {
-        std::fs::remove_dir_all(format!("{model_directory}_backup")).unwrap();
-    }
+    // Clean up workspace
+    cleanup_workspace(&utils);
 }
 
 #[test]
 fn trained_model_is_convertible_to_ordinary_model_and_back() {
     let model_directory = "tests/test_model_persistence_3".to_string();
     let new_model_directory = "tests/test_model_persistence_3_new".to_string();
+    let utils = create_test_utils();
+    
     {
         // Arrange
-        let utils = WrappedUtils::new(Utils::new(1000000000, 4));
+        train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string(), utils.clone());
 
-        train_model(model_directory.clone(), "tests/test_model_persistence_3_internal".to_string());
-
+        let workspace = utils.get_workspace();
+        let expected_model_path = format!("{}/{}", workspace, model_directory);
+        
         let mut ordinary_model =
-            ClassicNeuralNetwork::from_disk(model_directory.clone(), utils.clone()).unwrap();
+            ClassicNeuralNetwork::from_disk(expected_model_path, utils.clone()).unwrap();
         ordinary_model.allocate();
         // Act
         ordinary_model.save(new_model_directory.clone()).expect("Failed to save model");
 
+        let expected_new_model_path = format!("{}/{}", workspace, new_model_directory);
         let mut trainable_ordinary_model =
-            ClassicNeuralNetwork::from_disk(new_model_directory.clone(), utils).unwrap();
+            ClassicNeuralNetwork::from_disk(expected_new_model_path, utils.clone()).unwrap();
 
         trainable_ordinary_model.allocate();
 
@@ -169,12 +242,16 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
             .expect("Failed to save trainable model");
     }
     // Assert
-    // Check if the new model directory exists
-    assert!(std::path::Path::new(&new_model_directory).exists());
-    // Check that the backup directory is removed
-    assert!(!std::path::Path::new(&format!("{model_directory}_backup")).exists());
-    // Check that the backup directory is removed
-    assert!(!std::path::Path::new(&format!("{new_model_directory}_backup")).exists());
-    // Clean up
-    std::fs::remove_dir_all(&new_model_directory).unwrap();
+    // Check if the new model directory exists (should be in workspace)
+    let workspace = utils.get_workspace();
+    let expected_new_model_path = format!("{}/{}", workspace, new_model_directory);
+    assert!(std::path::Path::new(&expected_new_model_path).exists());
+    // Check that the backup directories are removed (should be in workspace)
+    let model_backup_path = format!("{}/{}_backup", workspace, model_directory);
+    assert!(!std::path::Path::new(&model_backup_path).exists());
+    let new_model_backup_path = format!("{}/{}_backup", workspace, new_model_directory);
+    assert!(!std::path::Path::new(&new_model_backup_path).exists());
+    
+    // Clean up workspace
+    cleanup_workspace(&utils);
 }

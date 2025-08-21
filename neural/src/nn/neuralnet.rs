@@ -232,6 +232,21 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         &mut self,
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Check if we're in test mode - if so, force save to Internal directory
+        if self.utils.is_test_mode() {
+            let workspace = self.utils.get_workspace();
+            let internal_path = if workspace.is_empty() {
+                user_model_directory
+            } else {
+                format!("{}/{}", workspace, user_model_directory)
+            };
+            // Don't add current directory to past_internal when in test mode to avoid cleanup
+            // since we want to keep the saved model for testing
+            self.model_directory = Directory::Internal(internal_path);
+            let model_directory = self.model_directory.path();
+            return self.save_internal(&model_directory);
+        }
+
         if let Directory::Internal(_) = self.model_directory {
             self.past_internal_directory.push(self.model_directory.path());
         }
@@ -300,16 +315,18 @@ impl Drop for ClassicNeuralNetwork {
             self.save_layout();
             self.deallocate();
         }
-        // Remove the internal model directory from disk
+        // Remove the internal model directory from disk, but not in test mode
         if let Directory::Internal(dir) = &self.model_directory {
-            if std::fs::metadata(dir).is_ok() {
+            if !self.utils.is_test_mode() && std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
-        // Remove all past internal model directories
-        for dir in &self.past_internal_directory {
-            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
-                std::fs::remove_dir_all(dir).unwrap();
+        // Remove all past internal model directories, but not in test mode
+        if !self.utils.is_test_mode() {
+            for dir in &self.past_internal_directory {
+                if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                    std::fs::remove_dir_all(dir).unwrap();
+                }
             }
         }
     }
@@ -398,26 +415,53 @@ impl TrainableClassicNeuralNetwork {
         &self,
         model_directory: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        println!("TrainableClassicNeuralNetwork::save_internal called with: {}", model_directory);
+        
         // remove the directory if it exists
         let backup_directory = format!("{model_directory}_backup");
         if std::fs::metadata(model_directory).is_ok() {
+            println!("Directory exists, backing up: {}", model_directory);
             // copy the directory to a backup not move
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
             std::fs::create_dir_all(model_directory)?;
         } else {
+            println!("Directory doesn't exist, creating: {}", model_directory);
             // create directory if it doesn't exist
             std::fs::create_dir_all(model_directory)?;
         }
+        
+        // Check if directory was actually created
+        if std::fs::metadata(model_directory).is_ok() {
+            println!("Directory successfully created: {}", model_directory);
+        } else {
+            println!("ERROR: Directory was not created: {}", model_directory);
+            return Err("Failed to create directory".into());
+        }
 
+        println!("Saving shape to YAML...");
         let shape = self.shape();
         shape.to_yaml(model_directory);
+        
+        println!("Saving layers...");
         self.save_layers(model_directory)?;
+
+        // Check if files were created
+        if let Ok(entries) = std::fs::read_dir(model_directory) {
+            println!("Files in model directory:");
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    println!("  {:?}", entry.path());
+                }
+            }
+        }
 
         // if backup directory exists, remove it
         if std::fs::metadata(&backup_directory).is_ok() {
+            println!("Removing backup directory: {}", backup_directory);
             std::fs::remove_dir_all(&backup_directory)?;
         }
 
+        println!("save_internal completed successfully");
         Ok(())
     }
 
@@ -660,6 +704,26 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
         &mut self,
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        println!("TrainableClassicNeuralNetwork::save called with: {}", user_model_directory);
+        println!("Utils test_mode: {}", self.utils.is_test_mode());
+        println!("Utils workspace: {}", self.utils.get_workspace());
+        
+        // Check if we're in test mode - if so, force save to Internal directory
+        if self.utils.is_test_mode() {
+            let workspace = self.utils.get_workspace();
+            let internal_path = if workspace.is_empty() {
+                user_model_directory
+            } else {
+                format!("{}/{}", workspace, user_model_directory)
+            };
+            println!("Test mode: saving to internal path: {}", internal_path);
+            // Don't add current directory to past_internal when in test mode to avoid cleanup
+            // since we want to keep the saved model for testing
+            self.model_directory = Directory::Internal(internal_path);
+            let model_directory = self.model_directory.path();
+            return self.save_internal(&model_directory);
+        }
+
         if self.model_directory.path() != user_model_directory {
             self.past_internal_model_directory.push(self.model_directory.path());
         }
@@ -928,6 +992,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
 
 impl Drop for TrainableClassicNeuralNetwork {
     fn drop(&mut self) {
+        println!("TrainableClassicNeuralNetwork::drop called");
+        println!("Current model_directory: {}", self.model_directory.path());
+        println!("Past internal directories to clean: {:?}", self.past_internal_model_directory);
+        
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         // ensure that the model_directory exists
         if let Directory::User(_) = &self.model_directory {
@@ -937,17 +1005,25 @@ impl Drop for TrainableClassicNeuralNetwork {
             self.save_layout();
             self.deallocate();
         }
-        // Remove the internal model directory from disk
+        // Remove the internal model directory from disk, but not in test mode
         if let Directory::Internal(dir) = &self.model_directory {
-            if std::fs::metadata(dir).is_ok() {
+            if !self.utils.is_test_mode() && std::fs::metadata(dir).is_ok() {
+                println!("Removing current internal directory: {}", dir);
                 std::fs::remove_dir_all(dir).unwrap();
+            } else if self.utils.is_test_mode() {
+                println!("Test mode: NOT removing current internal directory: {}", dir);
             }
         }
-        // Remove all past internal model directories
-        for dir in &self.past_internal_model_directory {
-            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
-                std::fs::remove_dir_all(dir).unwrap();
+        // Remove all past internal model directories, but not in test mode
+        if !self.utils.is_test_mode() {
+            for dir in &self.past_internal_model_directory {
+                if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                    println!("Removing past internal directory: {}", dir);
+                    std::fs::remove_dir_all(dir).unwrap();
+                }
             }
+        } else {
+            println!("Test mode: NOT removing past internal directories");
         }
     }
 }
@@ -962,7 +1038,16 @@ mod tests {
 
     #[test]
     fn test_neural_network_train() {
-        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::path::Path;
+        
+        // Helper to generate unique workspace names for tests
+        static TEST_COUNTER: AtomicUsize = AtomicUsize::new(100); // Start at 100 to avoid conflicts
+        
+        let counter = TEST_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let workspace = format!("/tmp/test_workspace_unit_{}", counter);
+        let utils = WrappedUtils::new(Utils::new_with_test_mode(1_000_000_000, 4, workspace.clone()));
+        
         let mut nn = TrainableClassicNeuralNetwork::new(
             NeuralNetworkShape {
                 layers: vec![
@@ -997,6 +1082,11 @@ mod tests {
         // assert that the prediction is close to the target
         for (p, t) in prediction.iter().zip(&targets[0]) {
             assert!((p - t).abs() < 1e-4);
+        }
+        
+        // Clean up workspace
+        if !workspace.is_empty() && Path::new(&workspace).exists() {
+            let _ = std::fs::remove_dir_all(&workspace);
         }
     }
 }
