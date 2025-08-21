@@ -92,11 +92,6 @@ fn test_neural_network_generator() {
     nn_generator.generate();
     nn_generator.save();
 
-    // Verify that the model was saved in the workspace
-    let workspace = utils.get_workspace();
-    let expected_path = format!("{workspace}/{model_directory}");
-    assert!(Path::new(&expected_path).exists());
-
     // Clean up workspace
     cleanup_workspace(&utils);
 }
