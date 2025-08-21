@@ -99,14 +99,11 @@ fn train_model(
     );
     match training_session {
         Ok(mut training_session) => {
-            println!("Training session loaded from disk, training...");
             // Train the neural network and check the success rate
             let success_rate = training_session.train().expect("Training failed");
             // print the success rate
             println!("Success rate: {success_rate}");
-            println!("Saving model to: {}", model_directory);
             training_session.save_model(model_directory.clone()).expect("Failed to save model");
-            println!("Model saved successfully");
             return;
         },
         Err(e) => {
@@ -114,7 +111,6 @@ fn train_model(
         },
     }
 
-    println!("Creating new training session...");
     let mut training_session = TrainingSession::new(
         training_params,
         Box::new(data_importer),
@@ -124,23 +120,10 @@ fn train_model(
     .expect("Failed to create TrainingSession");
 
     // Train the neural network and check the success rate
-    println!("Training new neural network...");
     let success_rate = training_session.train().expect("Training failed");
     // print the success rate
     println!("Success rate: {success_rate}");
-    println!("Saving model to: {}", model_directory);
     training_session.save_model(model_directory.clone()).expect("Failed to save model");
-    println!("Model saved successfully");
-    
-    // Check immediately after save
-    let workspace = utils.get_workspace();
-    let immediate_check_path = format!("{}/{}", workspace, model_directory);
-    println!("Immediately after save, checking path: {}", immediate_check_path);
-    if std::path::Path::new(&immediate_check_path).exists() {
-        println!("SUCCESS: Directory exists immediately after save");
-    } else {
-        println!("ERROR: Directory does not exist immediately after save");
-    }
 }
 
 #[test]
@@ -149,9 +132,6 @@ fn new_model_is_persisted() {
     let model_directory = "tests/test_model_persistence_1".to_string();
     let utils = create_test_utils();
 
-    println!("Test mode: {}", utils.is_test_mode());
-    println!("Workspace: {}", utils.get_workspace());
-
     // Act
     train_model(model_directory.clone(), "tests/test_model_persistence_1_internal".to_string(), utils.clone());
 
@@ -159,29 +139,6 @@ fn new_model_is_persisted() {
     // Check if the model directory exists (should be in workspace)
     let workspace = utils.get_workspace();
     let expected_path = format!("{}/{}", workspace, model_directory);
-    println!("Expected path: {}", expected_path);
-    
-    // Let's also check what files exist in the workspace
-    if let Ok(entries) = std::fs::read_dir(&workspace) {
-        println!("Files in workspace:");
-        for entry in entries {
-            if let Ok(entry) = entry {
-                println!("  {:?}", entry.path());
-                if entry.path().is_dir() {
-                    if let Ok(sub_entries) = std::fs::read_dir(entry.path()) {
-                        for sub_entry in sub_entries {
-                            if let Ok(sub_entry) = sub_entry {
-                                println!("    {:?}", sub_entry.path());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else {
-        println!("Workspace directory doesn't exist or can't be read: {}", workspace);
-    }
-    
     assert!(std::path::Path::new(&expected_path).exists());
 
     // Clean up workspace
