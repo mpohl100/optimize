@@ -23,10 +23,10 @@ proptest! {
         let matrix = WrappedMatrix::<f64>::new(rows, cols);
         let row = rows / 2;
         let col = cols / 2;
-        
+
         matrix.set_mut_unchecked(row, col, value);
         let retrieved = matrix.get_unchecked(row, col);
-        
+
         prop_assert!((retrieved - value).abs() < f64::EPSILON);
     }
 
@@ -38,7 +38,7 @@ proptest! {
         test_col in 0..20usize,
     ) {
         let matrix = WrappedMatrix::<f64>::new(rows, cols);
-        
+
         if test_row >= rows || test_col >= cols {
             prop_assert!(matrix.get(test_row, test_col).is_err());
         } else {
@@ -57,17 +57,17 @@ proptest! {
     ) {
         let base_matrix = WrappedMatrix::<i64>::new(rows, cols);
         let mut sum_matrix = SumMatrix::new(base_matrix);
-        
+
         let row = rows / 2;
         let mut expected_sum = 0i64;
-        
+
         for (i, &value) in values.iter().enumerate() {
             if i < cols {
                 sum_matrix.set_val(row, i, value).unwrap();
                 expected_sum += value;
             }
         }
-        
+
         let actual_sum = sum_matrix.get_row_sum(row);
         prop_assert_eq!(actual_sum, expected_sum);
     }
@@ -81,23 +81,23 @@ proptest! {
     ) {
         let base_matrix = WrappedMatrix::<i64>::new(rows, cols);
         let mut sum_matrix = SumMatrix::new(base_matrix);
-        
+
         let row = 0;
         sum_matrix.set_val(row, 0, value1).unwrap();
         sum_matrix.set_val(row, 1, value2).unwrap();
-        
+
         let ratio1 = sum_matrix.get_ratio(row, 0).unwrap();
         let ratio2 = sum_matrix.get_ratio(row, 1).unwrap();
-        
+
         // Ratios should sum to 1.0 (approximately)
         let total_ratio = ratio1 + ratio2;
         prop_assert!((total_ratio - 1.0).abs() < 1e-10);
-        
+
         // Individual ratios should be correct
         let total = value1 + value2;
         let expected_ratio1 = value1 as f64 / total as f64;
         let expected_ratio2 = value2 as f64 / total as f64;
-        
+
         prop_assert!((ratio1 - expected_ratio1).abs() < 1e-10);
         prop_assert!((ratio2 - expected_ratio2).abs() < 1e-10);
     }
