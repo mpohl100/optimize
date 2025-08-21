@@ -315,18 +315,15 @@ impl Drop for ClassicNeuralNetwork {
             self.save_layout();
             self.deallocate();
         }
-        // Remove the internal model directory from disk, but not in test mode
+        // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
-            if !self.utils.is_test_mode() && std::fs::metadata(dir).is_ok() {
+            if std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
-        // Remove all past internal model directories, but not in test mode
-        if !self.utils.is_test_mode() {
-            for dir in &self.past_internal_directory {
-                if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
-                    std::fs::remove_dir_all(dir).unwrap();
-                }
+        for dir in &self.past_internal_directory {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
             }
         }
     }
@@ -969,18 +966,15 @@ impl Drop for TrainableClassicNeuralNetwork {
             self.save_layout();
             self.deallocate();
         }
-        // Remove the internal model directory from disk, but not in test mode
+        // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
-            if !self.utils.is_test_mode() && std::fs::metadata(dir).is_ok() {
+            if std::fs::metadata(dir).is_ok() {
                 std::fs::remove_dir_all(dir).unwrap();
             }
         }
-        // Remove all past internal model directories, but not in test mode
-        if !self.utils.is_test_mode() {
-            for dir in &self.past_internal_model_directory {
-                if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
-                    std::fs::remove_dir_all(dir).unwrap();
-                }
+        for dir in &self.past_internal_model_directory {
+            if dir != &self.model_directory.path() && std::fs::metadata(dir).is_ok() {
+                std::fs::remove_dir_all(dir).unwrap();
             }
         }
     }
@@ -1042,6 +1036,12 @@ mod tests {
             assert!((p - t).abs() < 1e-4);
         }
         
+        // Clean up workspace
+        if !workspace.is_empty() && Path::new(&workspace).exists() {
+            let _ = std::fs::remove_dir_all(&workspace);
+        }
+    }
+}
         // Clean up workspace
         if !workspace.is_empty() && Path::new(&workspace).exists() {
             let _ = std::fs::remove_dir_all(&workspace);
