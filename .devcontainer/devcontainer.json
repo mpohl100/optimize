@@ -3,7 +3,7 @@
     "build": {"dockerfile": "Dockerfile"},
     "containerEnv":{
       "EXECUTE_BIN_BASH": "0",
-      "RUN_POSTCREATE": "true"
+      "RUN_POSTCREATE": "false"
     },
     "customizations": {
         "vscode": {
