@@ -34,7 +34,7 @@ jobs:
             # Add multiple commands to run if needed
 
             cargo build --release --verbose -p gen || exit 1
-            cargo test --release --verbose -p gen || exit 1
-            cargo bench -p gen || exit 1
             cargo fmt --check || exit 1
             cargo clippy -- -D warnings || exit 1
+            cargo test --release --verbose -p gen || exit 1
+            cargo bench -p gen || exit 1
