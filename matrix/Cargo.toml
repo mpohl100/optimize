@@ -12,6 +12,7 @@ readme = "../README.md"
 [dependencies]
 rayon = { workspace = true }
 num-traits = { workspace = true }
+thiserror = { workspace = true }
 
 utils = { path = "../utils" }
 
