@@ -42,6 +42,8 @@ pub struct Utils {
     trainable_layer_alloc_manager: WrappedAllocManager<WrappedTrainableLayer>,
     mutli_progress: Arc<MultiProgress>,
     thread_pool: WrappedThreadPool,
+    test_mode: bool,
+    workspace: String,
 }
 
 impl Utils {
@@ -61,6 +63,30 @@ impl Utils {
             ),
             mutli_progress: Arc::new(MultiProgress::new()),
             thread_pool: WrappedThreadPool::new(num_threads),
+            test_mode: false,
+            workspace: String::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn new_with_test_mode(
+        cpu_memory: usize,
+        num_threads: usize,
+        workspace: String,
+    ) -> Self {
+        Self {
+            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
+                WrappedLayer,
+            >::new(
+                cpu_memory
+            )),
+            trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
+                AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
+            ),
+            mutli_progress: Arc::new(MultiProgress::new()),
+            thread_pool: WrappedThreadPool::new(num_threads),
+            test_mode: true,
+            workspace,
         }
     }
 
@@ -111,6 +137,16 @@ impl Utils {
         R: Send + 'static,
     {
         self.thread_pool.execute(f)
+    }
+
+    #[must_use]
+    pub fn is_test_mode(&self) -> bool {
+        self.test_mode
+    }
+
+    #[must_use]
+    pub fn get_workspace(&self) -> &str {
+        &self.workspace
     }
 }
 
@@ -172,5 +208,15 @@ impl WrappedUtils {
         R: Send + 'static,
     {
         safe_lock(&self.utils).execute(f)
+    }
+
+    #[must_use]
+    pub fn is_test_mode(&self) -> bool {
+        safe_lock(&self.utils).is_test_mode()
+    }
+
+    #[must_use]
+    pub fn get_workspace(&self) -> String {
+        safe_lock(&self.utils).get_workspace().to_string()
     }
 }
