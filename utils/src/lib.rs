@@ -24,7 +24,7 @@
 //! use utils::safer::safe_lock;
 //!
 //! let mutex = Mutex::new(42);
-//! 
+//!
 //! // Safe lock that handles poison errors gracefully
 //! let guard = safe_lock(&mutex);
 //! println!("Value: {}", *guard);
