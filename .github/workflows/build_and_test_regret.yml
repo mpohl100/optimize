@@ -1,0 +1,40 @@
+name: Build and Test - regret
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'regret/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'regret/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout (GitHub)
+        uses: actions/checkout@v3
+
+      - name: Build and run dev container task
+        uses: devcontainers/ci@v0.3
+        with:
+          env: |
+            RUN_POSTCREATE=false
+          runCmd: |
+            # Add multiple commands to run if needed
+
+            cargo build --release --verbose -p regret || exit 1
+            cargo test --release --verbose -p regret || exit 1
+            cargo bench -p regret || exit 1
+            cargo fmt --check || exit 1
+            cargo clippy -- -D warnings || exit 1
