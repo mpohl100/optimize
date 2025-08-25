@@ -904,8 +904,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                             nb_correct_outputs += 1;
                         }
                     }
-                    let nb_correct_outputs_f64: f64 =
-                        NumCast::from(nb_correct_outputs).expect("Failed to convert to f64");
+                    let nb_correct_outputs_f64: f64 = NumCast::from(nb_correct_outputs)
+                        .expect("Failed to convert nb_correct_outputs to f64");
                     let target_len_f64: f64 =
                         NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                     success_count += nb_correct_outputs_f64 / target_len_f64;

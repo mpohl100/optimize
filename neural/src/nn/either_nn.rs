@@ -418,8 +418,10 @@ impl TrainableEitherNeuralNetwork {
                         nb_correct += 1;
                     }
                 }
-                let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap();
-                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let nb_correct_f64: f64 =
+                    NumCast::from(nb_correct).expect("Failed to convert nb_correct to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                 let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage >= sample_match_percentage
             })
@@ -440,8 +442,10 @@ impl TrainableEitherNeuralNetwork {
                         nb_correct += 1;
                     }
                 }
-                let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap();
-                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let nb_correct_f64: f64 =
+                    NumCast::from(nb_correct).expect("Failed to convert nb_correct to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                 let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage < sample_match_percentage
             })
