@@ -16,6 +16,7 @@ use crate::nn::nn_factory::get_first_free_model_directory;
 use crate::nn::nn_trait::NeuralNetwork;
 use crate::nn::nn_trait::TrainableNeuralNetwork;
 use crate::utilities::util::WrappedUtils;
+use num_traits::cast::NumCast;
 
 #[derive(Debug)]
 pub struct EitherNeuralNetwork {
@@ -417,7 +418,9 @@ impl TrainableEitherNeuralNetwork {
                         nb_correct += 1;
                     }
                 }
-                let match_percentage = nb_correct as f64 / target.len() as f64;
+                let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap();
+                let target_len_f64: f64 = NumCast::from(target.len().max(1)).unwrap_or(1.0);
+                let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage >= sample_match_percentage
             })
             .map(|(input, target, _)| (input.clone(), target.clone()))
@@ -437,7 +440,9 @@ impl TrainableEitherNeuralNetwork {
                         nb_correct += 1;
                     }
                 }
-                let match_percentage = nb_correct as f64 / target.len() as f64;
+                let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap();
+                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage < sample_match_percentage
             })
             .map(|(input, target, _)| (input.clone(), target.clone()))
@@ -489,8 +494,16 @@ impl TrainableEitherNeuralNetwork {
             self.utils.clone(),
         ));
 
-        let acc =
-            nn.train(inputs, targets, learning_rate, epochs, tolerance, use_adam, validation_split, sample_match_percentage);
+        let acc = nn.train(
+            inputs,
+            targets,
+            learning_rate,
+            epochs,
+            tolerance,
+            use_adam,
+            validation_split,
+            sample_match_percentage,
+        );
 
         let error_message = format!("Failed to save {dir_name} neural network");
         nn.save(model_dir).expect(&error_message);
@@ -611,7 +624,13 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         }
 
         let ((left_inputs, left_targets), (right_inputs, right_targets)) =
-            Self::split_by_prediction(&mut temp_nn, inputs, targets, tolerance, sample_match_percentage);
+            Self::split_by_prediction(
+                &mut temp_nn,
+                inputs,
+                targets,
+                tolerance,
+                sample_match_percentage,
+            );
 
         if Self::too_few_mispredictions(&right_inputs) {
             self.save_pre_network(&temp_nn, "pre");
