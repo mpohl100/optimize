@@ -511,7 +511,7 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                 let target_len_f64: f64 =
                     NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                 let match_percentage = nb_correct_f64 / target_len_f64;
-                match_percentage < sample_match_percentage
+                match_percentage >= sample_match_percentage
             })
             .map(|(input, target, _)| {
                 let mut t = target.clone();
@@ -628,7 +628,7 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 500];
 
-        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7, 0.6);
+        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7, 1.0);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]
