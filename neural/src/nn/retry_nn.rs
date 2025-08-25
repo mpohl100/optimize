@@ -465,8 +465,10 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                     }
                 }
                 let mut t = target.clone();
-                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs).unwrap();
-                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs)
+                    .expect("Failed to convert nb_correct_outputs to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                 let match_percentage = nb_correct_f64 / target_len_f64;
                 if match_percentage >= sample_match_percentage {
                     t.push(0.0);
@@ -504,8 +506,10 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                         nb_correct_outputs += 1;
                     }
                 }
-                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs).unwrap();
-                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs)
+                    .expect("Failed to convert nb_correct_outputs to f64");
+                let target_len_f64: f64 =
+                    NumCast::from(target.len()).expect("Failed to convert target.len() to f64");
                 let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage < sample_match_percentage
             })
