@@ -419,7 +419,7 @@ impl TrainableEitherNeuralNetwork {
                     }
                 }
                 let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap();
-                let target_len_f64: f64 = NumCast::from(target.len().max(1)).unwrap_or(1.0);
+                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
                 let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage >= sample_match_percentage
             })
