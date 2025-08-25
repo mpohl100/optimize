@@ -107,8 +107,9 @@ pub fn sigmoid(x: f64) -> f64 {
 // Typumwandlung von usize zu f64: Nutze NumCast::from und eine dedizierte Variable mit explizitem Typ
 use num_traits::NumCast;
 
-let len_f64: f64 = NumCast::from(target.len().max(1)).unwrap_or(1.0);
-let match_percentage = f64::from(nb_correct) / len_f64;
+let nb_correct_f64: f64 = NumCast::from(nb_correct).unwrap_or(0.0);
+let len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+let match_percentage = nb_correct_f64 / len_f64;
 ```
 
 ### Logging and Tracing
