@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use num_traits::NumCast;
+
 use super::nn_factory::copy_dir_recursive;
 use super::nn_factory::neural_network_from_disk;
 use super::nn_factory::trainable_neural_network_from_disk;
@@ -463,7 +465,9 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                     }
                 }
                 let mut t = target.clone();
-                let match_percentage = nb_correct_outputs as f64 / target.len() as f64;
+                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs).unwrap();
+                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let match_percentage = nb_correct_f64 / target_len_f64;
                 if match_percentage >= sample_match_percentage {
                     t.push(0.0);
                 } else {
@@ -500,8 +504,9 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
                         nb_correct_outputs += 1;
                     }
                 }
-
-                let match_percentage = nb_correct_outputs as f64 / target.len() as f64;
+                let nb_correct_f64: f64 = NumCast::from(nb_correct_outputs).unwrap();
+                let target_len_f64: f64 = NumCast::from(target.len()).unwrap_or(1.0);
+                let match_percentage = nb_correct_f64 / target_len_f64;
                 match_percentage < sample_match_percentage
             })
             .map(|(input, target, _)| {

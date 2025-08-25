@@ -81,10 +81,10 @@ pub type Result<T> = std::result::Result<T, NeuralNetworkError>;
 ### Performance and Memory Management
 
 **Memory Allocation:**
-- Use the custom `alloc` crate for memory-intensive operations
-- Prefer `Vec::with_capacity()` when size is known
-- Use `Box<[T]>` for fixed-size arrays
-- Consider `smallvec` for small collections
+Use the custom `alloc` crate for memory-intensive operations
+Prefer `Vec::with_capacity()` when size is known
+Use `Box<[T]>` for fixed-size arrays
+Consider `smallvec` for small collections
 
 **Performance Patterns:**
 ```rust
@@ -103,6 +103,12 @@ const DEFAULT_LEARNING_RATE: f64 = 0.001;
 pub fn sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-x).exp())
 }
+
+// Typumwandlung von usize zu f64: Nutze NumCast::from und eine dedizierte Variable mit explizitem Typ
+use num_traits::NumCast;
+
+let len_f64: f64 = NumCast::from(target.len().max(1)).unwrap_or(1.0);
+let match_percentage = f64::from(nb_correct) / len_f64;
 ```
 
 ### Logging and Tracing
@@ -771,6 +777,35 @@ impl Default for TrainingConfig {
             early_stopping: Some(EarlyStoppingConfig::default()),
         }
     }
+}
+```
+
+## Number casts
+
+**Use the Numcast crate for number conversions:**
+
+```rust
+use num_traits::cast::NumCast;
+
+fn example() {
+    let x: i32 = 42;
+    let y: f64 = NumCast::from(x).unwrap();
+}
+```
+
+**Use Numcast::from instead of as**
+
+```rust
+fn example() {
+    let x: i32 = 42;
+    let y: f64 = NumCast::from(x).unwrap();
+}
+```rust
+use num_traits::cast::NumCast;
+
+fn example() {
+    let x: i32 = 42;
+    let y: f64 = NumCast::from(x).unwrap();
 }
 ```
 

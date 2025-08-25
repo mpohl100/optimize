@@ -733,6 +733,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     fn train(
         &mut self,
         inputs: &[Vec<f64>],
