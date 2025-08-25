@@ -815,3 +815,16 @@ When implementing new features, always consider:
 5. How does this fit into the overall architecture?
 
 Remember: Code is read more often than it's written. Make it clear, well-documented, and maintainable.
+
+## Agent Mode Development Workflow
+
+**When working in agent mode, always follow this iterative workflow for every change:**
+
+1. Run `cargo build` to check for compilation errors.
+2. Run `cargo fmt` to ensure code formatting.
+3. Run `cargo clippy --fix` to automatically fix lint warnings.
+4. Run `cargo clippy -- -D warnings` to ensure no warnings remain.
+5. Fix any remaining Clippy warnings manually.
+6. Repeat steps 1–5 until all warnings are resolved and the code builds cleanly.
+
+**No code change is complete until all Clippy warnings are fixed and the code is formatted.**
