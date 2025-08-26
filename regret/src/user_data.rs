@@ -4,7 +4,6 @@
 //! and provides a thread-safe wrapper for such data. Implement `DecisionTrait`
 //! for your domain-specific data to use with the regret minimization framework.
 
-use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
@@ -70,8 +69,8 @@ impl<Decision: DecisionTrait> WrappedDecision<Decision> {
 }
 
 // Backward compatibility aliases
-/// Alias for DecisionTrait for backward compatibility.
+/// Alias for `DecisionTrait` for backward compatibility.
 pub use DecisionTrait as UserDataTrait;
 
-/// Alias for WrappedDecision for backward compatibility.
+/// Alias for `WrappedDecision` for backward compatibility.
 pub use WrappedDecision as WrappedUserData;
