@@ -260,6 +260,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
                 .iter()
                 .map(|child| child.calculate_expected_value() * child.get_probability())
                 .sum::<f64>(),
+            ProviderType::None => 0.0, // Terminal node has zero expected value
         };
         self.current_expected_value
     }
@@ -310,7 +311,9 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
                     child.populate_children();
                 });
             },
-            ProviderType::ExpectedValue(_) => {},
+            ProviderType::ExpectedValue(_) | ProviderType::None => {
+                // Expected value and terminal nodes have no children to populate
+            }
         }
     }
 

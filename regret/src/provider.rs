@@ -75,13 +75,15 @@ impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
     }
 }
 
-/// Enum representing either a children provider or expected value provider.
+/// Enum representing either a children provider, expected value provider, or none (terminal node).
 #[derive(Debug, Clone)]
 pub enum ProviderType<UserData: UserDataTrait> {
     /// Children provider variant.
     Children(WrappedChildrenProvider<UserData>),
     /// Expected value provider variant.
     ExpectedValue(WrappedExpectedValueProvider<UserData>),
+    /// None variant for terminal nodes.
+    None,
 }
 
 /// Associates a provider type with optional user data.
