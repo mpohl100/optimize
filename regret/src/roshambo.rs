@@ -10,9 +10,10 @@ use crate::provider::{
 };
 use crate::regret_node::{RegretNode, WrappedRegret};
 use crate::user_data::{UserDataTrait, WrappedUserData};
+use serde::{Deserialize, Serialize};
 
 /// Enum representing choices in Rock-Paper-Scissors.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 /// Enum representing choices in Rock-Paper-Scissors.
 pub enum Choice {
     /// The Rock move.
@@ -25,7 +26,7 @@ pub enum Choice {
 }
 
 /// User data for Rock-Paper-Scissors.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RoshamboData {
     /// The chosen move.
     pub choice: Choice,

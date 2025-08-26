@@ -9,6 +9,7 @@ use regret::regret_node::RegretNode;
 use regret::regret_node::WrappedRegret;
 use regret::user_data::UserDataTrait;
 use regret::user_data::WrappedUserData;
+use serde::{Deserialize, Serialize};
 
 use num_traits::cast::NumCast;
 
