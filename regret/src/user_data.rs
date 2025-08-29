@@ -67,10 +67,3 @@ impl<Decision: DecisionTrait> WrappedDecision<Decision> {
         self.get_decision_data()
     }
 }
-
-// Backward compatibility aliases
-/// Alias for `DecisionTrait` for backward compatibility.
-pub use DecisionTrait as UserDataTrait;
-
-/// Alias for `WrappedDecision` for backward compatibility.
-pub use WrappedDecision as WrappedUserData;
