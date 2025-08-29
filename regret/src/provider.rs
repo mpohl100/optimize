@@ -75,6 +75,48 @@ impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
     }
 }
 
+/// Trait for types that can generate percentage children nodes given parent data.
+pub trait PercentageProvider<UserData: UserDataTrait>: std::fmt::Debug {
+    /// Returns the children nodes for the given parent data.
+    fn get_children(
+        &self,
+        parents_data: Vec<WrappedUserData<UserData>>,
+    ) -> Vec<WrappedUserData<UserData>>;
+}
+
+/// Thread-safe wrapper for a boxed `PercentageProvider`.
+#[derive(Debug, Clone)]
+pub struct WrappedPercentageProvider<UserData: UserDataTrait> {
+    /// The underlying provider, boxed and wrapped in Arc<Mutex>.
+    provider: Arc<Mutex<Box<dyn PercentageProvider<UserData>>>>,
+}
+
+impl<UserData: UserDataTrait> WrappedPercentageProvider<UserData> {
+    /// Creates a new wrapped percentage provider.
+    #[must_use]
+    pub fn new(provider: Box<dyn PercentageProvider<UserData>>) -> Self {
+        Self { provider: Arc::new(Mutex::new(provider)) }
+    }
+
+    /// Gets the children nodes for the given parent data.
+    #[must_use]
+    pub fn get_children(
+        &self,
+        parents_data: Vec<WrappedUserData<UserData>>,
+    ) -> Vec<WrappedUserData<UserData>> {
+        safe_lock(&self.provider).get_children(parents_data)
+    }
+}
+
+/// Enum representing provider types for percentage nodes.
+#[derive(Debug, Clone)]
+pub enum PercentageProviderType<UserData: UserDataTrait> {
+    /// Children provider variant that offers `get_children` functionality.
+    Children(WrappedPercentageProvider<UserData>),
+    /// None variant for terminal nodes.
+    None,
+}
+
 /// Enum representing either a children provider, expected value provider, or none (terminal node).
 #[derive(Debug, Clone)]
 pub enum ProviderType<UserData: UserDataTrait> {

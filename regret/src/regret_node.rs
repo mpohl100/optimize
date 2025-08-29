@@ -313,7 +313,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
             },
             ProviderType::ExpectedValue(_) | ProviderType::None => {
                 // Expected value and terminal nodes have no children to populate
-            }
+            },
         }
     }
 
