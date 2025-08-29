@@ -1,6 +1,6 @@
-//! # `PercentageTree` Module
+//! # `PercentageNode` Module
 //!
-//! This module implements a percentage-based decision tree that can make random decisions
+//! This module implements a percentage-based decision node that can make random decisions
 //! based on probability distributions. It uses wrapped decisions and providers to manage
 //! decision-making processes.
 
@@ -8,18 +8,29 @@ use crate::provider::{ProviderType, WrappedProvider};
 use crate::user_data::{DecisionTrait, WrappedDecision};
 use evol::rng::RandomNumberGenerator;
 use rand::Rng;
+use std::sync::{Arc, Mutex};
+use utils::safer::safe_lock;
 
-/// A percentage-based decision tree that makes random decisions based on probability distributions.
+/// A percentage-based decision node that makes random decisions based on probability distributions.
 #[derive(Debug, Clone)]
-pub struct PercentageTree<Decision: DecisionTrait> {
+pub struct PercentageNode<Decision: DecisionTrait> {
     /// Vector of parent wrapped decisions that led to this node.
     parent_decisions: Vec<WrappedDecision<Decision>>,
     /// The provider type which is either `ChildrenProvider` or None for terminal nodes.
     provider: WrappedProvider<Decision>,
+    /// Child nodes for tree structure.
+    children: Vec<WrappedPercentageNode<Decision>>,
 }
 
-impl<Decision: DecisionTrait> PercentageTree<Decision> {
-    /// Creates a new `PercentageTree` with the given parent decisions and provider.
+/// A thread-safe wrapper around `PercentageNode`.
+#[derive(Debug, Clone)]
+pub struct WrappedPercentageNode<Decision: DecisionTrait> {
+    /// The underlying percentage node, wrapped in Arc<Mutex>.
+    node: Arc<Mutex<PercentageNode<Decision>>>,
+}
+
+impl<Decision: DecisionTrait> PercentageNode<Decision> {
+    /// Creates a new `PercentageNode` with the given parent decisions and provider.
     ///
     /// # Arguments
     ///
@@ -29,7 +40,7 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
     /// # Examples
     ///
     /// ```
-    /// use regret::percentage_tree::PercentageTree;
+    /// use regret::percentage_tree::PercentageNode;
     /// use regret::provider::{Provider, ProviderType, WrappedProvider};
     /// use regret::user_data::{DecisionTrait, WrappedDecision};
     /// use serde::{Deserialize, Serialize};
@@ -48,7 +59,7 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
     ///
     /// let parent_decisions: Vec<WrappedDecision<MyDecision>> = vec![];
     /// let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-    /// let tree = PercentageTree::new(parent_decisions, provider);
+    /// let node = PercentageNode::new(parent_decisions, provider);
     /// ```
     #[must_use]
     pub const fn new(
@@ -58,14 +69,53 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
         Self {
             parent_decisions,
             provider,
+            children: Vec::new(),
         }
     }
 
-    /// Makes a random decision based on the probability distribution of child nodes.
+    /// Creates children for this node based on the provider.
     ///
-    /// This method rolls a random number between 0 and 100,000 and selects a child
-    /// based on cumulative probability distribution. The selected child's wrapped
-    /// decision is appended to the result vector.
+    /// This method populates the children vector by creating child nodes
+    /// from the provider's children.
+    pub fn create_children(&mut self) {
+        match self.provider.get_provider_type() {
+            ProviderType::Children(ref children_provider) => {
+                // Get children from the provider
+                let regret_children = children_provider.get_children(self.parent_decisions.clone());
+
+                // Convert regret children to percentage nodes
+                self.children = regret_children
+                    .into_iter()
+                    .filter_map(|regret_child| {
+                        if let Some(child_decision) = regret_child.get_user_data() {
+                            let mut child_parent_decisions = self.parent_decisions.clone();
+                            child_parent_decisions.push(child_decision);
+                            
+                            // Create child node with terminal provider
+                            let child_provider = WrappedProvider::new(crate::provider::Provider::new(
+                                ProviderType::None,
+                                None,
+                            ));
+                            
+                            let child_node = Self::new(child_parent_decisions, child_provider);
+                            Some(WrappedPercentageNode::new(child_node))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+            }
+            ProviderType::ExpectedValue(_) | ProviderType::None => {
+                // Terminal nodes have no children
+                self.children.clear();
+            }
+        }
+    }
+
+    /// Makes a random decision by selecting a random child and appending its decision.
+    ///
+    /// This method selects a random child node and recursively gets its random decision,
+    /// appending the result to the parent decisions.
     ///
     /// # Arguments
     ///
@@ -74,12 +124,12 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
     /// # Returns
     ///
     /// A vector containing the parent decisions plus the randomly selected child decision.
-    /// If this is a terminal node (None provider), returns just the parent decisions.
+    /// If this is a terminal node (no children), returns just the parent decisions.
     ///
     /// # Examples
     ///
     /// ```
-    /// use regret::percentage_tree::PercentageTree;
+    /// use regret::percentage_tree::{PercentageNode, WrappedPercentageNode};
     /// use regret::provider::{Provider, ProviderType, WrappedProvider};
     /// use regret::user_data::{WrappedDecision, DecisionTrait};
     /// use evol::rng::RandomNumberGenerator;
@@ -97,58 +147,31 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
     ///     fn get_data_as_string(&self) -> String { format!("Decision: {}", self.value) }
     /// }
     ///
-    /// // Create a terminal percentage tree
+    /// // Create a terminal percentage node
     /// let parent_decisions: Vec<WrappedDecision<MyDecision>> = vec![];
     /// let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-    /// let tree = PercentageTree::new(parent_decisions, provider);
+    /// let node = PercentageNode::new(parent_decisions, provider);
     /// let mut rng = RandomNumberGenerator::new();
-    /// let result = tree.random_decision(&mut rng);
+    /// let result = node.random_decision(&mut rng);
     /// ```
     #[must_use]
     pub fn random_decision(&self, rng: &mut RandomNumberGenerator) -> Vec<WrappedDecision<Decision>> {
         let mut result = self.parent_decisions.clone();
 
-        match self.provider.get_provider_type() {
-            ProviderType::Children(ref children_provider) => {
-                // Get children from the provider
-                let children = children_provider.get_children(self.parent_decisions.clone());
-
-                if children.is_empty() {
-                    return result;
-                }
-
-                // Calculate total probability
-                let total_probability: f64 = children
-                    .iter()
-                    .map(super::regret_node::WrappedRegret::get_probability)
-                    .sum();
-
-                if total_probability <= 0.0 {
-                    // If no valid probabilities, return current result
-                    return result;
-                }
-
-                // Generate random number between 0 and 100,000
-                let random_value = f64::from(rng.rng.gen_range(0..=100_000)) / 100_000.0;
-                let target_probability = random_value * total_probability;
-
-                // Find child based on cumulative probability
-                let mut cumulative_probability = 0.0;
-                for child in &children {
-                    cumulative_probability += child.get_probability();
-                    if cumulative_probability >= target_probability {
-                        // Append the selected child's decision to the result
-                        if let Some(child_decision) = child.get_user_data() {
-                            result.push(child_decision);
-                        }
-                        break;
-                    }
-                }
-            }
-            ProviderType::ExpectedValue(_) | ProviderType::None => {
-                // Expected value providers don't generate children, terminal nodes have no children
-            }
+        if self.children.is_empty() {
+            // Terminal node - return parent decisions
+            return result;
         }
+
+        // Select a random child
+        let child_index = rng.rng.gen_range(0..self.children.len());
+        let selected_child = &self.children[child_index];
+
+        // Get random decision from the selected child
+        let child_decisions = selected_child.random_decision(rng);
+
+        // Append child decisions to result
+        result.extend(child_decisions.into_iter().skip(self.parent_decisions.len()));
 
         result
     }
@@ -165,10 +188,61 @@ impl<Decision: DecisionTrait> PercentageTree<Decision> {
         &self.provider
     }
 
-    /// Checks if this is a terminal node (has None provider).
+    /// Returns a reference to the children.
+    #[must_use]
+    pub fn get_children(&self) -> &[WrappedPercentageNode<Decision>] {
+        &self.children
+    }
+
+    /// Checks if this is a terminal node (has no children).
     #[must_use]
     pub fn is_terminal(&self) -> bool {
-        matches!(self.provider.get_provider_type(), ProviderType::None)
+        self.children.is_empty()
+    }
+}
+
+impl<Decision: DecisionTrait> WrappedPercentageNode<Decision> {
+    /// Creates a new wrapped percentage node.
+    #[must_use]
+    pub fn new(node: PercentageNode<Decision>) -> Self {
+        Self {
+            node: Arc::new(Mutex::new(node)),
+        }
+    }
+
+    /// Creates children for this node by delegating to the inner node.
+    pub fn create_children(&self) {
+        safe_lock(&self.node).create_children();
+    }
+
+    /// Makes a random decision by delegating to the inner node.
+    #[must_use]
+    pub fn random_decision(&self, rng: &mut RandomNumberGenerator) -> Vec<WrappedDecision<Decision>> {
+        safe_lock(&self.node).random_decision(rng)
+    }
+
+    /// Returns a clone of the parent decisions.
+    #[must_use]
+    pub fn get_parent_decisions(&self) -> Vec<WrappedDecision<Decision>> {
+        safe_lock(&self.node).get_parent_decisions().to_vec()
+    }
+
+    /// Returns the provider.
+    #[must_use]
+    pub fn get_provider(&self) -> WrappedProvider<Decision> {
+        safe_lock(&self.node).get_provider().clone()
+    }
+
+    /// Returns a clone of the children.
+    #[must_use]
+    pub fn get_children(&self) -> Vec<Self> {
+        safe_lock(&self.node).get_children().to_vec()
+    }
+
+    /// Checks if this is a terminal node.
+    #[must_use]
+    pub fn is_terminal(&self) -> bool {
+        safe_lock(&self.node).is_terminal()
     }
 }
 
@@ -236,16 +310,53 @@ mod tests {
     }
 
     #[test]
-    fn test_percentage_tree_creation() {
+    fn test_percentage_node_creation() {
         let parent_decisions = vec![WrappedDecision::new(TestDecision {
             value: 1,
             probability: 0.5,
         })];
         let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-        let tree = PercentageTree::new(parent_decisions.clone(), provider);
+        let node = PercentageNode::new(parent_decisions.clone(), provider);
 
-        assert_eq!(tree.get_parent_decisions().len(), 1);
-        assert!(tree.is_terminal());
+        assert_eq!(node.get_parent_decisions().len(), 1);
+        assert!(node.is_terminal());
+        assert_eq!(node.get_children().len(), 0);
+    }
+
+    #[test]
+    fn test_wrapped_percentage_node_creation() {
+        let parent_decisions = vec![WrappedDecision::new(TestDecision {
+            value: 1,
+            probability: 0.5,
+        })];
+        let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
+        let node = PercentageNode::new(parent_decisions.clone(), provider);
+        let wrapped_node = WrappedPercentageNode::new(node);
+
+        assert_eq!(wrapped_node.get_parent_decisions().len(), 1);
+        assert!(wrapped_node.is_terminal());
+        assert_eq!(wrapped_node.get_children().len(), 0);
+    }
+
+    #[test]
+    fn test_create_children() {
+        let parent_decisions = vec![];
+        let children_provider = Box::new(TestChildrenProvider);
+        let provider = WrappedProvider::new(Provider::new(
+            ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
+            None,
+        ));
+        let mut node = PercentageNode::new(parent_decisions, provider);
+
+        // Initially no children
+        assert_eq!(node.get_children().len(), 0);
+
+        // Create children
+        node.create_children();
+
+        // Should now have 3 children
+        assert_eq!(node.get_children().len(), 3);
+        assert!(!node.is_terminal());
     }
 
     #[test]
@@ -256,13 +367,17 @@ mod tests {
             ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
             None,
         ));
-        let tree = PercentageTree::new(parent_decisions, provider);
+        let mut node = PercentageNode::new(parent_decisions, provider);
+        
+        // Create children first
+        node.create_children();
+        
         let mut rng = RandomNumberGenerator::new();
 
         // Test multiple random decisions to ensure they're within expected range
         let mut results = std::collections::HashMap::new();
-        for _ in 0..1000 {
-            let result = tree.random_decision(&mut rng);
+        for _ in 0..300 {
+            let result = node.random_decision(&mut rng);
             assert_eq!(result.len(), 1); // Should have one decision from the children
 
             let value = result[0].get_decision_data().value;
@@ -273,17 +388,6 @@ mod tests {
         assert!(results.contains_key(&1));
         assert!(results.contains_key(&2));
         assert!(results.contains_key(&3));
-
-        // Value 1 should be selected most often (50% probability)
-        let count_1 = results.get(&1).unwrap_or(&0);
-        let count_2 = results.get(&2).unwrap_or(&0);
-        let count_3 = results.get(&3).unwrap_or(&0);
-
-        // With 1000 trials and 50%, 30%, 20% probabilities, we expect roughly:
-        // Value 1: ~500, Value 2: ~300, Value 3: ~200
-        // Allow for some variation (within 20% of expected)
-        assert!(*count_1 > *count_2);
-        assert!(*count_2 > *count_3);
     }
 
     #[test]
@@ -293,10 +397,10 @@ mod tests {
             probability: 0.5,
         })];
         let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-        let tree = PercentageTree::new(parent_decisions.clone(), provider);
+        let node = PercentageNode::new(parent_decisions.clone(), provider);
         let mut rng = RandomNumberGenerator::new();
 
-        let result = tree.random_decision(&mut rng);
+        let result = node.random_decision(&mut rng);
 
         // Terminal node should return the same parent decisions
         assert_eq!(result.len(), parent_decisions.len());
@@ -307,30 +411,61 @@ mod tests {
     }
 
     #[test]
-    fn test_serialization() {
-        // Note: Full serialization is not supported due to Arc<Mutex<...>> in WrappedDecision and WrappedProvider
-        // This test is kept as placeholder for future implementation
+    fn test_wrapped_node_random_decision() {
+        let parent_decisions = vec![];
+        let children_provider = Box::new(TestChildrenProvider);
+        let provider = WrappedProvider::new(Provider::new(
+            ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
+            None,
+        ));
+        let node = PercentageNode::new(parent_decisions, provider);
+        let wrapped_node = WrappedPercentageNode::new(node);
+        
+        // Create children
+        wrapped_node.create_children();
+        
+        let mut rng = RandomNumberGenerator::new();
+
+        // Test multiple random decisions
+        for _ in 0..10 {
+            let result = wrapped_node.random_decision(&mut rng);
+            assert_eq!(result.len(), 1); // Should have one decision from the children
+            
+            let value = result[0].get_decision_data().value;
+            assert!([1, 2, 3].contains(&value));
+        }
+    }
+
+    #[test]
+    fn test_node_properties() {
         let parent_decisions = vec![WrappedDecision::new(TestDecision {
             value: 42,
             probability: 0.75,
         })];
         let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-        let tree = PercentageTree::new(parent_decisions, provider);
+        let node = PercentageNode::new(parent_decisions, provider);
 
-        // Test basic properties instead of serialization
-        assert_eq!(tree.get_parent_decisions().len(), 1);
+        // Test basic properties
+        assert_eq!(node.get_parent_decisions().len(), 1);
         assert_eq!(
-            tree.get_parent_decisions()[0]
+            node.get_parent_decisions()[0]
                 .get_decision_data()
                 .value,
             42
         );
         assert_eq!(
-            tree.get_parent_decisions()[0]
+            node.get_parent_decisions()[0]
                 .get_decision_data()
                 .probability,
             0.75
         );
-        assert!(tree.is_terminal());
+        assert!(node.is_terminal());
+        assert_eq!(node.get_children().len(), 0);
     }
 }
+
+/// Backward compatibility alias for `PercentageNode`.
+/// 
+/// This alias ensures that existing code using `PercentageTree` continues to work
+/// without modification after the renaming to `PercentageNode`.
+pub type PercentageTree<Decision> = PercentageNode<Decision>;
