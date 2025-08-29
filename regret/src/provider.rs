@@ -10,8 +10,9 @@ use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
 /// Trait for types that can generate child nodes given parent data.
-pub trait ChildrenProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>: std::fmt::Debug 
-where 
+pub trait ChildrenProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>:
+    std::fmt::Debug
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// Returns the children nodes for the given parent data.
@@ -23,16 +24,16 @@ where
 
 /// Thread-safe wrapper for a boxed `ChildrenProvider`.
 #[derive(Debug, Clone)]
-pub struct WrappedChildrenProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>> 
-where 
+pub struct WrappedChildrenProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// The underlying provider, boxed and wrapped in Arc<Mutex>.
     provider: Arc<Mutex<Box<dyn ChildrenProvider<UserData, ChildType>>>>,
 }
 
-impl<UserData: UserDataTrait, ChildType> WrappedChildrenProvider<UserData, ChildType> 
-where 
+impl<UserData: UserDataTrait, ChildType> WrappedChildrenProvider<UserData, ChildType>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// Creates a new wrapped children provider.
@@ -86,8 +87,8 @@ impl<UserData: UserDataTrait> WrappedExpectedValueProvider<UserData> {
 
 /// Enum representing either a children provider, expected value provider, or none (terminal node).
 #[derive(Debug, Clone)]
-pub enum ProviderType<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>> 
-where 
+pub enum ProviderType<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// Children provider variant.
@@ -100,8 +101,8 @@ where
 
 /// Associates a provider type with optional user data.
 #[derive(Debug, Clone)]
-pub struct Provider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>> 
-where 
+pub struct Provider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// The provider type (children or expected value).
@@ -110,8 +111,8 @@ where
     pub user_data: Option<WrappedUserData<UserData>>,
 }
 
-impl<UserData: UserDataTrait, ChildType> Provider<UserData, ChildType> 
-where 
+impl<UserData: UserDataTrait, ChildType> Provider<UserData, ChildType>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// Creates a new provider with the given type and optional user data.
@@ -126,16 +127,16 @@ where
 
 /// Thread-safe wrapper for a `Provider`.
 #[derive(Debug, Clone)]
-pub struct WrappedProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>> 
-where 
+pub struct WrappedProvider<UserData: UserDataTrait, ChildType = WrappedRegret<UserData>>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// The underlying provider, wrapped in Arc<Mutex>.
     provider: Arc<Mutex<Provider<UserData, ChildType>>>,
 }
 
-impl<UserData: UserDataTrait, ChildType> WrappedProvider<UserData, ChildType> 
-where 
+impl<UserData: UserDataTrait, ChildType> WrappedProvider<UserData, ChildType>
+where
     ChildType: Clone + std::fmt::Debug,
 {
     /// Creates a new wrapped provider.
