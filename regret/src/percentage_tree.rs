@@ -17,7 +17,7 @@ pub struct PercentageNode<Decision: DecisionTrait> {
     /// Vector of parent wrapped decisions that led to this node.
     parent_decisions: Vec<WrappedDecision<Decision>>,
     /// The provider type which is either `ChildrenProvider` or None for terminal nodes.
-    provider: WrappedProvider<Decision>,
+    provider: WrappedProvider<Decision, WrappedPercentageNode<Decision>>,
     /// Child nodes for tree structure.
     children: Vec<WrappedPercentageNode<Decision>>,
 }
@@ -64,7 +64,7 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
     #[must_use]
     pub const fn new(
         parent_decisions: Vec<WrappedDecision<Decision>>,
-        provider: WrappedProvider<Decision>,
+        provider: WrappedProvider<Decision, WrappedPercentageNode<Decision>>,
     ) -> Self {
         Self {
             parent_decisions,
@@ -81,29 +81,10 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
         match self.provider.get_provider_type() {
             ProviderType::Children(ref children_provider) => {
                 // Get children from the provider
-                let regret_children = children_provider.get_children(self.parent_decisions.clone());
-
-                // Convert regret children to percentage nodes
-                self.children = regret_children
-                    .into_iter()
-                    .filter_map(|regret_child| {
-                        if let Some(child_decision) = regret_child.get_user_data() {
-                            let mut child_parent_decisions = self.parent_decisions.clone();
-                            child_parent_decisions.push(child_decision);
-                            
-                            // Create child node with terminal provider
-                            let child_provider = WrappedProvider::new(crate::provider::Provider::new(
-                                ProviderType::None,
-                                None,
-                            ));
-                            
-                            let child_node = Self::new(child_parent_decisions, child_provider);
-                            Some(WrappedPercentageNode::new(child_node))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+                let child_nodes = children_provider.get_children(self.parent_decisions.clone());
+                
+                // Assign the children directly since they're already WrappedPercentageNode<Decision>
+                self.children = child_nodes;
             }
             ProviderType::ExpectedValue(_) | ProviderType::None => {
                 // Terminal nodes have no children
@@ -184,7 +165,7 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
 
     /// Returns a reference to the provider.
     #[must_use]
-    pub const fn get_provider(&self) -> &WrappedProvider<Decision> {
+    pub const fn get_provider(&self) -> &WrappedProvider<Decision, WrappedPercentageNode<Decision>> {
         &self.provider
     }
 
@@ -229,7 +210,7 @@ impl<Decision: DecisionTrait> WrappedPercentageNode<Decision> {
 
     /// Returns the provider.
     #[must_use]
-    pub fn get_provider(&self) -> WrappedProvider<Decision> {
+    pub fn get_provider(&self) -> WrappedProvider<Decision, Self> {
         safe_lock(&self.node).get_provider().clone()
     }
 
@@ -249,8 +230,7 @@ impl<Decision: DecisionTrait> WrappedPercentageNode<Decision> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::provider::{ChildrenProvider, Provider, ProviderType, WrappedChildrenProvider};
-    use crate::regret_node::{RegretNode, WrappedRegret};
+    use crate::provider::{Provider, ProviderType};
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -276,11 +256,11 @@ mod tests {
     #[derive(Debug, Clone)]
     struct TestChildrenProvider;
 
-    impl ChildrenProvider<TestDecision> for TestChildrenProvider {
+    impl crate::provider::ChildrenProvider<TestDecision, WrappedPercentageNode<TestDecision>> for TestChildrenProvider {
         fn get_children(
             &self,
             parents_data: Vec<WrappedDecision<TestDecision>>,
-        ) -> Vec<WrappedRegret<TestDecision>> {
+        ) -> Vec<WrappedPercentageNode<TestDecision>> {
             // Create three children with different probabilities
             let children_data = [
                 (1, 0.5),  // 50% probability
@@ -295,15 +275,17 @@ mod tests {
                         value: *value,
                         probability: *prob,
                     });
-                    let provider = WrappedProvider::new(Provider::new(ProviderType::None, Some(decision.clone())));
-                    let node = RegretNode::new(
-                        *prob,
-                        0.01,
-                        parents_data.clone(),
-                        provider,
+                    let mut child_parent_decisions = parents_data.clone();
+                    child_parent_decisions.push(decision);
+                    
+                    // Create child node with terminal provider
+                    let child_provider = WrappedProvider::new(crate::provider::Provider::new(
+                        ProviderType::None,
                         None,
-                    );
-                    WrappedRegret::new(node)
+                    ));
+                    
+                    let child_node = PercentageNode::new(child_parent_decisions, child_provider);
+                    WrappedPercentageNode::new(child_node)
                 })
                 .collect()
         }
@@ -343,7 +325,7 @@ mod tests {
         let parent_decisions = vec![];
         let children_provider = Box::new(TestChildrenProvider);
         let provider = WrappedProvider::new(Provider::new(
-            ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
+            ProviderType::Children(crate::provider::WrappedChildrenProvider::new(children_provider)),
             None,
         ));
         let mut node = PercentageNode::new(parent_decisions, provider);
@@ -364,7 +346,7 @@ mod tests {
         let parent_decisions = vec![];
         let children_provider = Box::new(TestChildrenProvider);
         let provider = WrappedProvider::new(Provider::new(
-            ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
+            ProviderType::Children(crate::provider::WrappedChildrenProvider::new(children_provider)),
             None,
         ));
         let mut node = PercentageNode::new(parent_decisions, provider);
@@ -415,7 +397,7 @@ mod tests {
         let parent_decisions = vec![];
         let children_provider = Box::new(TestChildrenProvider);
         let provider = WrappedProvider::new(Provider::new(
-            ProviderType::Children(WrappedChildrenProvider::new(children_provider)),
+            ProviderType::Children(crate::provider::WrappedChildrenProvider::new(children_provider)),
             None,
         ));
         let node = PercentageNode::new(parent_decisions, provider);

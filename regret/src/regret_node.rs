@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
 /// Represents a node in the regret minimization tree.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RegretNode<UserData: UserDataTrait> {
     /// Probability of this node.
     probability: f64,
@@ -342,7 +342,7 @@ impl<UserData: UserDataTrait> RegretNode<UserData> {
 }
 
 /// Thread-safe wrapper for a `RegretNode`.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedRegret<UserData: UserDataTrait> {
     /// The underlying regret node, wrapped in Arc<Mutex>.
     node: Arc<Mutex<RegretNode<UserData>>>,
