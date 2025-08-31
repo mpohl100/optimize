@@ -131,7 +131,7 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
     /// let mut rng = RandomNumberGenerator::new();
     /// let result = node.random_decision(&mut rng);
     /// ```
-    /// 
+    ///
     /// # Panics
     ///
     /// This function will panic in case the generation of a random number does not work
