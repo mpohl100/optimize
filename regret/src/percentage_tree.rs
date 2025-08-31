@@ -7,7 +7,7 @@
 use crate::provider::{ProviderType, WrappedProvider};
 use crate::user_data::{DecisionTrait, WrappedDecision};
 use evol::rng::RandomNumberGenerator;
-use rand::Rng;
+use num_traits::cast::NumCast;
 use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
@@ -144,14 +144,20 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
         }
 
         // Select a random child
-        let child_index = rng.rng.gen_range(0..self.children.len());
-        let selected_child = &self.children[child_index];
-
-        // Get random decision from the selected child
-        let child_decisions = selected_child.random_decision(rng);
-
-        // Append child decisions to result
-        result.extend(child_decisions.into_iter().skip(self.parent_decisions.len()));
+        let random_number: f64 =
+            NumCast::from(*rng.fetch_uniform(0.0, 100_000.0, 1).back().unwrap())
+                .expect("Failed to convert random number");
+        let mut cumulative_probability = 0.0;
+        for (index, child) in self.children.iter().enumerate() {
+            cumulative_probability += child.get_probability() * 100_000.0;
+            if cumulative_probability >= random_number {
+                let selected_child = &self.children[index];
+                // Get random decision from the selected child
+                let child_decisions = selected_child.random_decision(rng);
+                result.extend(child_decisions.into_iter().skip(self.parent_decisions.len()));
+                return result;
+            }
+        }
 
         result
     }
@@ -168,6 +174,12 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
         &self
     ) -> &WrappedProvider<Decision, WrappedPercentageNode<Decision>> {
         &self.provider
+    }
+
+    /// Returns the percentage probability of the last parent decision.
+    #[must_use]
+    fn get_probability(&self) -> f64 {
+        self.parent_decisions.last().map_or(0.0, |d| d.get_probability())
     }
 
     /// Returns a reference to the children.
@@ -226,6 +238,12 @@ impl<Decision: DecisionTrait> WrappedPercentageNode<Decision> {
     #[must_use]
     pub fn is_terminal(&self) -> bool {
         safe_lock(&self.node).is_terminal()
+    }
+
+    /// Returns the probability of the last parent decision.
+    #[must_use]
+    pub fn get_probability(&self) -> f64 {
+        safe_lock(&self.node).get_probability()
     }
 }
 
