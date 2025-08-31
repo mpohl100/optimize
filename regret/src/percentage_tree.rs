@@ -131,6 +131,10 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
     /// let mut rng = RandomNumberGenerator::new();
     /// let result = node.random_decision(&mut rng);
     /// ```
+    /// 
+    /// # Panics
+    ///
+    /// This function will panic in case the generation of a random number does not work
     #[must_use]
     pub fn random_decision(
         &self,
@@ -179,7 +183,7 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
     /// Returns the percentage probability of the last parent decision.
     #[must_use]
     fn get_probability(&self) -> f64 {
-        self.parent_decisions.last().map_or(0.0, |d| d.get_probability())
+        self.parent_decisions.last().map_or(0.0, super::user_data::WrappedDecision::get_probability)
     }
 
     /// Returns a reference to the children.
@@ -246,6 +250,12 @@ impl<Decision: DecisionTrait> WrappedPercentageNode<Decision> {
         safe_lock(&self.node).get_probability()
     }
 }
+
+/// Backward compatibility alias for `PercentageNode`.
+///
+/// This alias ensures that existing code using `PercentageTree` continues to work
+/// without modification after the renaming to `PercentageNode`.
+pub type PercentageTree<Decision> = PercentageNode<Decision>;
 
 #[cfg(test)]
 mod tests {
@@ -319,7 +329,7 @@ mod tests {
         let parent_decisions =
             vec![WrappedDecision::new(TestDecision { value: 1, probability: 0.5 })];
         let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-        let node = PercentageNode::new(parent_decisions.clone(), provider);
+        let node = PercentageNode::new(parent_decisions, provider);
 
         assert_eq!(node.get_parent_decisions().len(), 1);
         assert!(node.is_terminal());
@@ -331,7 +341,7 @@ mod tests {
         let parent_decisions =
             vec![WrappedDecision::new(TestDecision { value: 1, probability: 0.5 })];
         let provider = WrappedProvider::new(Provider::new(ProviderType::None, None));
-        let node = PercentageNode::new(parent_decisions.clone(), provider);
+        let node = PercentageNode::new(parent_decisions, provider);
         let wrapped_node = WrappedPercentageNode::new(node);
 
         assert_eq!(wrapped_node.get_parent_decisions().len(), 1);
@@ -456,9 +466,3 @@ mod tests {
         assert_eq!(node.get_children().len(), 0);
     }
 }
-
-/// Backward compatibility alias for `PercentageNode`.
-///
-/// This alias ensures that existing code using `PercentageTree` continues to work
-/// without modification after the renaming to `PercentageNode`.
-pub type PercentageTree<Decision> = PercentageNode<Decision>;
