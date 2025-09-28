@@ -12,7 +12,7 @@ use regret::user_data::WrappedDecision;
 
 use num_traits::cast::NumCast;
 
-pub trait StateTrait: Default + Clone + Eq + std::fmt::Debug {
+pub trait StateTrait: Default + Clone + Eq + Ord + PartialOrd + std::fmt::Debug {
     fn get_data_as_string(&self) -> String;
 }
 
@@ -263,7 +263,7 @@ mod tests {
     use rand::thread_rng;
     use rand_distr::{Distribution, Normal};
 
-    #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord)]
     struct TestState {
         value: i32,
     }
