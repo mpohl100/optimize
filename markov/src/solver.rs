@@ -203,7 +203,7 @@ impl<State: StateTrait> MarkovSolver<State> {
             Some(1.0),
         );
 
-        node.solve(iterations);
+        node.solve(iterations, false);
 
         println!("{}", node.get_data_as_string(0));
 

@@ -6,6 +6,7 @@
 
 use crate::provider::{ProviderType, WrappedProvider};
 use crate::user_data::{DecisionTrait, WrappedDecision};
+use rand::prelude::SliceRandom;
 use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 
@@ -123,11 +124,12 @@ impl<Decision: DecisionTrait> RegretNode<Decision> {
     pub fn solve(
         &mut self,
         num_iterations: usize,
+        do_randomize_children: bool,
     ) {
         self.populate_children();
         for _ in 0..num_iterations {
             // Implement the regret minimization algorithm here
-            self.calculate_expected_value();
+            self.calculate_expected_value(do_randomize_children);
             self.calculate_regrets(self.current_expected_value);
             let sum_regrets = self.get_sum_regrets();
             self.calculate_probabilities(sum_regrets, self.children.len());
@@ -236,13 +238,19 @@ impl<Decision: DecisionTrait> RegretNode<Decision> {
     }
 
     /// Calculates the expected value for this node.
-    fn calculate_expected_value(&mut self) -> f64 {
+    fn calculate_expected_value(
+        &mut self,
+        do_randomize_children: bool,
+    ) -> f64 {
         // Calculate the expected value based on the current probabilities
         // TODO fix this later
         // if self.get_total_probability() < self.min_probability {
         //     self.current_expected_value = 0.0;
         //     return 0.0;
         // }
+        if do_randomize_children {
+            self.children.shuffle(&mut rand::thread_rng());
+        }
 
         self.current_expected_value = match self.provider.get_provider_type() {
             ProviderType::ExpectedValue(ref provider) => {
@@ -258,7 +266,9 @@ impl<Decision: DecisionTrait> RegretNode<Decision> {
             ProviderType::Children(ref _provider) => self
                 .children
                 .iter()
-                .map(|child| child.calculate_expected_value() * child.get_probability())
+                .map(|child| {
+                    child.calculate_expected_value(do_randomize_children) * child.get_probability()
+                })
                 .sum::<f64>(),
             ProviderType::None => 0.0, // Terminal node has zero expected value
         };
@@ -369,8 +379,11 @@ impl<Decision: DecisionTrait> WrappedRegret<Decision> {
 
     /// Calculates and returns the expected value of the node.
     #[must_use]
-    pub fn calculate_expected_value(&self) -> f64 {
-        safe_lock(&self.node).calculate_expected_value()
+    pub fn calculate_expected_value(
+        &self,
+        do_randomize_children: bool,
+    ) -> f64 {
+        safe_lock(&self.node).calculate_expected_value(do_randomize_children)
     }
 
     /// Returns the user data associated with the node.
