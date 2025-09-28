@@ -5,4 +5,5 @@
 #![warn(clippy::cargo)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
+pub mod quantum;
 pub mod solver;
