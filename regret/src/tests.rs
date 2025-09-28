@@ -43,7 +43,7 @@ fn test_roshambo_regret_minimization() {
         Some(1.0),
     );
 
-    node.solve(1000);
+    node.solve(1000, false);
     // print node as string
     println!("{}", node.get_data_as_string(0));
     let children = node.get_children();
