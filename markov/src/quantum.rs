@@ -29,15 +29,19 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
         }
     }
 
+    /// Set the expected energy and standard deviation for the quantum roll
+    ///
+    /// # Panics
+    /// Panics if the standard deviation is negative
     #[must_use]
     pub fn roll(
         &self,
-        state: State,
+        state: &State,
     ) -> f64 {
-        let index = self.states.iter().position(|s| *s == state);
+        let index = self.states.iter().position(|s| *s == *state);
         if let Some(i) = index {
             // find the state in the already_rolled map
-            if let Some(value) = self.already_rolled.get(&state) {
+            if let Some(value) = self.already_rolled.get(state) {
                 *value
             } else {
                 let normal_distribution =
