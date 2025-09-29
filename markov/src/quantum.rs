@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 
 // Quantum module for Markov decision processes
-use crate::solver::StateTrait;
+use crate::solver::{MarkovSolver, StateTrait};
 use matrix::mat::WrappedMatrix;
 use rand_distr::{Distribution, Normal};
+
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct QuantumEnergyRoller<State: StateTrait + 'static> {
@@ -103,5 +105,48 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
         for connected_state in connected_states {
             self.set_energy(&connected_state, distributed_energy);
         }
+    }
+}
+
+pub struct WrappedQuantumEnergyRoller<State: StateTrait + 'static> {
+    roller: Arc<Mutex<QuantumEnergyRoller<State>>>,
+}
+
+impl<State: StateTrait + 'static> WrappedQuantumEnergyRoller<State> {
+    #[must_use]
+    pub fn new(roller: QuantumEnergyRoller<State>) -> Self {
+        Self { roller: Arc::new(Mutex::new(roller)) }
+    }
+
+    pub fn roll(
+        &self,
+        state: &State,
+        only_consider_dependent_states: bool,
+    ) -> f64 {
+        let mut roller = self.roller.lock().unwrap();
+        roller.roll(state, only_consider_dependent_states)
+    }
+
+    pub fn reset(&self) {
+        let mut roller = self.roller.lock().unwrap();
+        roller.reset();
+    }
+}
+
+pub struct QuantumSolver<State: StateTrait + 'static> {
+    roller: WrappedQuantumEnergyRoller<State>,
+    total_transition_solver: MarkovSolver<State>,
+    entangled_transition_solver: MarkovSolver<State>,
+}
+
+impl<State: StateTrait + 'static> QuantumSolver<State> {
+    #[must_use]
+    pub const fn new(roller: QuantumEnergyRoller<State>) -> Self {
+        let total_energy_func = |s: &State| -> f64 { roller.roll(s, false) };
+        let total_transition_solver = MarkovSolver::new(roller.states.clone(), total_energy_func);
+        let entangled_energy_func = |s: &State| -> f64 { roller.roll(s, true) };
+        let entangled_transition_solver =
+            MarkovSolver::new(roller.states.clone(), entangled_energy_func);
+        Self { roller, total_transition_solver, entangled_transition_solver }
     }
 }
