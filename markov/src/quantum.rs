@@ -33,6 +33,24 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
         self.already_rolled.clear();
     }
 
+    /// Entangle two states together
+    /// This creates a quantum link between the two states, allowing for
+    /// energy to be shared between them during a roll
+    ///
+    /// # Panics
+    /// Panics if either state is not in the list of states
+    ///
+    pub fn entangle_states(
+        &mut self,
+        state: &State,
+        other_state: &State,
+    ) {
+        let index = self.states.iter().position(|s| *s == *state).unwrap();
+        let other_index = self.states.iter().position(|s| *s == *other_state).unwrap();
+        self.entanglement_matrix.set_mut_unchecked(index, other_index, 1.0);
+        self.entanglement_matrix.set_mut_unchecked(other_index, index, 1.0);
+    }
+
     /// Set the expected energy and standard deviation for the quantum roll
     ///
     /// # Panics
