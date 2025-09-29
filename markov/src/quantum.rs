@@ -7,7 +7,7 @@ use rand_distr::{Distribution, Normal};
 
 use std::sync::{Arc, Mutex};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct QuantumEnergyRoller<State: StateTrait + 'static> {
     states: Vec<State>,
     entanglement_matrix: WrappedMatrix<f64>,
@@ -108,16 +108,24 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
     }
 }
 
-pub struct WrappedQuantumEnergyRoller<State: StateTrait + 'static> {
+#[derive(Debug, Clone)]
+pub struct WrappedQuantumEnergyRoller<State: StateTrait + Send + Sync + 'static> {
     roller: Arc<Mutex<QuantumEnergyRoller<State>>>,
 }
 
-impl<State: StateTrait + 'static> WrappedQuantumEnergyRoller<State> {
+impl<State: StateTrait + Send + Sync + 'static> WrappedQuantumEnergyRoller<State> {
     #[must_use]
     pub fn new(roller: QuantumEnergyRoller<State>) -> Self {
         Self { roller: Arc::new(Mutex::new(roller)) }
     }
 
+    /// Roll the quantum energy roller for a given state
+    /// If `only_consider_dependent_states` is true, only the entangled states
+    /// will be considered for energy distribution
+    ///
+    /// # Panics
+    /// Panics if the mutex is poisoned
+    #[must_use]
     pub fn roll(
         &self,
         state: &State,
@@ -133,25 +141,37 @@ impl<State: StateTrait + 'static> WrappedQuantumEnergyRoller<State> {
     }
 }
 
-pub struct QuantumSolver<State: StateTrait + 'static> {
+pub struct QuantumSolver<State: StateTrait + Send + Sync + 'static> {
     roller: WrappedQuantumEnergyRoller<State>,
     total_transition_solver: MarkovSolver<State>,
     entangled_transition_solver: MarkovSolver<State>,
 }
 
-impl<State: StateTrait + 'static> QuantumSolver<State> {
+impl<State: StateTrait + Send + Sync + 'static> QuantumSolver<State> {
     #[must_use]
-    pub const fn new(roller: QuantumEnergyRoller<State>) -> Self {
-        let wrapped_roller = WrappedQuantumEnergyRoller::new(roller);
-        let total_energy_func = |s: &State| -> f64 { wrapped_roller.roll(s, false) };
+    pub fn new(roller: QuantumEnergyRoller<State>) -> Self {
+        let wrapped_roller = Arc::new(WrappedQuantumEnergyRoller::new(roller));
+        let total_energy_func_roller = Arc::clone(&wrapped_roller);
+        let total_energy_func = move |s: &State| -> f64 { total_energy_func_roller.roll(s, false) };
         let total_energy_func =
             ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(total_energy_func)));
-        let total_transition_solver = MarkovSolver::new(roller.states.clone(), total_energy_func);
-        let entangled_energy_func = |s: &State| -> f64 { wrapped_roller.roll(s, true) };
+        let total_transition_solver = MarkovSolver::new(
+            Arc::clone(&wrapped_roller).roller.lock().unwrap().states.clone(),
+            total_energy_func,
+        );
+        let entangled_energy_func_roller = Arc::clone(&wrapped_roller);
+        let entangled_energy_func =
+            move |s: &State| -> f64 { entangled_energy_func_roller.roll(s, true) };
         let entangled_energy_func =
             ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(entangled_energy_func)));
-        let entangled_transition_solver =
-            MarkovSolver::new(roller.states.clone(), entangled_energy_func);
-        Self { roller: wrapped_roller, total_transition_solver, entangled_transition_solver }
+        let entangled_transition_solver = MarkovSolver::new(
+            Arc::clone(&wrapped_roller).roller.lock().unwrap().states.clone(),
+            entangled_energy_func,
+        );
+        Self {
+            roller: Arc::try_unwrap(wrapped_roller).unwrap(),
+            total_transition_solver,
+            entangled_transition_solver,
+        }
     }
 }
