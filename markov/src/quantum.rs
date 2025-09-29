@@ -135,6 +135,9 @@ impl<State: StateTrait + Send + Sync + 'static> WrappedQuantumEnergyRoller<State
         roller.roll(state, only_consider_dependent_states)
     }
 
+    /// Reset the roller, clearing all previously rolled energies
+    /// # Panics
+    /// Panics if the mutex is poisoned
     pub fn reset(&self) {
         let mut roller = self.roller.lock().unwrap();
         roller.reset();
@@ -148,6 +151,11 @@ pub struct QuantumSolver<State: StateTrait + Send + Sync + 'static> {
 }
 
 impl<State: StateTrait + Send + Sync + 'static> QuantumSolver<State> {
+    /// Create a new `QuantumSolver` with the given `QuantumEnergyRoller`
+    /// This will create two `MarkovSolvers`:
+    /// one for total energy calculation and one for entangled energy calculation
+    /// # Panics
+    /// Panics if the mutex is poisoned
     #[must_use]
     pub fn new(roller: QuantumEnergyRoller<State>) -> Self {
         let wrapped_roller = Arc::new(WrappedQuantumEnergyRoller::new(roller));
@@ -173,5 +181,13 @@ impl<State: StateTrait + Send + Sync + 'static> QuantumSolver<State> {
             total_transition_solver,
             entangled_transition_solver,
         }
+    }
+
+    pub fn solve(
+        &mut self,
+        iterations: usize,
+    ) {
+        self.total_transition_solver.solve(iterations);
+        self.entangled_transition_solver.solve(iterations);
     }
 }
