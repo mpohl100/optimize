@@ -142,14 +142,16 @@ pub struct QuantumSolver<State: StateTrait + 'static> {
 impl<State: StateTrait + 'static> QuantumSolver<State> {
     #[must_use]
     pub const fn new(roller: QuantumEnergyRoller<State>) -> Self {
-        let total_energy_func = |s: &State| -> f64 { roller.roll(s, false) };
-        let total_energy_func = ExpectedValueFuncWrapper::new(Arc::new(total_energy_func));
+        let wrapped_roller = WrappedQuantumEnergyRoller::new(roller);
+        let total_energy_func = |s: &State| -> f64 { wrapped_roller.roll(s, false) };
+        let total_energy_func =
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(total_energy_func)));
         let total_transition_solver = MarkovSolver::new(roller.states.clone(), total_energy_func);
-        let entangled_energy_func = |s: &State| -> f64 { roller.roll(s, true) };
-        let entangled_energy_func = ExpectedValueFuncWrapper::new(Arc::new(entangled_energy_func));
+        let entangled_energy_func = |s: &State| -> f64 { wrapped_roller.roll(s, true) };
+        let entangled_energy_func =
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(entangled_energy_func)));
         let entangled_transition_solver =
             MarkovSolver::new(roller.states.clone(), entangled_energy_func);
-        let wrapped_roller = WrappedQuantumEnergyRoller::new(roller);
         Self { roller: wrapped_roller, total_transition_solver, entangled_transition_solver }
     }
 }
