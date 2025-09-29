@@ -11,6 +11,8 @@ use regret::user_data::DecisionTrait;
 use regret::user_data::WrappedDecision;
 
 use num_traits::cast::NumCast;
+use std::fmt::Debug;
+use std::sync::Arc;
 
 pub trait StateTrait: Default + Clone + Eq + Ord + PartialOrd + std::fmt::Debug {
     fn get_data_as_string(&self) -> String;
@@ -58,14 +60,14 @@ impl<State: StateTrait> DecisionTrait for MarkovUserData<State> {
 #[derive(Debug, Clone)]
 struct MarkovChildrenProvider<State: StateTrait + 'static> {
     all_states: Vec<State>,
-    expected_value_calc_func: fn(&State) -> f64,
+    expected_value_calc_func: ExpectedValueFuncWrapper<State>,
     _marker: std::marker::PhantomData<State>,
 }
 
 impl<State: StateTrait> MarkovChildrenProvider<State> {
     fn new(
         all_states: Vec<State>,
-        expected_value_calc_func: fn(&State) -> f64,
+        expected_value_calc_func: ExpectedValueFuncWrapper<State>,
     ) -> Self {
         Self { all_states, expected_value_calc_func, _marker: std::marker::PhantomData }
     }
@@ -87,8 +89,10 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
                 .iter()
                 .map(|state| {
                     let data = WrappedDecision::new(MarkovUserData::new(state.clone()));
-                    let new_children_provider =
-                        Box::new(Self::new(self.all_states.clone(), self.expected_value_calc_func));
+                    let new_children_provider = Box::new(Self::new(
+                        self.all_states.clone(),
+                        self.expected_value_calc_func.clone(),
+                    ));
                     let provider = Provider::new(
                         ProviderType::Children(WrappedChildrenProvider::new(new_children_provider)),
                         Some(data),
@@ -108,8 +112,9 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
                 .iter()
                 .map(|state| {
                     let data = WrappedDecision::new(MarkovUserData::new(state.clone()));
-                    let new_expected_value_provider =
-                        Box::new(MarkovExpectedValueProvider::new(self.expected_value_calc_func));
+                    let new_expected_value_provider = Box::new(MarkovExpectedValueProvider::new(
+                        self.expected_value_calc_func.clone(),
+                    ));
                     let provider = Provider::new(
                         ProviderType::ExpectedValue(WrappedExpectedValueProvider::new(
                             new_expected_value_provider,
@@ -134,13 +139,48 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
     }
 }
 
+pub type ExpectedValueFunc<State: StateTrait + 'static> = Arc<dyn Fn(&State) -> f64 + Send + Sync>;
+
+pub struct ExpectedValueFuncWrapper<State: StateTrait + 'static> {
+    func: ExpectedValueFunc<State>,
+}
+
+impl<State: StateTrait + 'static> ExpectedValueFuncWrapper<State> {
+    pub fn new(func: ExpectedValueFunc<State>) -> Self {
+        Self { func }
+    }
+
+    fn call(
+        &self,
+        state: &State,
+    ) -> f64 {
+        (self.func)(state)
+    }
+}
+
+impl<State: StateTrait + 'static> Clone for ExpectedValueFuncWrapper<State> {
+    fn clone(&self) -> Self {
+        Self { func: Arc::clone(&self.func) }
+    }
+}
+
+// implement debug for ExpectedValueFuncWrapper
+impl<State: StateTrait + 'static> std::fmt::Debug for ExpectedValueFuncWrapper<State> {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        write!(f, "ExpectedValueFuncWrapper")
+    }
+}
+
 #[derive(Debug, Clone)]
 struct MarkovExpectedValueProvider<State: StateTrait + 'static> {
-    expected_value_calc_func: fn(&State) -> f64,
+    expected_value_calc_func: ExpectedValueFuncWrapper<State>,
 }
 
 impl<State: StateTrait + 'static> MarkovExpectedValueProvider<State> {
-    fn new(expected_value_calc_func: fn(&State) -> f64) -> Self {
+    fn new(expected_value_calc_func: ExpectedValueFuncWrapper<State>) -> Self {
         Self { expected_value_calc_func }
     }
 }
@@ -158,8 +198,8 @@ impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
             .get_decision_data()
             .get_state();
         let state_prev = parents_data[parents_data.len() - 2].get_decision_data().get_state();
-        let last_expected_value = (self.expected_value_calc_func)(&state_last);
-        let prev_expected_value = (self.expected_value_calc_func)(&state_prev);
+        let last_expected_value = self.expected_value_calc_func.call(&state_last);
+        let prev_expected_value = self.expected_value_calc_func.call(&state_prev);
         last_expected_value - prev_expected_value
     }
 }
@@ -168,13 +208,13 @@ impl<State: StateTrait> ExpectedValueProvider<MarkovUserData<State>>
 pub struct MarkovSolver<State: StateTrait + 'static> {
     transition_matrix: SumMatrix,
     states: Vec<State>,
-    expected_value_calc_func: fn(&State) -> f64,
+    expected_value_calc_func: ExpectedValueFuncWrapper<State>,
 }
 
 impl<State: StateTrait> MarkovSolver<State> {
     pub fn new(
         states: Vec<State>,
-        expected_value_calc_func: fn(&State) -> f64,
+        expected_value_calc_func: ExpectedValueFuncWrapper<State>,
     ) -> Self {
         let mat = WrappedMatrix::new(states.len(), states.len());
         Self { transition_matrix: SumMatrix::new(mat), states, expected_value_calc_func }
@@ -196,7 +236,10 @@ impl<State: StateTrait> MarkovSolver<State> {
             vec![],
             WrappedProvider::new(Provider::new(
                 ProviderType::Children(WrappedChildrenProvider::new(Box::new(
-                    MarkovChildrenProvider::new(self.states.clone(), self.expected_value_calc_func),
+                    MarkovChildrenProvider::new(
+                        self.states.clone(),
+                        self.expected_value_calc_func.clone(),
+                    ),
                 ))),
                 None,
             )),
@@ -295,6 +338,8 @@ mod tests {
             2 => -1.0,
             _ => 0.0,
         };
+        let expected_value_calc_func =
+            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -321,6 +366,8 @@ mod tests {
         let states = vec![state_1, state_2];
 
         let expected_value_calc_func = |_state: &TestState| 1.0;
+        let expected_value_calc_func =
+            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -347,6 +394,8 @@ mod tests {
             2 => 1.0,
             _ => 0.0,
         };
+        let expected_value_calc_func =
+            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -387,6 +436,9 @@ mod tests {
                 _ => 0.0,
             }
         };
+
+        let expected_value_calc_func =
+            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -431,6 +483,9 @@ mod tests {
                 _ => 0.0,
             }
         };
+
+        let expected_value_calc_func =
+            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 

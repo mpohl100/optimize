@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 // Quantum module for Markov decision processes
-use crate::solver::{MarkovSolver, StateTrait};
+use crate::solver::{ExpectedValueFuncWrapper, MarkovSolver, StateTrait};
 use matrix::mat::WrappedMatrix;
 use rand_distr::{Distribution, Normal};
 
@@ -143,10 +143,13 @@ impl<State: StateTrait + 'static> QuantumSolver<State> {
     #[must_use]
     pub const fn new(roller: QuantumEnergyRoller<State>) -> Self {
         let total_energy_func = |s: &State| -> f64 { roller.roll(s, false) };
+        let total_energy_func = ExpectedValueFuncWrapper::new(Arc::new(total_energy_func));
         let total_transition_solver = MarkovSolver::new(roller.states.clone(), total_energy_func);
         let entangled_energy_func = |s: &State| -> f64 { roller.roll(s, true) };
+        let entangled_energy_func = ExpectedValueFuncWrapper::new(Arc::new(entangled_energy_func));
         let entangled_transition_solver =
             MarkovSolver::new(roller.states.clone(), entangled_energy_func);
-        Self { roller, total_transition_solver, entangled_transition_solver }
+        let wrapped_roller = WrappedQuantumEnergyRoller::new(roller);
+        Self { roller: wrapped_roller, total_transition_solver, entangled_transition_solver }
     }
 }
