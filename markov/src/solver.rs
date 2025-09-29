@@ -12,7 +12,7 @@ use regret::user_data::WrappedDecision;
 
 use num_traits::cast::NumCast;
 use std::fmt::Debug;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub trait StateTrait: Default + Clone + Eq + Ord + PartialOrd + std::fmt::Debug {
     fn get_data_as_string(&self) -> String;
@@ -139,7 +139,8 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
     }
 }
 
-pub type ExpectedValueFunc<State: StateTrait + 'static> = Arc<dyn Fn(&State) -> f64 + Send + Sync>;
+pub type ExpectedValueFunc<State: StateTrait + 'static> =
+    Arc<Mutex<dyn FnMut(&State) -> f64 + Send + Sync>>;
 
 pub struct ExpectedValueFuncWrapper<State: StateTrait + 'static> {
     func: ExpectedValueFunc<State>,
@@ -154,7 +155,8 @@ impl<State: StateTrait + 'static> ExpectedValueFuncWrapper<State> {
         &self,
         state: &State,
     ) -> f64 {
-        (self.func)(state)
+        let mut func = self.func.lock().unwrap();
+        func(state)
     }
 }
 
@@ -339,7 +341,7 @@ mod tests {
             _ => 0.0,
         };
         let expected_value_calc_func =
-            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(expected_value_calc_func)));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -367,7 +369,7 @@ mod tests {
 
         let expected_value_calc_func = |_state: &TestState| 1.0;
         let expected_value_calc_func =
-            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(expected_value_calc_func)));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -395,7 +397,7 @@ mod tests {
             _ => 0.0,
         };
         let expected_value_calc_func =
-            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(expected_value_calc_func)));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -438,7 +440,7 @@ mod tests {
         };
 
         let expected_value_calc_func =
-            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(expected_value_calc_func)));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
@@ -485,7 +487,7 @@ mod tests {
         };
 
         let expected_value_calc_func =
-            ExpectedValueFuncWrapper::new(Arc::new(expected_value_calc_func));
+            ExpectedValueFuncWrapper::new(Arc::new(Mutex::new(expected_value_calc_func)));
 
         let mut solver = MarkovSolver::new(states, expected_value_calc_func);
 
