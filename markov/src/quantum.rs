@@ -42,6 +42,7 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
     pub fn roll(
         &mut self,
         state: &State,
+        only_consider_dependent_states: bool,
     ) -> f64 {
         // if the energy is already set, return it and remove the state from the map
         if self.already_rolled.contains_key(state) {
@@ -51,7 +52,11 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
             .expect("Standard deviation must be non-negative");
         let energy = normal.sample(&mut rand::thread_rng());
         self.set_energy(state, energy);
-        self.already_rolled.remove(state).unwrap()
+        if only_consider_dependent_states {
+            0.0
+        } else {
+            self.already_rolled.remove(state).unwrap()
+        }
     }
 
     #[allow(clippy::cast_precision_loss)]
