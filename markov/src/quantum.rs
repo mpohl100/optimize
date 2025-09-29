@@ -29,6 +29,10 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.already_rolled.clear();
+    }
+
     /// Set the expected energy and standard deviation for the quantum roll
     ///
     /// # Panics
