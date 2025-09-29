@@ -43,21 +43,15 @@ impl<State: StateTrait + 'static> QuantumEnergyRoller<State> {
         &mut self,
         state: &State,
     ) -> f64 {
-        let index = self.states.iter().position(|s| *s == *state);
-        if let Some(_i) = index {
-            // find the state in the already_rolled map
-            if let Some(value) = self.already_rolled.get(state) {
-                *value
-            } else {
-                let normal_distribution =
-                    Normal::new(self.expected_energy, self.standard_deviation).unwrap();
-                let energy = normal_distribution.sample(&mut rand::thread_rng());
-                self.set_energy(state, energy);
-                energy
-            }
-        } else {
-            panic!("State not found in the list of states");
+        // if the energy is already set, return it and remove the state from the map
+        if self.already_rolled.contains_key(state) {
+            return self.already_rolled.remove(state).unwrap();
         }
+        let normal = Normal::new(self.expected_energy, self.standard_deviation)
+            .expect("Standard deviation must be non-negative");
+        let energy = normal.sample(&mut rand::thread_rng());
+        self.set_energy(state, energy);
+        self.already_rolled.remove(state).unwrap()
     }
 
     #[allow(clippy::cast_precision_loss)]
