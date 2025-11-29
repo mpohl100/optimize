@@ -80,12 +80,11 @@ impl NeuralNetworkPhenotype {
     ) {
         let left_half_shape = self.left_half_shape.clone();
         let right_half_shape = self.right_half_shape.clone();
-        let previous_shape = if left_half_shape.is_some() && right_half_shape.is_some() {
-            let left_shape = left_half_shape.unwrap();
-            let right_shape = right_half_shape.unwrap();
-            left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
-        } else {
-            self.get_nn().shape()
+        let previous_shape = match (left_half_shape, right_half_shape) {
+            (Some(left_shape), Some(right_shape)) => {
+                left_shape.merge(right_shape, fetch_activation_data(rng_wrapper))
+            },
+            _ => self.get_nn().shape(),
         };
 
         let mut mutater = NeuralNetworkMutater::new(rng_wrapper);
