@@ -65,7 +65,7 @@ struct MarkovChildrenProvider<State: StateTrait + 'static> {
 }
 
 impl<State: StateTrait> MarkovChildrenProvider<State> {
-    fn new(
+    const fn new(
         all_states: Vec<State>,
         expected_value_calc_func: ExpectedValueFuncWrapper<State>,
     ) -> Self {
@@ -139,8 +139,7 @@ impl<State: StateTrait + 'static> ChildrenProvider<MarkovUserData<State>>
     }
 }
 
-pub type ExpectedValueFunc<State: StateTrait + 'static> =
-    Arc<Mutex<dyn FnMut(&State) -> f64 + Send + Sync>>;
+pub type ExpectedValueFunc<State> = Arc<Mutex<dyn FnMut(&State) -> f64 + Send + Sync>>;
 
 pub struct ExpectedValueFuncWrapper<State: StateTrait + 'static> {
     func: ExpectedValueFunc<State>,
@@ -182,7 +181,7 @@ struct MarkovExpectedValueProvider<State: StateTrait + 'static> {
 }
 
 impl<State: StateTrait + 'static> MarkovExpectedValueProvider<State> {
-    fn new(expected_value_calc_func: ExpectedValueFuncWrapper<State>) -> Self {
+    const fn new(expected_value_calc_func: ExpectedValueFuncWrapper<State>) -> Self {
         Self { expected_value_calc_func }
     }
 }
@@ -214,6 +213,7 @@ pub struct MarkovSolver<State: StateTrait + 'static> {
 }
 
 impl<State: StateTrait> MarkovSolver<State> {
+    #[must_use]
     pub fn new(
         states: Vec<State>,
         expected_value_calc_func: ExpectedValueFuncWrapper<State>,
@@ -314,11 +314,11 @@ mod tests {
     }
 
     impl TestState {
-        fn new(value: i32) -> Self {
+        const fn new(value: i32) -> Self {
             Self { value }
         }
 
-        fn get_value(&self) -> i32 {
+        const fn get_value(&self) -> i32 {
             self.value
         }
     }

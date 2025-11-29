@@ -140,12 +140,12 @@ pub struct RowIterMut<'a, T> {
 impl<T> Matrix<T> {
     /// Returns an iterator over the rows of the matrix (immutable)
     #[must_use]
-    pub const fn iter(&self) -> RowIter<T> {
+    pub const fn iter(&self) -> RowIter<'_, T> {
         RowIter { matrix: self, current_row: 0 }
     }
 
     /// Returns an iterator over the rows of the matrix (mutable)
-    pub fn iter_mut(&mut self) -> RowIterMut<T> {
+    pub fn iter_mut(&mut self) -> RowIterMut<'_, T> {
         RowIterMut { matrix: self, current_row: 0 }
     }
 }
