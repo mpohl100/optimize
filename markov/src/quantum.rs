@@ -145,7 +145,7 @@ impl<State: StateTrait + Send + Sync + 'static> WrappedQuantumEnergyRoller<State
 }
 
 pub struct QuantumSolver<State: StateTrait + Send + Sync + 'static> {
-    roller: WrappedQuantumEnergyRoller<State>,
+    _roller: WrappedQuantumEnergyRoller<State>,
     total_transition_solver: MarkovSolver<State>,
     entangled_transition_solver: MarkovSolver<State>,
 }
@@ -177,7 +177,7 @@ impl<State: StateTrait + Send + Sync + 'static> QuantumSolver<State> {
             entangled_energy_func,
         );
         Self {
-            roller: Arc::try_unwrap(wrapped_roller).unwrap(),
+            _roller: Arc::try_unwrap(wrapped_roller).unwrap(),
             total_transition_solver,
             entangled_transition_solver,
         }
