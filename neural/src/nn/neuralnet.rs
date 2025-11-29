@@ -145,11 +145,9 @@ impl ClassicNeuralNetwork {
         if std::fs::metadata(model_directory).is_ok() {
             // copy the directory to a backup
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(model_directory)?;
-        } else {
-            // create directory if it doesn't exist
-            std::fs::create_dir_all(model_directory)?;
         }
+        // create directory if it doesn't exist
+        std::fs::create_dir_all(model_directory)?;
 
         let shape = self.shape();
         shape.to_yaml(model_directory);
@@ -417,11 +415,9 @@ impl TrainableClassicNeuralNetwork {
         if std::fs::metadata(model_directory).is_ok() {
             // copy the directory to a backup not move
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
-            std::fs::create_dir_all(model_directory)?;
-        } else {
-            // create directory if it doesn't exist
-            std::fs::create_dir_all(model_directory)?;
         }
+        // create directory if it doesn't exist
+        std::fs::create_dir_all(model_directory)?;
 
         let shape = self.shape();
         shape.to_yaml(model_directory);
