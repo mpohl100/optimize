@@ -140,7 +140,7 @@ fn save<T: PersistableValue>(
     Ok(())
 }
 
-fn read<T: PersistableValue>(path: String) -> Result<(WrappedMatrix<T>), Box<dyn Error>> {
+fn read<T: PersistableValue>(path: String) -> Result<WrappedMatrix<T>, Box<dyn Error>> {
     // create a lock file which acts as a lock
     let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
@@ -183,4 +183,80 @@ fn read<T: PersistableValue>(path: String) -> Result<(WrappedMatrix<T>), Box<dyn
         }
     }
     Ok(weights)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::allocatable::Allocatable;
+    use std::error::Error;
+    use std::fs;
+
+    #[derive(Default, Clone, Debug, PartialEq)]
+    struct TestValue(f64);
+
+    impl PersistableValue for TestValue {
+        fn to_string_for_matrix(&self) -> String {
+            self.0.to_string()
+        }
+        fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>> {
+            Ok(Self(s.parse::<f64>()?))
+        }
+    }
+
+    #[test]
+    fn test_persistable_matrix_new() {
+        let dir = Directory::Internal("/tmp".to_string());
+        let matrix = PersistableMatrix::<TestValue>::new(dir, "test", 2, 3);
+        assert_eq!(matrix.rows, 2);
+        assert_eq!(matrix.cols, 3);
+        assert!(!matrix.is_allocated());
+    }
+
+    #[test]
+    fn test_persistable_matrix_allocate_and_deallocate() {
+        let dir = Directory::Internal("/tmp".to_string());
+        let mut matrix = PersistableMatrix::<TestValue>::new(dir, "alloc", 2, 2);
+        matrix.allocate();
+        assert!(matrix.is_allocated());
+        matrix.deallocate();
+        assert!(!matrix.is_allocated());
+    }
+
+    #[test]
+    fn test_persistable_matrix_set_and_get_size() {
+        let dir = Directory::Internal("/tmp".to_string());
+        let matrix = PersistableMatrix::<TestValue>::new(dir, "size", 4, 5);
+        let expected_size = 4 * 5 * std::mem::size_of::<TestValue>();
+        assert_eq!(matrix.get_size(), expected_size);
+    }
+
+    #[test]
+    fn test_persistable_matrix_mark_for_use() {
+        let dir = Directory::Internal("/tmp".to_string());
+        let mut matrix = PersistableMatrix::<TestValue>::new(dir, "use", 1, 1);
+        assert!(!matrix.is_in_use());
+        matrix.mark_for_use();
+        assert!(matrix.is_in_use());
+        matrix.free_from_use();
+        assert!(!matrix.is_in_use());
+    }
+
+    #[test]
+    fn test_persistable_matrix_persistence() {
+        let dir = Directory::User("/tmp".to_string());
+        let mut matrix = PersistableMatrix::<TestValue>::new(dir, "persist", 2, 2);
+        matrix.allocate();
+        if let Some(mat) = &mut matrix.mat {
+            mat.set_mut_unchecked(0, 0, TestValue(42.0));
+            mat.set_mut_unchecked(1, 1, TestValue(24.0));
+        }
+        matrix.deallocate();
+        let loaded = read::<TestValue>("/tmp/matrix_persist.txt".to_string()).unwrap();
+        assert_eq!(loaded.get_unchecked(0, 0), TestValue(42.0));
+        assert_eq!(loaded.get_unchecked(1, 1), TestValue(24.0));
+        // Clean up
+        let _ = fs::remove_file("/tmp/matrix_persist.txt");
+        let _ = fs::remove_file("/tmp/matrix_persist.txt.lock");
+    }
 }
