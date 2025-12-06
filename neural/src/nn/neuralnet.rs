@@ -19,9 +19,9 @@ use std::path::Path;
 
 use std::boxed::Box;
 
-use super::directory::Directory;
 use super::nn_factory::{copy_dir_recursive, get_first_free_model_directory};
 use super::nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork};
+use matrix::directory::Directory;
 
 /// A neural network.
 #[derive(Debug)]
@@ -416,7 +416,7 @@ impl TrainableClassicNeuralNetwork {
             // copy the directory to a backup not move
             copy_dir_recursive(Path::new(&model_directory), Path::new(&backup_directory))?;
         }
-        // create directory if it doesn't exist
+        // create directory if it doesn't existc
         std::fs::create_dir_all(model_directory)?;
 
         let shape = self.shape();

@@ -1,5 +1,6 @@
 use crate::nn::shape::NeuralNetworkShape;
-use crate::{nn::directory::Directory, utilities::util::WrappedUtils};
+use crate::utilities::util::WrappedUtils;
+use matrix::directory::Directory;
 use std::sync::{Arc, Mutex};
 use utils::safer::safe_lock;
 

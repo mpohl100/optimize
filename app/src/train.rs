@@ -1,4 +1,4 @@
-use neural::nn::directory::Directory;
+use matrix::directory::Directory;
 use neural::nn::shape::NeuralNetworkShape;
 use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use neural::training::data_importer::{DataImporter, SessionData};

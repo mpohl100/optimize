@@ -1,4 +1,4 @@
-use neural::nn::directory::Directory;
+use matrix::directory::Directory;
 use neural::nn::neuralnet::ClassicNeuralNetwork;
 use neural::nn::nn_trait::NeuralNetwork;
 use neural::nn::shape::NeuralNetworkShape;

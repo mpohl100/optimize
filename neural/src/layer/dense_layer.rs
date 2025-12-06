@@ -3,9 +3,9 @@ use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
-use crate::nn::directory::Directory;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::Allocatable;
+use matrix::directory::Directory;
 
 pub use matrix::mat::Matrix;
 use matrix::mat::WrappedMatrix;

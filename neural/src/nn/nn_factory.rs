@@ -1,9 +1,9 @@
 use std::{fs, io, path::Path};
 
 use crate::utilities::util::WrappedUtils;
+use matrix::directory::Directory;
 
 use super::{
-    directory::Directory,
     either_nn::{EitherNeuralNetwork, TrainableEitherNeuralNetwork},
     neuralnet::{ClassicNeuralNetwork, TrainableClassicNeuralNetwork},
     nn_trait::{WrappedNeuralNetwork, WrappedTrainableNeuralNetwork},

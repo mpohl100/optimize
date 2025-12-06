@@ -9,7 +9,6 @@ use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
 use super::shape::NeuralNetworkShape;
 
-use crate::nn::directory::Directory;
 use crate::nn::neuralnet::ClassicNeuralNetwork;
 use crate::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::nn::nn_factory::get_first_free_model_directory;
@@ -19,6 +18,7 @@ use crate::nn::shape::AnnotatedNeuralNetworkShape;
 use crate::nn::shape::LayerShape;
 use crate::nn::shape::LayerType;
 use crate::utilities::util::WrappedUtils;
+use matrix::directory::Directory;
 
 #[derive(Debug)]
 pub struct RetryNeuralNetwork {
