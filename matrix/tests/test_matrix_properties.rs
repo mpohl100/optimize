@@ -1,7 +1,6 @@
 use matrix::mat::WrappedMatrix;
 use matrix::sum_mat::SumMatrix;
 use proptest::prelude::*;
-
 // Property-based tests for WrappedMatrix
 proptest! {
     #[test]
@@ -10,8 +9,8 @@ proptest! {
         cols in 1..100usize,
     ) {
         let matrix = WrappedMatrix::<f64>::new(rows, cols);
-        prop_assert_eq!(matrix.rows(), rows);
-        prop_assert_eq!(matrix.cols(), cols);
+        assert_eq!(matrix.rows(), rows);
+        assert_eq!(matrix.cols(), cols);
     }
 
     #[test]
@@ -27,7 +26,7 @@ proptest! {
         matrix.set_mut_unchecked(row, col, value);
         let retrieved = matrix.get_unchecked(row, col);
 
-        prop_assert!((retrieved - value).abs() < f64::EPSILON);
+        assert!((retrieved - value).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -40,9 +39,9 @@ proptest! {
         let matrix = WrappedMatrix::<f64>::new(rows, cols);
 
         if test_row >= rows || test_col >= cols {
-            prop_assert!(matrix.get(test_row, test_col).is_err());
+            assert!(matrix.get(test_row, test_col).is_err());
         } else {
-            prop_assert!(matrix.get(test_row, test_col).is_ok());
+            assert!(matrix.get(test_row, test_col).is_ok());
         }
     }
 }
@@ -69,7 +68,7 @@ proptest! {
         }
 
         let actual_sum = sum_matrix.get_row_sum(row);
-        prop_assert_eq!(actual_sum, expected_sum);
+        assert_eq!(actual_sum, expected_sum);
     }
 
     #[test]
@@ -91,14 +90,14 @@ proptest! {
 
         // Ratios should sum to 1.0 (approximately)
         let total_ratio = ratio1 + ratio2;
-        prop_assert!((total_ratio - 1.0).abs() < 1e-10);
+        assert!((total_ratio - 1.0).abs() < 1e-10);
 
         // Individual ratios should be correct
         let total = value1 + value2;
         let expected_ratio1 = value1 as f64 / total as f64;
         let expected_ratio2 = value2 as f64 / total as f64;
 
-        prop_assert!((ratio1 - expected_ratio1).abs() < 1e-10);
-        prop_assert!((ratio2 - expected_ratio2).abs() < 1e-10);
+        assert!((ratio1 - expected_ratio1).abs() < 1e-10);
+        assert!((ratio2 - expected_ratio2).abs() < 1e-10);
     }
 }

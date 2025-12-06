@@ -1,8 +1,6 @@
 use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use alloc::allocatable::Allocatable;
-
-use criterion::measurement::ValueFormatter;
 use fs2::FileExt;
 use std::error::Error;
 use std::fs::File;
@@ -11,7 +9,16 @@ use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
 
-pub struct PersistableMatrix<T: Default + Clone> {
+pub trait PersistableValue: Default + Clone {
+    fn to_string_for_matrix(&self) -> String;
+    /// # Errors
+    /// Returns an error if the string cannot be parsed into the type.
+    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
+    where
+        Self: Sized;
+}
+
+pub struct PersistableMatrix<T: PersistableValue> {
     matrix_file_path: Directory,
     rows: usize,
     cols: usize,
@@ -19,11 +26,11 @@ pub struct PersistableMatrix<T: Default + Clone> {
     in_use: bool,
 }
 
-impl<T: Default + Clone> PersistableMatrix<T> {
+impl<T: PersistableValue> PersistableMatrix<T> {
     #[must_use]
     pub fn new(
         matrix_file_path: Directory,
-        label: String,
+        label: &str,
         rows: usize,
         cols: usize,
     ) -> Self {
@@ -36,7 +43,7 @@ impl<T: Default + Clone> PersistableMatrix<T> {
     }
 }
 
-impl<T: Default + Clone> Drop for PersistableMatrix<T> {
+impl<T: PersistableValue> Drop for PersistableMatrix<T> {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         if let Directory::User(dir) = &self.matrix_file_path {
@@ -57,7 +64,7 @@ impl<T: Default + Clone> Drop for PersistableMatrix<T> {
     }
 }
 
-impl<T: Default + Clone> Allocatable for PersistableMatrix<T> {
+impl<T: PersistableValue> Allocatable for PersistableMatrix<T> {
     fn allocate(&mut self) {
         if self.is_allocated() {
             return;
@@ -107,7 +114,7 @@ impl<T: Default + Clone> Allocatable for PersistableMatrix<T> {
     }
 }
 
-fn save<T: Default + Clone + 'static>(
+fn save<T: PersistableValue>(
     path: String,
     matrix: &WrappedMatrix<T>,
 ) -> Result<(), Box<dyn Error>> {
@@ -125,7 +132,7 @@ fn save<T: Default + Clone + 'static>(
     writeln!(file, "{} {}", matrix.rows(), matrix.cols())?;
     for i in 0..matrix.rows() {
         for j in 0..matrix.cols() {
-            write!(file, "{};", to_string_for_matrix(matrix.get_unchecked(i, j)))?;
+            write!(file, "{};", matrix.get_unchecked(i, j).to_string_for_matrix())?;
         }
         writeln!(file)?;
     }
@@ -133,21 +140,7 @@ fn save<T: Default + Clone + 'static>(
     Ok(())
 }
 
-fn to_string_for_matrix<T: Default + Clone + 'static>(value: T) -> String {
-    // do an if constexpr to check if T is f64
-    if std::any::TypeId::of::<T>() == std::any::TypeId::of::<f64>() {
-        let v = unsafe { *(&value as *const T as *const f64) };
-        return format!("{:.6}", v);
-    } else if std::any::TypeId::of::<T>() == std::any::TypeId::of::<f32>() {
-        let v = unsafe { *(&value as *const T as *const f32) };
-        return format!("{:.6}", v);
-    }
-    return String::new();
-}
-
-fn read<T: Default + Clone + std::str::FromStr + 'static>(
-    path: String
-) -> Result<(WrappedMatrix<T>), Box<dyn Error>> {
+fn read<T: PersistableValue>(path: String) -> Result<(WrappedMatrix<T>), Box<dyn Error>> {
     // create a lock file which acts as a lock
     let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
@@ -179,7 +172,7 @@ fn read<T: Default + Clone + std::str::FromStr + 'static>(
                     if let Some(p) = part {
                         let figures = p.split_whitespace().collect::<Vec<_>>();
                         if figures.len() == 1 || figures.len() == 4 {
-                            let val = figures[0].parse::<T>()?;
+                            let val = T::from_string_for_matrix(figures[0])?;
                             weights.set_mut_unchecked(i, j, val);
                         } else {
                             return Err("Invalid weight format".into());

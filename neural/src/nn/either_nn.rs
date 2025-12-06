@@ -9,13 +9,13 @@ use super::nn_trait::WrappedNeuralNetwork;
 use super::nn_trait::WrappedTrainableNeuralNetwork;
 use super::shape::NeuralNetworkShape;
 
-use crate::nn::directory::Directory;
 use crate::nn::neuralnet::ClassicNeuralNetwork;
 use crate::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::nn::nn_factory::get_first_free_model_directory;
 use crate::nn::nn_trait::NeuralNetwork;
 use crate::nn::nn_trait::TrainableNeuralNetwork;
 use crate::utilities::util::WrappedUtils;
+use matrix::directory::Directory;
 use num_traits::cast::NumCast;
 
 #[derive(Debug)]

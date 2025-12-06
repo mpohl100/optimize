@@ -1,11 +1,11 @@
 use super::data_importer::DataImporter;
 use super::training_params::TrainingParams;
-use crate::nn::directory::Directory;
 use crate::nn::nn_factory::new_trainable_neural_network;
 use crate::nn::nn_factory::trainable_neural_network_from_disk;
 use crate::nn::nn_factory::NeuralNetworkCreationArguments;
 use crate::nn::nn_trait::WrappedTrainableNeuralNetwork;
 use crate::utilities::util::WrappedUtils;
+use matrix::directory::Directory;
 
 use num_traits::NumCast;
 
