@@ -4,6 +4,7 @@ use super::layer_trait::WrappedTrainableLayer;
 use super::matrix_extensions::MatrixExtensions;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
+use crate::layer::matrix_extensions::TrainableMatrixExtensions;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::Allocatable;
 use matrix::directory::Directory;
@@ -583,11 +584,7 @@ impl TrainableLayer for TrainableDenseLayer {
         let d_out_vec = d_out.to_vec();
         // Calculate weight gradients
         let _ = utils.execute(move || {
-            weights.mat().lock().unwrap().par_indexed_iter_mut().for_each(|(i, row_grad)| {
-                row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
-                    grad.grad = d_out_vec[i] * input_cache[j];
-                });
-            });
+            weights.backward_calculate_gradients(&d_out_vec, &input_cache);
             0
         });
 
