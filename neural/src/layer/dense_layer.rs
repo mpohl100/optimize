@@ -440,19 +440,9 @@ impl Layer for TrainableDenseLayer {
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
+        let biases_values: Vec<f64> = biases.iter().map(|b| b.value).collect();
         let inputs = input.to_vec();
-        utils.execute(move || {
-            weights
-                .mat()
-                .lock()
-                .unwrap()
-                .par_indexed_iter()
-                .map(|(row_idx, weights_row)| {
-                    weights_row.iter().zip(inputs.iter()).map(|(&w, &x)| w.value * x).sum::<f64>()
-                        + biases[row_idx].value // Use the bias corresponding to the row index
-                })
-                .collect()
-        })
+        utils.execute(move || weights.forward(&inputs, &biases_values))
     }
 
     #[allow(clippy::needless_range_loop)]
