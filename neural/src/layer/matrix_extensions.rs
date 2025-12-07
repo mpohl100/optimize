@@ -55,13 +55,13 @@ impl MatrixExtensions<Weight> for WrappedMatrix<Weight> {
 pub trait TrainableMatrixExtensions<T: Default + Clone>: MatrixExtensions<T> {
     fn backward_calculate_gradients(
         &self,
-        d_out_vec: &Vec<f64>,
-        input_cache: &Vec<f64>,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
     );
     fn backward_calculate_weights_sec(
         &self,
         j: usize,
-        d_out_vec_sec: &Vec<f64>,
+        d_out_vec_sec: &[f64],
     ) -> f64;
     fn update_weights(
         &self,
@@ -80,8 +80,8 @@ pub trait TrainableMatrixExtensions<T: Default + Clone>: MatrixExtensions<T> {
 impl TrainableMatrixExtensions<Weight> for WrappedMatrix<Weight> {
     fn backward_calculate_gradients(
         &self,
-        d_out_vec: &Vec<f64>,
-        input_cache: &Vec<f64>,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
     ) {
         self.mat().lock().unwrap().par_indexed_iter_mut().for_each(|(i, row_grad)| {
             row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
@@ -93,7 +93,7 @@ impl TrainableMatrixExtensions<Weight> for WrappedMatrix<Weight> {
     fn backward_calculate_weights_sec(
         &self,
         j: usize,
-        d_out_vec_sec: &Vec<f64>,
+        d_out_vec_sec: &[f64],
     ) -> f64 {
         self.mat()
             .lock()
