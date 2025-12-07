@@ -1,6 +1,7 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
+use super::matrix_extensions::MatrixExtensions;
 use super::AllocatableLayer;
 use super::TrainableAllocatableLayer;
 use crate::utilities::util::WrappedUtils;
@@ -164,19 +165,7 @@ impl Layer for DenseLayer {
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
         let inputs = input.to_vec();
-        utils.execute(move || {
-            let vec = weights
-                .mat()
-                .lock()
-                .unwrap()
-                .par_indexed_iter()
-                .map(|(row_idx, weights_row)| {
-                    weights_row.iter().zip(inputs.iter()).map(|(&w, &x)| w * x).sum::<f64>()
-                        + biases[row_idx] // Use the bias corresponding to the row index
-                })
-                .collect::<Vec<f64>>();
-            vec
-        })
+        utils.execute(move || weights.forward(&inputs, &biases))
     }
 
     fn forward_batch(
@@ -279,19 +268,19 @@ impl AllocatableLayer for DenseLayer {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-struct Weight {
-    value: f64,
-    grad: f64,
-    m: f64,
-    v: f64,
+pub struct Weight {
+    pub value: f64,
+    pub grad: f64,
+    pub m: f64,
+    pub v: f64,
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-struct Bias {
-    value: f64,
-    grad: f64,
-    m: f64,
-    v: f64,
+pub struct Bias {
+    pub value: f64,
+    pub grad: f64,
+    pub m: f64,
+    pub v: f64,
 }
 
 /// A fully connected neural network layer (Dense layer).
