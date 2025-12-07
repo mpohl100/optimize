@@ -595,16 +595,7 @@ impl TrainableLayer for TrainableDenseLayer {
         utils.execute(move || {
             (0..input_cache_sec.len())
                 .into_par_iter()
-                .map(|j| {
-                    weights_sec
-                        .mat()
-                        .lock()
-                        .unwrap()
-                        .iter()
-                        .enumerate()
-                        .map(|(i, row)| row[j].value * d_out_vec_sec[i])
-                        .sum::<f64>()
-                })
+                .map(|j| weights_sec.backward_calculate_weights_sec(j, &d_out_vec_sec))
                 .collect::<Vec<f64>>()
         })
     }
@@ -621,11 +612,7 @@ impl TrainableLayer for TrainableDenseLayer {
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weight
         let _ = utils.execute(move || {
-            weights.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
-                for weight in weights_row.iter_mut() {
-                    weight.value -= learning_rate * weight.grad;
-                }
-            });
+            weights.update_weights(learning_rate);
             0
         });
 
@@ -674,29 +661,10 @@ impl TrainableLayer for TrainableDenseLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        let t_f: f64 = NumCast::from(t).expect("Failed to convert time step to f64");
-        let beta1_pow_t = beta1.powf(t_f);
-        let beta2_pow_t = beta2.powf(t_f);
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weights
         let _ = utils.execute(move || {
-            weights.mat().lock().unwrap().par_iter_mut().for_each(|weight_row| {
-                for weight in weight_row.iter_mut() {
-                    let grad = weight.grad;
-
-                    // Update first and second moments
-                    weight.m = beta1.mul_add(weight.m, (1.0 - beta1) * grad);
-                    weight.v = beta2.mul_add(weight.v, (1.0 - beta2) * grad.powi(2));
-
-                    // Bias correction
-                    let m_hat = weight.m / (1.0 - beta1_pow_t);
-                    let v_hat = weight.v / (1.0 - beta2_pow_t);
-
-                    // Adjusted learning rate and update
-                    let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-                    weight.value -= adjusted_learning_rate * m_hat;
-                }
-            });
+            weights.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             0
         });
 
