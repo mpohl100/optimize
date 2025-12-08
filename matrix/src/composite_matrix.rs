@@ -53,4 +53,20 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
+
+    pub fn get_slice_x(&self) -> usize {
+        self.slice_x
+    }
+
+    pub fn get_slice_y(&self) -> usize {
+        self.slice_y
+    }
+
+    pub fn rows(&self) -> usize {
+        self.rows
+    }
+
+    pub fn cols(&self) -> usize {
+        self.cols
+    }
 }

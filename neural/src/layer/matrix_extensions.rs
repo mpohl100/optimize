@@ -1,5 +1,9 @@
-use super::dense_layer::Weight;
+use crate::layer::dense_layer::NumberEntry;
 
+use super::dense_layer::Weight;
+use crate::layer::dense_layer::WeightEntry;
+
+use matrix::composite_matrix::CompositeMatrix;
 use matrix::mat::WrappedMatrix;
 
 use rayon::iter::ParallelIterator;
@@ -143,5 +147,17 @@ impl TrainableMatrixExtensions<Weight> for WrappedMatrix<Weight> {
                 weight.value -= adjusted_learning_rate * m_hat;
             }
         });
+    }
+}
+
+impl MatrixExtensions<f64> for CompositeMatrix<NumberEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &[f64],
+    ) -> Vec<f64> {
+        let mut outputs = vec![0.0; self.rows()];
+
+        outputs
     }
 }

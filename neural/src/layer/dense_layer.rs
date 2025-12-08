@@ -12,6 +12,7 @@ use matrix::directory::Directory;
 pub use matrix::mat::Matrix;
 use matrix::mat::WrappedMatrix;
 
+use matrix::persistable_matrix::PersistableValue;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -1042,5 +1043,46 @@ mod tests {
         layer.update_weights(0.01, utils);
 
         std::fs::remove_dir_all("test_model_unit").unwrap();
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct NumberEntry(f64);
+
+impl PersistableValue for NumberEntry {
+    fn to_string_for_matrix(&self) -> String {
+        format!("{}", self.0)
+    }
+
+    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
+    where
+        Self: Sized,
+    {
+        let value = s.parse::<f64>()?;
+        Ok(NumberEntry(value))
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct WeightEntry(Weight);
+
+impl PersistableValue for WeightEntry {
+    fn to_string_for_matrix(&self) -> String {
+        format!("{} {} {} {}", self.0.value, self.0.grad, self.0.m, self.0.v)
+    }
+
+    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
+    where
+        Self: Sized,
+    {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() != 4 {
+            return Err("Invalid weight entry format".into());
+        }
+        let value = parts[0].parse::<f64>()?;
+        let grad = parts[1].parse::<f64>()?;
+        let m = parts[2].parse::<f64>()?;
+        let v = parts[3].parse::<f64>()?;
+        Ok(WeightEntry(Weight { value, grad, m, v }))
     }
 }

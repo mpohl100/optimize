@@ -309,6 +309,7 @@ where
         mat.get_unchecked(x, y).clone()
     }
 
+    #[must_use]
     pub fn get_mut_unchecked(
         &self,
         x: usize,
