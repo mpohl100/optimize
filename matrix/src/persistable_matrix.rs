@@ -18,6 +18,7 @@ pub trait PersistableValue: Default + Clone {
         Self: Sized;
 }
 
+#[derive(Default, Clone)]
 pub struct PersistableMatrix<T: PersistableValue> {
     matrix_file_path: Directory,
     rows: usize,
@@ -40,6 +41,23 @@ impl<T: PersistableValue> PersistableMatrix<T> {
         };
 
         Self { matrix_file_path: matrix_path, rows, cols, mat: None, in_use: false }
+    }
+
+    pub fn set_mut_unchecked(
+        &mut self,
+        x: usize,
+        y: usize,
+        value: T,
+    ) {
+        if let Some(mat) = &mut self.mat {
+            mat.set_mut_unchecked(x, y, value);
+        } else {
+            // allocate the matrix first
+            self.allocate();
+            if let Some(mat) = &mut self.mat {
+                mat.set_mut_unchecked(x, y, value);
+            }
+        }
     }
 }
 
