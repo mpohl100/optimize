@@ -13,7 +13,7 @@ pub struct CompositeMatrix<T: PersistableValue> {
 impl<T: PersistableValue> CompositeMatrix<T> {
     ///  Create a new ``CompositeMatrix``
     /// # Panics
-    /// Panics if set_mut_unchecked fails
+    /// Panics if ``set_mut_unchecked`` fails
     #[must_use]
     pub fn new(
         slice_x: usize,
@@ -50,9 +50,7 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         let matrix_y = y / self.slice_y;
         let within_x = x % self.slice_x;
         let within_y = y % self.slice_y;
-        let binding = self.matrices.mat();
-        let mut matrices = binding.lock().unwrap();
-        let persistable_matrix = matrices.get_mut_unchecked(matrix_x, matrix_y);
+        let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 }

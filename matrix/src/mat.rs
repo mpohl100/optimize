@@ -308,4 +308,13 @@ where
         let mat = safe_lock(&self.mat);
         mat.get_unchecked(x, y).clone()
     }
+
+    pub fn get_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        let mut mat = safe_lock(&self.mat);
+        mat.get_mut_unchecked(x, y).clone()
+    }
 }
