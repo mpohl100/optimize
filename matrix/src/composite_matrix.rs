@@ -54,19 +54,23 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 
-    pub fn get_slice_x(&self) -> usize {
+    #[must_use]
+    pub const fn get_slice_x(&self) -> usize {
         self.slice_x
     }
 
-    pub fn get_slice_y(&self) -> usize {
+    #[must_use]
+    pub const fn get_slice_y(&self) -> usize {
         self.slice_y
     }
 
-    pub fn rows(&self) -> usize {
+    #[must_use]
+    pub const fn rows(&self) -> usize {
         self.rows
     }
 
-    pub fn cols(&self) -> usize {
+    #[must_use]
+    pub const fn cols(&self) -> usize {
         self.cols
     }
 }
