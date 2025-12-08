@@ -1059,7 +1059,7 @@ impl PersistableValue for NumberEntry {
         Self: Sized,
     {
         let value = s.parse::<f64>()?;
-        Ok(NumberEntry(value))
+        Ok(Self(value))
     }
 }
 
@@ -1083,6 +1083,6 @@ impl PersistableValue for WeightEntry {
         let grad = parts[1].parse::<f64>()?;
         let m = parts[2].parse::<f64>()?;
         let v = parts[3].parse::<f64>()?;
-        Ok(WeightEntry(Weight { value, grad, m, v }))
+        Ok(Self(Weight { value, grad, m, v }))
     }
 }
