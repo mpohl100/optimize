@@ -55,6 +55,11 @@ impl<T: PersistableValue> CompositeMatrix<T> {
     }
 
     #[must_use]
+    pub const fn matrices(&self) -> &WrappedMatrix<PersistableMatrix<T>> {
+        &self.matrices
+    }
+
+    #[must_use]
     pub const fn get_slice_x(&self) -> usize {
         self.slice_x
     }

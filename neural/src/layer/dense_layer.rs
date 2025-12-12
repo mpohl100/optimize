@@ -1047,7 +1047,7 @@ mod tests {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct NumberEntry(f64);
+pub struct NumberEntry(pub f64);
 
 impl PersistableValue for NumberEntry {
     fn to_string_for_matrix(&self) -> String {
@@ -1064,7 +1064,7 @@ impl PersistableValue for NumberEntry {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct WeightEntry(Weight);
+pub struct WeightEntry(pub Weight);
 
 impl PersistableValue for WeightEntry {
     fn to_string_for_matrix(&self) -> String {
