@@ -59,6 +59,21 @@ impl<T: PersistableValue> PersistableMatrix<T> {
             }
         }
     }
+
+    #[must_use]
+    pub const fn mat(&self) -> Option<&WrappedMatrix<T>> {
+        self.mat.as_ref()
+    }
+
+    #[must_use]
+    pub const fn rows(&self) -> usize {
+        self.rows
+    }
+
+    #[must_use]
+    pub const fn cols(&self) -> usize {
+        self.cols
+    }
 }
 
 impl<T: PersistableValue> Drop for PersistableMatrix<T> {
