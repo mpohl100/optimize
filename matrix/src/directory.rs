@@ -51,4 +51,21 @@ impl Directory {
             Self::Internal(path) | Self::User(path) => std::fs::metadata(path).is_ok(),
         }
     }
+
+    #[must_use]
+    pub fn expand(
+        &self,
+        subdirectory: &str,
+    ) -> Self {
+        match self {
+            Self::Internal(path) => {
+                let new_path = format!("{}/{}", path, subdirectory);
+                Self::Internal(new_path)
+            },
+            Self::User(path) => {
+                let new_path = format!("{}/{}", path, subdirectory);
+                Self::User(new_path)
+            },
+        }
+    }
 }

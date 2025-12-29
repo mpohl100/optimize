@@ -7,6 +7,7 @@ use super::TrainableAllocatableLayer;
 use crate::layer::matrix_extensions::TrainableMatrixExtensions;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::Allocatable;
+use matrix::composite_matrix::CompositeMatrix;
 use matrix::directory::Directory;
 
 pub use matrix::mat::Matrix;
@@ -290,9 +291,11 @@ pub struct Bias {
 pub struct TrainableDenseLayer {
     rows: usize,
     cols: usize,
-    weights: Option<WrappedMatrix<Weight>>, // Weight matrix (output_size x input_size)
-    biases: Option<Vec<Bias>>,              // Bias vector (output_size)
-    input_cache: Option<Vec<f64>>,          // Cache input for use in backward pass
+    weights: Option<CompositeMatrix<WeightEntry>>, // Weight matrix (output_size x input_size)
+    weight_directory: Directory,
+    biases: Option<CompositeMatrix<BiasEntry>>, // Bias vector (output_size)
+    bias_directory: Directory,
+    input_cache: Option<Vec<f64>>, // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
     in_use: bool,
     layer_path: Directory,
@@ -308,19 +311,14 @@ impl TrainableDenseLayer {
         position_in_nn: usize,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = match model_directory {
-            Directory::User(path) => {
-                Directory::User(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-            Directory::Internal(path) => {
-                Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-        };
+        let layer_path = model_directory.clone().expand(&format!("layer_{position_in_nn}"));
         Self {
             rows: output_size,
             cols: input_size,
             weights: None,
+            weight_directory: layer_path.expand("weights"),
             biases: None,
+            bias_directory: layer_path.expand("biases"),
             input_cache: None,
             input_batch_cache: None,
             in_use: false,
@@ -1084,5 +1082,29 @@ impl PersistableValue for WeightEntry {
         let m = parts[2].parse::<f64>()?;
         let v = parts[3].parse::<f64>()?;
         Ok(Self(Weight { value, grad, m, v }))
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct BiasEntry(pub Bias);
+
+impl PersistableValue for BiasEntry {
+    fn to_string_for_matrix(&self) -> String {
+        format!("{} {} {} {}", self.0.value, self.0.grad, self.0.m, self.0.v)
+    }
+
+    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
+    where
+        Self: Sized,
+    {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() != 4 {
+            return Err("Invalid bias entry format".into());
+        }
+        let value = parts[0].parse::<f64>()?;
+        let grad = parts[1].parse::<f64>()?;
+        let m = parts[2].parse::<f64>()?;
+        let v = parts[3].parse::<f64>()?;
+        Ok(Self(Bias { value, grad, m, v }))
     }
 }

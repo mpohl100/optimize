@@ -18,7 +18,7 @@ pub trait PersistableValue: Default + Clone {
         Self: Sized;
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct PersistableMatrix<T: PersistableValue> {
     matrix_file_path: Directory,
     rows: usize,
