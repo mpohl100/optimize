@@ -2,6 +2,7 @@ use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use crate::persistable_matrix::{PersistableMatrix, PersistableValue};
 
+#[derive(Debug, Clone)]
 pub struct CompositeMatrix<T: PersistableValue> {
     slice_x: usize,
     slice_y: usize,
