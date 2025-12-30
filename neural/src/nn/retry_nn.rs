@@ -135,6 +135,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
         layer_type: LayerType::Dense {
             input_size: internal_layer.input_size(),
             output_size: internal_layer.output_size() + 1,
+            matrix_params: internal_layer.matrix_params().clone(),
         },
         activation: internal_layer.activation,
     };
@@ -148,6 +149,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
             layer_type: LayerType::Dense {
                 input_size: internal_layer.input_size() + 1,
                 output_size: internal_layer.output_size() + 1,
+                matrix_params: internal_layer.matrix_params().clone(),
             },
             activation: internal_layer.activation.clone(),
         };
@@ -596,6 +598,7 @@ impl Drop for TrainableRetryNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
@@ -608,11 +611,19 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],

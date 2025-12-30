@@ -6,6 +6,7 @@ use neural::training::training_params::TrainingParams;
 use neural::training::training_session::TrainingSession;
 
 use clap::Parser;
+use neural::layer::dense_layer::MatrixParams;
 use neural::utilities::util::{Utils, WrappedUtils};
 
 /// Command line arguments
@@ -65,7 +66,11 @@ impl Args {
             let output_size = data.labels[0].len();
             // create a shape with one dense layer and the sigmoid activation function
             let shape = NeuralNetworkShape::new(vec![LayerShape {
-                layer_type: LayerType::Dense { input_size, output_size },
+                layer_type: LayerType::Dense {
+                    input_size,
+                    output_size,
+                    matrix_params: MatrixParams { slice_rows: 1000, slice_cols: 1000 },
+                },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             }]);
             return TrainingParams::new(

@@ -2,12 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
 
+use crate::layer::dense_layer::MatrixParams;
+
 /// Enum representing the type of layer in a neural network.
 /// Each variant includes the input size and output size of the layer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
-    Dense { input_size: usize, output_size: usize },
+    Dense { input_size: usize, output_size: usize, matrix_params: MatrixParams },
 }
 
 /// Enum representing the type of activation function used in a layer.
@@ -101,6 +103,12 @@ impl LayerShape {
     #[must_use]
     pub fn layer_type(&self) -> LayerType {
         self.layer_type.clone()
+    }
+
+    pub fn matrix_params(&self) -> MatrixParams {
+        match self.layer_type {
+            LayerType::Dense { matrix_params, .. } => matrix_params.clone(),
+        }
     }
 
     /// Checks if the layer shape is valid.
@@ -279,11 +287,13 @@ impl NeuralNetworkShape {
 
         let merge_layer_input_size = self.layers.last().unwrap().output_size();
         let merge_layer_output_size = other.layers.first().unwrap().input_size();
+        let matrix_params = self.layers.last().unwrap().matrix_params();
 
         let merge_layer = LayerShape {
             layer_type: LayerType::Dense {
                 input_size: merge_layer_input_size,
                 output_size: merge_layer_output_size,
+                matrix_params: matrix_params.clone(),
             },
             activation: middle_activation_data,
         };
@@ -388,13 +398,21 @@ mod tests {
     #[test]
     fn test_layer_shape_validity() {
         let valid_layer = LayerShape {
-            layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
+            layer_type: LayerType::Dense {
+                input_size: 10,
+                output_size: 5,
+                matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+            },
             activation: ActivationData::new(ActivationType::ReLU),
         };
         assert!(valid_layer.is_valid());
 
         let invalid_layer = LayerShape {
-            layer_type: LayerType::Dense { input_size: 0, output_size: 5 },
+            layer_type: LayerType::Dense {
+                input_size: 0,
+                output_size: 5,
+                matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+            },
             activation: ActivationData::new(ActivationType::Sigmoid),
         };
         assert!(!invalid_layer.is_valid());
@@ -404,11 +422,19 @@ mod tests {
     fn test_neural_network_shape_validity() {
         let layers = vec![
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
+                layer_type: LayerType::Dense {
+                    input_size: 10,
+                    output_size: 5,
+                    matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 5, output_size: 3 },
+                layer_type: LayerType::Dense {
+                    input_size: 5,
+                    output_size: 3,
+                    matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ];
@@ -417,13 +443,18 @@ mod tests {
 
         let invalid_layers = vec![
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 10, output_size: 5 },
+                layer_type: LayerType::Dense {
+                    input_size: 10,
+                    output_size: 5,
+                    matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: 4, // Mismatch here
                     output_size: 3,
+                    matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
                 },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },

@@ -205,6 +205,7 @@ fn validate_params(params: &TrainingParams) -> Result<(), Box<dyn Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::nn::shape::NeuralNetworkShape;
     use crate::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
     use crate::training::data_importer::{DataImporter, SessionData};
@@ -242,19 +243,35 @@ mod tests {
         let nn_shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 64, output_size: 64 },
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new_softmax(2.0),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::Sigmoid),
                 },
             ],
