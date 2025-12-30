@@ -749,6 +749,7 @@ impl Drop for TrainableEitherNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape, LayerType},
         utilities::util::Utils,
@@ -761,18 +762,30 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],
             },
             NeuralNetworkShape {
                 layers: vec![LayerShape {
-                    layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                    layer_type: LayerType::Dense {
+                        input_size: 3,
+                        output_size: 3,
+                        matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                    },
                     activation: ActivationData::new_softmax(1.0),
                 }],
             },

@@ -76,6 +76,9 @@ impl<'a> NeuralNetworkMutater<'a> {
                         layer_type: LayerType::Dense {
                             input_size,
                             output_size: layer.output_size(),
+                            matrix_params: match &layer.layer_type {
+                                LayerType::Dense { matrix_params, .. } => *matrix_params,
+                            },
                         },
                         activation: layer.activation.clone(),
                     };
@@ -88,6 +91,9 @@ impl<'a> NeuralNetworkMutater<'a> {
                         layer_type: LayerType::Dense {
                             input_size: layer.input_size(),
                             output_size,
+                            matrix_params: match &layer.layer_type {
+                                LayerType::Dense { matrix_params, .. } => *matrix_params,
+                            },
                         },
                         activation: layer.activation.clone(),
                     };
@@ -99,6 +105,9 @@ impl<'a> NeuralNetworkMutater<'a> {
                         layer_type: LayerType::Dense {
                             input_size: mutated_shape.get_layer(position - 1).output_size(),
                             output_size: layer.output_size(),
+                            matrix_params: match &layer.layer_type {
+                                LayerType::Dense { matrix_params, .. } => *matrix_params,
+                            },
                         },
                         activation: layer.activation.clone(),
                     };
@@ -172,12 +181,24 @@ fn fetch_added_layers(
     }
 
     let first_layer = LayerShape {
-        layer_type: LayerType::Dense { input_size: begin_size, output_size: inner_size },
+        layer_type: LayerType::Dense {
+            input_size: begin_size,
+            output_size: inner_size,
+            matrix_params: match &layer.layer_type {
+                LayerType::Dense { matrix_params, .. } => *matrix_params,
+            },
+        },
         activation: activation.clone(),
     };
 
     let second_layer = LayerShape {
-        layer_type: LayerType::Dense { input_size: inner_size, output_size: end_size },
+        layer_type: LayerType::Dense {
+            input_size: inner_size,
+            output_size: end_size,
+            matrix_params: match &layer.layer_type {
+                LayerType::Dense { matrix_params, .. } => *matrix_params,
+            },
+        },
         activation,
     };
     vec![first_layer, second_layer]
@@ -187,6 +208,7 @@ fn fetch_added_layers(
 mod tests {
     use super::*;
     use crate::pheno::rng_wrapper::FakeRng;
+    use neural::layer::dense_layer::MatrixParams;
     use neural::nn::shape::LayerChangeType;
 
     // --------------------------------------------------------------------------------------------------------
@@ -202,7 +224,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -234,7 +260,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -266,7 +296,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -301,7 +335,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -333,7 +371,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -365,7 +407,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 1.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -400,7 +446,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -432,7 +482,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -464,7 +518,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 2.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -500,11 +558,19 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -545,11 +611,19 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -590,11 +664,19 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -636,7 +718,11 @@ mod tests {
         let mut rng = FakeRng::new(vec![2.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
-                layer_type: LayerType::Dense { input_size: 196, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 196,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             }],
         };
@@ -664,11 +750,19 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -693,11 +787,19 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -726,15 +828,27 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -767,15 +881,27 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],
@@ -808,15 +934,35 @@ mod tests {
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 196, output_size: 128 },
+                    layer_type: LayerType::Dense {
+                        input_size: 196,
+                        output_size: 128,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
                 LayerShape {
-                    layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                    layer_type: LayerType::Dense {
+                        input_size: 128,
+                        output_size: 64,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
+                    activation: ActivationData::new(ActivationType::ReLU),
+                },
+                LayerShape {
+                    layer_type: LayerType::Dense {
+                        input_size: 64,
+                        output_size: 10,
+                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                    },
                     activation: ActivationData::new(ActivationType::ReLU),
                 },
             ],

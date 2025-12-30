@@ -1,5 +1,6 @@
 use evol::evolution::{EvolutionOptions, LogLevel};
 use gen::neuralnet_gen::NeuralNetworkGenerator;
+use neural::layer::dense_layer::MatrixParams;
 use neural::nn::shape::NeuralNetworkShape;
 use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use neural::training::data_importer::{DataImporter, SessionData};
@@ -60,15 +61,27 @@ fn test_neural_network_generator() {
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 128,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 64,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 64,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],

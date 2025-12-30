@@ -64,6 +64,7 @@ impl ClassicNeuralNetwork {
                 layer_shape.output_size(),
                 network.model_directory.clone(),
                 i,
+                layer_shape.matrix_params().clone(),
             );
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
@@ -109,12 +110,13 @@ impl ClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size } => {
+                LayerType::Dense { input_size, output_size, matrix_params } => {
                     let layer = DenseLayer::new(
                         *input_size,
                         *output_size,
                         network.model_directory.clone(),
                         i,
+                        matrix_params.clone(),
                     );
                     WrappedLayer::new(Box::new(layer))
                 },
@@ -368,6 +370,7 @@ impl TrainableClassicNeuralNetwork {
                 layer_shape.output_size(),
                 network.model_directory.clone(),
                 i,
+                layer_shape.matrix_params().clone(),
             )));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -569,12 +572,13 @@ impl TrainableClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size } => {
+                LayerType::Dense { input_size, output_size, matrix_params } => {
                     let layer = TrainableDenseLayer::new(
                         *input_size,
                         *output_size,
                         network.model_directory.clone(),
                         i,
+                        matrix_params.clone(),
                     );
                     WrappedTrainableLayer::new(Box::new(layer))
                 },
@@ -987,6 +991,7 @@ impl Drop for TrainableClassicNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
@@ -1009,11 +1014,19 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::Sigmoid),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],
