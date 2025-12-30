@@ -7,6 +7,7 @@ use super::TrainableAllocatableLayer;
 use crate::layer::matrix_extensions::TrainableMatrixExtensions;
 use crate::utilities::util::WrappedUtils;
 use alloc::allocatable::Allocatable;
+use matrix::composite_matrix::CompositeMatrix;
 use matrix::directory::Directory;
 
 pub use matrix::mat::Matrix;
@@ -20,6 +21,8 @@ use num_traits::cast::NumCast;
 
 use fs2::FileExt;
 use rand::Rng;
+use serde::Deserialize;
+use serde::Serialize;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufRead;
@@ -27,14 +30,23 @@ use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
+pub struct MatrixParams {
+    pub slice_rows: usize,
+    pub slice_cols: usize,
+}
+
 #[derive(Debug, Clone)]
 pub struct DenseLayer {
     rows: usize,
     cols: usize,
+    weights_new: Option<CompositeMatrix<NumberEntry>>,
+    biases_new: Option<CompositeMatrix<NumberEntry>>,
     weights: Option<WrappedMatrix<f64>>,
     biases: Option<Vec<f64>>,
     in_use: bool,
     layer_path: Directory,
+    matrix_params: MatrixParams,
 }
 
 impl DenseLayer {
@@ -44,6 +56,7 @@ impl DenseLayer {
         output_size: usize,
         model_directory: Directory,
         position_in_nn: usize,
+        matrix_params: MatrixParams,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = match model_directory {
@@ -57,10 +70,13 @@ impl DenseLayer {
         Self {
             rows: output_size,
             cols: input_size,
+            weights_new: None,
+            biases_new: None,
             weights: None,
             biases: None,
             in_use: false,
             layer_path,
+            matrix_params,
         }
     }
 }
@@ -241,6 +257,7 @@ impl AllocatableLayer for DenseLayer {
             self.output_size(),
             Directory::Internal(model_directory),
             position_in_nn,
+            self.matrix_params.clone(),
         )) as Box<dyn AllocatableLayer + Send>;
         new_layer.copy_on_filesystem(self.layer_path.path());
         new_layer
@@ -292,10 +309,15 @@ pub struct TrainableDenseLayer {
     cols: usize,
     weights: Option<WrappedMatrix<Weight>>, // Weight matrix (output_size x input_size)
     biases: Option<Vec<Bias>>,              // Bias vector (output_size)
-    input_cache: Option<Vec<f64>>,          // Cache input for use in backward pass
+    weights_new: Option<CompositeMatrix<WeightEntry>>, // Weight matrix (output_size x input_size)
+    weight_directory: Directory,
+    biases_new: Option<CompositeMatrix<BiasEntry>>, // Bias vector (output_size)
+    bias_directory: Directory,
+    input_cache: Option<Vec<f64>>, // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
     in_use: bool,
     layer_path: Directory,
+    matrix_params: MatrixParams,
 }
 
 impl TrainableDenseLayer {
@@ -306,25 +328,24 @@ impl TrainableDenseLayer {
         output_size: usize,
         model_directory: Directory,
         position_in_nn: usize,
+        matrix_params: MatrixParams,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = match model_directory {
-            Directory::User(path) => {
-                Directory::User(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-            Directory::Internal(path) => {
-                Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-        };
+        let layer_path = model_directory.clone().expand(&format!("layer_{position_in_nn}"));
         Self {
             rows: output_size,
             cols: input_size,
+            weights_new: None,
+            biases_new: None,
             weights: None,
+            weight_directory: layer_path.expand("weights"),
             biases: None,
+            bias_directory: layer_path.expand("biases"),
             input_cache: None,
             input_batch_cache: None,
             in_use: false,
             layer_path,
+            matrix_params,
         }
     }
 
@@ -757,6 +778,7 @@ impl TrainableAllocatableLayer for TrainableDenseLayer {
             self.output_size(),
             Directory::Internal(model_directory),
             position_in_nn,
+            self.matrix_params.clone(),
         )) as Box<dyn TrainableAllocatableLayer + Send>;
         new_layer.copy_on_filesystem(self.layer_path.path());
         new_layer
@@ -1024,8 +1046,13 @@ mod tests {
     #[test]
     fn test_dense_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
-        let mut layer =
-            TrainableDenseLayer::new(3, 2, Directory::Internal("test_model_unit".to_string()), 0);
+        let mut layer = TrainableDenseLayer::new(
+            3,
+            2,
+            Directory::Internal("test_model_unit".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+        );
 
         let input = vec![1.0, 2.0, 3.0];
         layer.allocate();
@@ -1084,5 +1111,29 @@ impl PersistableValue for WeightEntry {
         let m = parts[2].parse::<f64>()?;
         let v = parts[3].parse::<f64>()?;
         Ok(Self(Weight { value, grad, m, v }))
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct BiasEntry(pub Bias);
+
+impl PersistableValue for BiasEntry {
+    fn to_string_for_matrix(&self) -> String {
+        format!("{} {} {} {}", self.0.value, self.0.grad, self.0.m, self.0.v)
+    }
+
+    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
+    where
+        Self: Sized,
+    {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() != 4 {
+            return Err("Invalid bias entry format".into());
+        }
+        let value = parts[0].parse::<f64>()?;
+        let grad = parts[1].parse::<f64>()?;
+        let m = parts[2].parse::<f64>()?;
+        let v = parts[3].parse::<f64>()?;
+        Ok(Self(Bias { value, grad, m, v }))
     }
 }
