@@ -8,7 +8,6 @@ use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 use crate::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
 use crate::utilities::util::WrappedUtils;
-use alloc::allocatable::WrappedAllocatableTrait;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -204,10 +203,7 @@ impl ClassicNeuralNetwork {
     ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.mark_for_use();
-            self.utils.allocate(layer);
             output = layer.forward(&output, self.utils.clone());
-            layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
         }
@@ -259,20 +255,6 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         self.model_directory.clone()
     }
 
-    /// Allocates the layers of the neural network.
-    fn allocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.allocate(layer);
-        }
-    }
-
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.deallocate(layer);
-        }
-    }
-
     fn set_internal(&mut self) {
         // set the model directory to internal
         self.model_directory = Directory::Internal(self.model_directory.path());
@@ -286,7 +268,8 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            new_layers.push(layer.duplicate(model_directory.clone(), i));
+            let new_layer = layer.clone();
+            new_layers.push(new_layer);
             layer.cleanup();
         }
         WrappedNeuralNetwork::new(Box::new(Self {
@@ -313,7 +296,6 @@ impl Drop for ClassicNeuralNetwork {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
             self.save_layout();
-            self.deallocate();
         }
         // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
@@ -490,10 +472,7 @@ impl TrainableClassicNeuralNetwork {
     ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.mark_for_use();
-            self.utils.allocate_trainable(layer);
             output = layer.forward(&output, self.utils.clone());
-            layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
         }
@@ -523,10 +502,7 @@ impl TrainableClassicNeuralNetwork {
             self.layers.iter_mut().rev().zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
-            layer.mark_for_use();
-            self.utils.allocate_trainable(layer);
             grad = layer.backward(&grad, self.utils.clone());
-            layer.free_from_use();
         }
     }
 
@@ -699,20 +675,6 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
-    }
-
-    /// Allocates the layers of the neural network.
-    fn allocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.allocate_trainable(layer);
-        }
-    }
-
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.deallocate_trainable(layer);
-        }
     }
 
     fn set_internal(&mut self) {
@@ -949,7 +911,8 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            new_layers.push(layer.duplicate(model_directory.clone(), i));
+            let new_layer = layer.clone();
+            new_layers.push(new_layer);
             layer.cleanup();
         }
         WrappedTrainableNeuralNetwork::new(Box::new(Self {
@@ -972,7 +935,6 @@ impl Drop for TrainableClassicNeuralNetwork {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
             self.save_layout();
-            self.deallocate();
         }
         // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
