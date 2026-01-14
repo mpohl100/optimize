@@ -74,6 +74,16 @@ impl<T: PersistableValue> PersistableMatrix<T> {
     pub const fn cols(&self) -> usize {
         self.cols
     }
+
+    /// Save the matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(mat) = &self.mat {
+            save(self.matrix_file_path.path(), mat)?;
+        }
+        Ok(())
+    }
 }
 
 impl<T: PersistableValue> Drop for PersistableMatrix<T> {

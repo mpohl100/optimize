@@ -1,4 +1,8 @@
+use crate::layer::dense_layer::BiasEntry;
+use crate::layer::dense_layer::NumberEntry;
+use crate::layer::dense_layer::WeightEntry;
 use crate::utilities::util::WrappedUtils;
+use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::mat::WrappedMatrix;
 use utils::safer::safe_lock;
 
@@ -64,10 +68,10 @@ pub trait Layer: std::fmt::Debug + DynClone {
     ) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
-    fn get_weights(&self) -> WrappedMatrix<f64>;
+    fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry>;
 
     /// Returns the biases of the layer.
-    fn get_biases(&self) -> Vec<f64>;
+    fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry>;
 
     /// Marks the layer as in use.
     fn cleanup(&self);
@@ -140,12 +144,12 @@ impl WrappedLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> Vec<f64> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
         safe_lock(&self.layer).get_biases()
     }
 }
@@ -276,12 +280,12 @@ impl WrappedTrainableLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightEntry> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> Vec<f64> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasEntry> {
         safe_lock(&self.layer).get_biases()
     }
 
