@@ -76,7 +76,6 @@ fn test_neural_network_breeding() {
         for child in children.iter().take(4) {
             parents.push(child.clone());
         }
-        parents[0].allocate();
     }
 
     // Remove model directory

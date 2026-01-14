@@ -2,11 +2,8 @@ use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::matrix_extensions::MatrixExtensions;
-use super::AllocatableLayer;
-use super::TrainableAllocatableLayer;
 use crate::layer::matrix_extensions::TrainableMatrixExtensions;
 use crate::utilities::util::WrappedUtils;
-use alloc::allocatable::Allocatable;
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::directory::Directory;
 
@@ -40,8 +37,8 @@ pub struct MatrixParams {
 pub struct DenseLayer {
     rows: usize,
     cols: usize,
-    weights_new: Option<CompositeMatrix<NumberEntry>>,
-    biases_new: Option<CompositeMatrix<NumberEntry>>,
+    weights_new: CompositeMatrix<NumberEntry>,
+    biases_new: CompositeMatrix<NumberEntry>,
     weights: Option<WrappedMatrix<f64>>,
     biases: Option<Vec<f64>>,
     in_use: bool,
@@ -67,11 +64,25 @@ impl DenseLayer {
                 Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
             },
         };
+        let weights = CompositeMatrix::new(
+            matrix_params.slice_rows,
+            matrix_params.slice_cols,
+            output_size,
+            input_size,
+            &layer_path.expand("weights"),
+        );
+        let biases = CompositeMatrix::new(
+            matrix_params.slice_rows,
+            1,
+            output_size,
+            1,
+            &layer_path.expand("biases"),
+        );
         Self {
             rows: output_size,
             cols: input_size,
-            weights_new: None,
-            biases_new: None,
+            weights_new: weights,
+            biases_new: biases,
             weights: None,
             biases: None,
             in_use: false,
@@ -81,105 +92,12 @@ impl DenseLayer {
     }
 }
 
-impl Drop for DenseLayer {
-    fn drop(&mut self) {
-        // Save the model to ensure that everything is on disk if it is a user_model_directory
-        if let Directory::User(dir) = &self.layer_path {
-            if std::fs::metadata(dir).is_ok() {
-                // Save the model to disk
-                self.deallocate();
-            }
-        }
-        // Remove the internal model directory from disk
-        if let Directory::Internal(dir) = &self.layer_path {
-            // check that dir is a file
-            let path = Path::new(dir);
-            // delete the file
-            if path.is_file() {
-                std::fs::remove_file(dir).expect("Failed to remove file");
-            }
-        }
-    }
-}
-
-impl Allocatable for DenseLayer {
-    fn allocate(&mut self) {
-        if self.is_allocated() {
-            return;
-        }
-        // if the layer_path does not exist, create a new matrix and store it
-        if self.layer_path.exists() {
-            // if the layer_path exists, read the matrix and store it
-            let (weights, biases) =
-                read(self.layer_path.path()).expect("Failed to read layer weights and biases");
-            if self.rows == weights.rows() && self.cols == weights.cols() {
-                self.rows = weights.rows();
-                self.cols = weights.cols();
-                self.weights = Some(weights);
-                self.biases = Some(biases);
-            } else {
-                self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-                self.biases = Some(vec![0.0; self.rows]);
-                save(
-                    self.layer_path.path(),
-                    self.weights.as_ref().unwrap(),
-                    self.biases.as_ref().unwrap(),
-                )
-                .expect("Failed to save layer weights and biases");
-            }
-        } else {
-            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-            self.biases = Some(vec![0.0; self.rows]);
-            save(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        }
-    }
-
-    fn deallocate(&mut self) {
-        if self.is_allocated() {
-            save(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        }
-        self.weights = None;
-        self.biases = None;
-    }
-
-    fn is_allocated(&self) -> bool {
-        self.weights.is_some() && self.biases.is_some()
-    }
-
-    fn get_size(&self) -> usize {
-        (self.rows * self.cols + self.rows) * std::mem::size_of::<Weight>()
-    }
-
-    fn mark_for_use(&mut self) {
-        self.in_use = true;
-    }
-
-    fn free_from_use(&mut self) {
-        self.in_use = false;
-    }
-
-    fn is_in_use(&self) -> bool {
-        self.in_use
-    }
-}
-
 impl Layer for DenseLayer {
     fn forward(
         &mut self,
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        assert!(self.is_allocated(), "Layer not allocated");
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
         let inputs = input.to_vec();
@@ -245,47 +163,6 @@ impl Layer for DenseLayer {
     }
 }
 
-impl AllocatableLayer for DenseLayer {
-    fn duplicate(
-        &mut self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Box<dyn AllocatableLayer + Send> {
-        self.deallocate();
-        let new_layer = Box::new(Self::new(
-            self.input_size(),
-            self.output_size(),
-            Directory::Internal(model_directory),
-            position_in_nn,
-            self.matrix_params.clone(),
-        )) as Box<dyn AllocatableLayer + Send>;
-        new_layer.copy_on_filesystem(self.layer_path.path());
-        new_layer
-    }
-
-    fn copy_on_filesystem(
-        &self,
-        layer_path: String,
-    ) {
-        // Copy the layer to the new directory
-        let new_layer_path = self.layer_path.clone();
-        let original_path = layer_path;
-        // Create the new directory if it doesn't exist
-        let new_layer_path_string = new_layer_path.path();
-        if !new_layer_path.exists() {
-            // create the parent directory if it does not exist
-            let p = Path::new(&new_layer_path_string);
-            let parent_dir = p.parent().unwrap();
-            std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
-        }
-        let p_orig = Path::new(&original_path);
-        if p_orig.is_file() {
-            // copy the file
-            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
-        }
-    }
-}
-
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Weight {
     pub value: f64,
@@ -309,9 +186,9 @@ pub struct TrainableDenseLayer {
     cols: usize,
     weights: Option<WrappedMatrix<Weight>>, // Weight matrix (output_size x input_size)
     biases: Option<Vec<Bias>>,              // Bias vector (output_size)
-    weights_new: Option<CompositeMatrix<WeightEntry>>, // Weight matrix (output_size x input_size)
+    weights_new: CompositeMatrix<WeightEntry>, // Weight matrix (output_size x input_size)
     weight_directory: Directory,
-    biases_new: Option<CompositeMatrix<BiasEntry>>, // Bias vector (output_size)
+    biases_new: CompositeMatrix<BiasEntry>, // Bias vector (output_size)
     bias_directory: Directory,
     input_cache: Option<Vec<f64>>, // Cache input for use in backward pass
     input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
@@ -332,11 +209,25 @@ impl TrainableDenseLayer {
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = model_directory.clone().expand(&format!("layer_{position_in_nn}"));
+        let weights = CompositeMatrix::new(
+            matrix_params.slice_rows,
+            matrix_params.slice_cols,
+            output_size,
+            input_size,
+            &layer_path.expand("weights"),
+        );
+        let biases = CompositeMatrix::new(
+            matrix_params.slice_rows,
+            1,
+            output_size,
+            1,
+            &layer_path.expand("biases"),
+        );
         Self {
             rows: output_size,
             cols: input_size,
-            weights_new: None,
-            biases_new: None,
+            weights_new: weights,
+            biases_new: biases,
             weights: None,
             weight_directory: layer_path.expand("weights"),
             biases: None,
@@ -363,102 +254,12 @@ impl TrainableDenseLayer {
     }
 }
 
-impl Drop for TrainableDenseLayer {
-    fn drop(&mut self) {
-        // Save the model to ensure that everything is on disk if it is a user_model_directory
-        if let Directory::User(dir) = &self.layer_path {
-            if std::fs::metadata(dir).is_ok() {
-                // Save the model to disk
-                self.deallocate();
-            }
-        }
-    }
-}
-
-impl Allocatable for TrainableDenseLayer {
-    fn allocate(&mut self) {
-        if self.is_allocated() {
-            return;
-        }
-        // if the layer_path does not exist, create a new matrix and store it
-        if self.layer_path.exists() {
-            // if the layer_path exists, read the matrix and store it
-            let (weights, biases) = read_weight(self.layer_path.path())
-                .expect("Failed to read layer weights and biases");
-            if self.rows == weights.rows() && self.cols == weights.cols() {
-                self.rows = weights.rows();
-                self.cols = weights.cols();
-                self.weights = Some(weights);
-                self.biases = Some(biases);
-            } else {
-                self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-                self.biases = Some(vec![Bias::default(); self.rows]);
-                self.initialize_weights();
-                save_weight(
-                    self.layer_path.path(),
-                    self.weights.as_ref().unwrap(),
-                    self.biases.as_ref().unwrap(),
-                )
-                .expect("Failed to save layer weights and biases");
-            }
-        } else {
-            self.weights = Some(WrappedMatrix::new(self.rows, self.cols));
-            self.biases = Some(vec![Bias::default(); self.rows]);
-            self.initialize_weights();
-            save_weight(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        }
-        self.input_cache = Some(Vec::new());
-        self.input_batch_cache = Some(Vec::new());
-    }
-
-    fn deallocate(&mut self) {
-        if self.is_allocated() {
-            save_weight(
-                self.layer_path.path(),
-                self.weights.as_ref().unwrap(),
-                self.biases.as_ref().unwrap(),
-            )
-            .expect("Failed to save layer weights and biases");
-        }
-        self.weights = None;
-        self.biases = None;
-        self.input_cache = None;
-        self.input_batch_cache = None;
-    }
-
-    fn is_allocated(&self) -> bool {
-        self.weights.is_some() && self.biases.is_some()
-    }
-
-    fn get_size(&self) -> usize {
-        (self.rows * self.cols + self.rows) * std::mem::size_of::<Weight>()
-    }
-
-    fn mark_for_use(&mut self) {
-        self.in_use = true;
-    }
-
-    fn free_from_use(&mut self) {
-        self.in_use = false;
-    }
-
-    fn is_in_use(&self) -> bool {
-        self.in_use
-    }
-}
-
 impl Layer for TrainableDenseLayer {
     fn forward(
         &mut self,
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        assert!(self.is_allocated(), "Layer not allocated");
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
         let weights = self.weights.as_ref().unwrap().clone();
         let biases = self.biases.as_ref().unwrap().clone();
@@ -487,20 +288,6 @@ impl Layer for TrainableDenseLayer {
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.is_allocated() {
-            // just copy the files
-            let original_path = self.layer_path.path();
-            // if the original path does not exist early return
-            if std::fs::metadata(original_path.clone()).is_err() {
-                return Ok(());
-            }
-            let file_path = Path::new(&path);
-            if file_path.is_file() && original_path != path {
-                // copy the file
-                std::fs::copy(original_path, path).expect("Failed to copy file in save layer");
-            }
-            return Ok(());
-        }
         // assign weights and biases to a matrix and vector
         let weights = WrappedMatrix::new(
             self.weights.as_ref().unwrap().rows(),
@@ -530,7 +317,6 @@ impl Layer for TrainableDenseLayer {
         let (weights, biases) = read(path)?;
         self.rows = weights.rows();
         self.cols = weights.cols();
-        self.allocate();
         // assign all weights and biases
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
@@ -620,7 +406,6 @@ impl TrainableLayer for TrainableDenseLayer {
         learning_rate: f64,
         utils: WrappedUtils,
     ) {
-        assert!(self.is_allocated(), "Layer not allocated");
         let weights = self.weights.as_ref().unwrap().clone();
         // Update weight
         let _ = utils.execute(move || {
@@ -707,20 +492,6 @@ impl TrainableLayer for TrainableDenseLayer {
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        if !self.is_allocated() {
-            // just copy the files
-            let original_path = self.layer_path.path();
-            // if the original path does not exist early return
-            if std::fs::metadata(original_path.clone()).is_err() {
-                return Ok(());
-            }
-            let file_path = Path::new(&path);
-            if file_path.is_file() && original_path != path {
-                std::fs::copy(original_path, path)
-                    .expect("Failed to copy file in save layer weight");
-            }
-            return Ok(());
-        }
         // assign weights and biases to a matrix and vector
         let weights = WrappedMatrix::new(
             self.weights.as_ref().unwrap().rows(),
@@ -746,7 +517,6 @@ impl TrainableLayer for TrainableDenseLayer {
         let (weights, biases) = read_weight(path)?;
         self.rows = weights.rows();
         self.cols = weights.cols();
-        self.allocate();
         // assign all weights and biases
         for i in 0..weights.rows() {
             for j in 0..weights.cols() {
@@ -763,48 +533,6 @@ impl TrainableLayer for TrainableDenseLayer {
             }
         }
         Ok(())
-    }
-}
-
-impl TrainableAllocatableLayer for TrainableDenseLayer {
-    fn duplicate(
-        &mut self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Box<dyn TrainableAllocatableLayer + Send> {
-        self.deallocate();
-        let new_layer = Box::new(Self::new(
-            self.input_size(),
-            self.output_size(),
-            Directory::Internal(model_directory),
-            position_in_nn,
-            self.matrix_params.clone(),
-        )) as Box<dyn TrainableAllocatableLayer + Send>;
-        new_layer.copy_on_filesystem(self.layer_path.path());
-        new_layer
-    }
-
-    fn copy_on_filesystem(
-        &self,
-        layer_path: String,
-    ) {
-        // Copy the layer to the new directory
-        let new_layer_path = self.layer_path.clone();
-        let original_path = layer_path;
-        // Create the new directory if it doesn't exist
-        let new_layer_path_string = new_layer_path.path();
-        if !new_layer_path.exists() {
-            // create the parent directory if it does not exist
-            let p = Path::new(&new_layer_path_string);
-            let parent_dir = p.parent().unwrap();
-            std::fs::create_dir_all(parent_dir).expect("Failed to create directory");
-        }
-        // Copy the file of the original path to the new path on the filesystem
-        let p_orig = Path::new(&original_path);
-        if p_orig.is_file() {
-            // copy the file
-            std::fs::copy(original_path, new_layer_path.path()).expect("Failed to copy layer file");
-        }
     }
 }
 
@@ -1055,10 +783,7 @@ mod tests {
         );
 
         let input = vec![1.0, 2.0, 3.0];
-        layer.allocate();
-        layer.mark_for_use();
         let output = layer.forward(&input, utils.clone());
-        layer.free_from_use();
 
         assert_eq!(output.len(), 2);
 

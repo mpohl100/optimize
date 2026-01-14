@@ -217,15 +217,12 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
 
     let mut ordinary_model =
         ClassicNeuralNetwork::from_disk(expected_model_path, utils.clone()).unwrap();
-    ordinary_model.allocate();
     // Act
     ordinary_model.save(new_model_directory.clone()).expect("Failed to save model");
 
     let expected_new_model_path = format!("{workspace}/{new_model_directory}");
     let mut trainable_ordinary_model =
         ClassicNeuralNetwork::from_disk(expected_new_model_path, utils.clone()).unwrap();
-
-    trainable_ordinary_model.allocate();
 
     trainable_ordinary_model
         .save(new_model_directory.clone())
