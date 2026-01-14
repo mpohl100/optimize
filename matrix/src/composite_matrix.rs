@@ -2,6 +2,8 @@ use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use crate::persistable_matrix::{PersistableMatrix, PersistableValue};
 
+use utils::safer::safe_lock;
+
 #[derive(Debug, Clone)]
 pub struct CompositeMatrix<T: PersistableValue> {
     slice_x: usize,
@@ -78,5 +80,48 @@ impl<T: PersistableValue> CompositeMatrix<T> {
     #[must_use]
     pub const fn cols(&self) -> usize {
         self.cols
+    }
+
+    /// Save the composite matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        for i in 0..(self.rows / self.slice_x) {
+            for j in 0..(self.cols / self.slice_y) {
+                let persistable_matrix = self.matrices.get_unchecked(i, j);
+                persistable_matrix.save()?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WrappedCompositeMatrix<T: PersistableValue> {
+    cm: std::sync::Arc<std::sync::Mutex<CompositeMatrix<T>>>,
+}
+
+impl<T: PersistableValue> WrappedCompositeMatrix<T> {
+    #[must_use]
+    pub fn new(cm: CompositeMatrix<T>) -> Self {
+        Self { cm: std::sync::Arc::new(std::sync::Mutex::new(cm)) }
+    }
+
+    pub fn set_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+        value: T,
+    ) {
+        let cm = safe_lock(&self.cm);
+        cm.set_mut_unchecked(x, y, value);
+    }
+
+    /// Save the composite matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let cm = safe_lock(&self.cm);
+        cm.save()
     }
 }

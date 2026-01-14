@@ -312,8 +312,6 @@ impl DenseLayer {
     
     pub fn forward(&self, input: &Matrix<f64>) -> Result<Matrix<f64>, NeuralNetworkError>
     pub fn backward(&mut self, input: &Matrix<f64>, grad_output: &Matrix<f64>) -> Result<Matrix<f64>, NeuralNetworkError>
-    pub fn get_weights(&self) -> &Matrix<f64>
-    pub fn get_bias(&self) -> &Vector<f64>
     pub fn update_weights(&mut self, learning_rate: f64)
 }
 ```
