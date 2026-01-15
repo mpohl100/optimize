@@ -43,6 +43,23 @@ impl<T: PersistableValue> PersistableMatrix<T> {
         Self { matrix_file_path: matrix_path, rows, cols, mat: None, in_use: false }
     }
 
+    /// # Panics
+    /// Panics if the matrix is not allocated.
+    /// Returns the value at the specified (x, y) position.
+    #[must_use]
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        self.mat.as_ref().map_or_else(
+            || {
+                panic!("Matrix is not allocated");
+            },
+            |mat| mat.get_unchecked(x, y),
+        )
+    }
+
     pub fn set_mut_unchecked(
         &mut self,
         x: usize,

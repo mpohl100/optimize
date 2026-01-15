@@ -2,7 +2,9 @@ use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::matrix_extensions::MatrixExtensions;
-use crate::layer::matrix_extensions::TrainableMatrixExtensions;
+use crate::layer::matrix_extensions::MatrixExtensionsComposite;
+use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
+use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
 use crate::utilities::util::WrappedUtils;
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::composite_matrix::WrappedCompositeMatrix;
@@ -200,20 +202,20 @@ impl TrainableDenseLayer {
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = model_directory.clone().expand(&format!("layer_{position_in_nn}"));
-        let weights = CompositeMatrix::new(
+        let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
             output_size,
             input_size,
             &layer_path.expand("weights"),
-        );
-        let biases = CompositeMatrix::new(
+        ));
+        let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             1,
             output_size,
             1,
             &layer_path.expand("biases"),
-        );
+        ));
         Self {
             rows: output_size,
             cols: input_size,
@@ -250,8 +252,8 @@ impl Layer for TrainableDenseLayer {
         utils: WrappedUtils,
     ) -> Vec<f64> {
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
-        let weights = self.weights_new.clone();
-        let biases = self.biases_new.clone();
+        let weights = self.weights_new;
+        let biases = self.biases_new;
         let inputs = input.to_vec();
         utils.execute(move || weights.forward(&inputs, &biases))
     }
@@ -395,16 +397,18 @@ impl TrainableLayer for TrainableDenseLayer {
 
         let biases = other.get_biases();
 
-        for i in 0..self.weights.as_ref().unwrap().rows() {
-            for j in 0..self.weights.as_ref().unwrap().cols() {
+        for i in 0..self.weights_new.rows() {
+            for j in 0..self.weights_new.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    let w = Weight { value: v, grad: 0.0, m: 0.0, v: 0.0 };
-                    self.weights.as_mut().unwrap().set_mut_unchecked(i, j, w);
+                    let w = Weight { value: v.0.value, grad: 0.0, m: 0.0, v: 0.0 };
+                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(w));
                 }
             }
-            if i < biases.len() {
-                self.biases.as_mut().unwrap()[i].value = biases[i];
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                let bias = Bias { value: b.0.value, grad: 0.0, m: 0.0, v: 0.0 };
+                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(bias));
             }
         }
     }
@@ -418,80 +422,34 @@ impl TrainableLayer for TrainableDenseLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        let weights = self.weights.as_ref().unwrap().clone();
+        let weights = self.weights_new;
         // Update weights
         let _ = utils.execute(move || {
             weights.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             0
         });
 
+        let biases = self.biases_new;
         // Update biases
-        for i in 0..self.biases.as_ref().unwrap().len() {
-            let grad = self.biases.as_ref().unwrap()[i].grad;
-
-            // Update first and second moments
-            self.biases.as_mut().unwrap()[i].m =
-                beta1.mul_add(self.biases.as_ref().unwrap()[i].m, (1.0 - beta1) * grad);
-            self.biases.as_mut().unwrap()[i].v =
-                beta2.mul_add(self.biases.as_ref().unwrap()[i].v, (1.0 - beta2) * grad.powi(2));
-
-            // Bias correction
-            let t_i: i32 = NumCast::from(t).expect("Failed to convert t to i32");
-            let m_hat = self.biases.as_ref().unwrap()[i].m / (1.0 - beta1.powi(t_i));
-            let v_hat = self.biases.as_ref().unwrap()[i].v / (1.0 - beta2.powi(t_i));
-
-            // Adjusted learning rate
-            let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-
-            // Update biases
-            self.biases.as_mut().unwrap()[i].value -= adjusted_learning_rate * m_hat;
-        }
+        let _ = utils.execute(move || {
+            biases.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+            0
+        });
     }
 
     fn save_weight(
         &self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        // assign weights and biases to a matrix and vector
-        let weights = WrappedMatrix::new(
-            self.weights.as_ref().unwrap().rows(),
-            self.weights.as_ref().unwrap().cols(),
-        );
-        let mut biases = vec![Bias::default(); self.biases.as_ref().unwrap().len()];
-        for i in 0..self.weights.as_ref().unwrap().rows() {
-            for j in 0..self.weights.as_ref().unwrap().cols() {
-                weights.set_mut_unchecked(i, j, self.weights.as_ref().unwrap().get_unchecked(i, j));
-            }
-        }
-        for (i, bias) in self.biases.as_ref().unwrap().iter().enumerate() {
-            biases[i] = *bias;
-        }
-        save_weight(path, &weights, &biases)
+        self.weights_new.save()?;
+        self.biases_new.save()?;
+        Ok(())
     }
 
     fn read_weight(
         &mut self,
         path: String,
     ) -> Result<(), Box<dyn Error>> {
-        // Read weights and biases from a file at the specified path
-        let (weights, biases) = read_weight(path)?;
-        self.rows = weights.rows();
-        self.cols = weights.cols();
-        // assign all weights and biases
-        for i in 0..weights.rows() {
-            for j in 0..weights.cols() {
-                if i < weights.rows() && j < weights.cols() {
-                    self.weights.as_mut().unwrap().set_mut_unchecked(
-                        i,
-                        j,
-                        weights.get_unchecked(i, j),
-                    );
-                }
-            }
-            if i < biases.len() {
-                self.biases.as_mut().unwrap()[i] = biases[i];
-            }
-        }
         Ok(())
     }
 }
