@@ -6,17 +6,21 @@ use super::dense_layer::WeightEntry;
 use alloc::allocatable::Allocatable;
 
 use matrix::composite_matrix::CompositeMatrix;
+use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::mat::WrappedMatrix;
 
+use matrix::persistable_matrix::PersistableValue;
 use rayon::iter::ParallelIterator;
 
 use num_traits::cast::NumCast;
+
+use utils::safer::safe_lock;
 
 pub trait MatrixExtensions<T: Default + Clone> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &WrappedMatrix<T>,
     ) -> Vec<f64>;
 }
 
@@ -24,15 +28,16 @@ impl MatrixExtensions<f64> for WrappedMatrix<f64> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &WrappedMatrix<f64>,
     ) -> Vec<f64> {
         self.mat()
             .lock()
             .unwrap()
             .par_indexed_iter()
             .map(|(row_idx, weights_row)| {
-                weights_row.iter().zip(inputs.iter()).map(|(&w, &x)| w * x).sum::<f64>()
-                    + biases[row_idx] // Use the bias corresponding to the row index
+                let value = weights_row.iter().zip(inputs.iter()).map(|(w, &x)| w * x).sum::<f64>()
+                    + *biases.mat().lock().unwrap().get_mut_unchecked(row_idx, 0); // Use the bias corresponding to the row index
+                value
             })
             .collect::<Vec<f64>>()
     }
@@ -42,7 +47,7 @@ impl MatrixExtensions<Weight> for WrappedMatrix<Weight> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &WrappedMatrix<Weight>,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -51,7 +56,7 @@ impl MatrixExtensions<Weight> for WrappedMatrix<Weight> {
             .map(|(row_idx, weights_row)| {
                 let value =
                     weights_row.iter().zip(inputs.iter()).map(|(w, &x)| w.value * x).sum::<f64>()
-                        + biases[row_idx]; // Use the bias corresponding to the row index
+                        + biases.mat().lock().unwrap().get_mut_unchecked(row_idx, 0).value; // Use the bias corresponding to the row index
                 value
             })
             .collect::<Vec<f64>>()
@@ -156,7 +161,7 @@ impl MatrixExtensions<NumberEntry> for WrappedMatrix<NumberEntry> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &WrappedMatrix<NumberEntry>,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -164,7 +169,8 @@ impl MatrixExtensions<NumberEntry> for WrappedMatrix<NumberEntry> {
             .par_indexed_iter()
             .map(|(row_idx, weights_row)| {
                 weights_row.iter().zip(inputs.iter()).map(|(w, x)| w.0 * x).sum::<f64>()
-                    + biases[row_idx] // Use the bias corresponding to the row index
+                    + biases.mat().lock().unwrap().get_mut_unchecked(row_idx, 0).0
+                // Use the bias corresponding to the row index
             })
             .collect::<Vec<f64>>()
     }
@@ -174,7 +180,7 @@ impl MatrixExtensions<WeightEntry> for WrappedMatrix<WeightEntry> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &WrappedMatrix<WeightEntry>,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -183,7 +189,7 @@ impl MatrixExtensions<WeightEntry> for WrappedMatrix<WeightEntry> {
             .map(|(row_idx, weights_row)| {
                 let value =
                     weights_row.iter().zip(inputs.iter()).map(|(w, &x)| w.0.value * x).sum::<f64>()
-                        + biases[row_idx]; // Use the bias corresponding to the row index
+                        + biases.mat().lock().unwrap().get_mut_unchecked(row_idx, 0).0.value; // Use the bias corresponding to the row index
                 value
             })
             .collect::<Vec<f64>>()
@@ -259,19 +265,29 @@ impl TrainableMatrixExtensions<WeightEntry> for WrappedMatrix<WeightEntry> {
     }
 }
 
-impl MatrixExtensions<NumberEntry> for CompositeMatrix<NumberEntry> {
+pub trait MatrixExtensionsComposite<T: Default + Clone + PersistableValue> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &CompositeMatrix<T>,
+    ) -> Vec<f64>;
+}
+
+impl MatrixExtensionsComposite<NumberEntry> for CompositeMatrix<NumberEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &CompositeMatrix<NumberEntry>,
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
+                let mut b = biases.matrices().get_unchecked(i, j);
+                b.allocate();
                 let local_outputs = matrix.mat().unwrap().forward(
                     &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    &biases[i * self.get_slice_x()..(i + 1) * self.get_slice_x()],
+                    &b.mat().unwrap(),
                 );
                 for (k, &val) in local_outputs.iter().enumerate() {
                     outputs[i * self.get_slice_x() + k] += val;
@@ -282,19 +298,21 @@ impl MatrixExtensions<NumberEntry> for CompositeMatrix<NumberEntry> {
     }
 }
 
-impl MatrixExtensions<WeightEntry> for CompositeMatrix<WeightEntry> {
+impl MatrixExtensionsComposite<WeightEntry> for CompositeMatrix<WeightEntry> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &[f64],
+        biases: &CompositeMatrix<WeightEntry>,
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
+                let mut b = biases.matrices().get_unchecked(i, j);
+                b.allocate();
                 let local_outputs = matrix.mat().unwrap().forward(
                     &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    &biases[i * self.get_slice_x()..(i + 1) * self.get_slice_x()],
+                    &b.mat().unwrap(),
                 );
                 for (k, &val) in local_outputs.iter().enumerate() {
                     outputs[i * self.get_slice_x() + k] += val;
@@ -305,7 +323,34 @@ impl MatrixExtensions<WeightEntry> for CompositeMatrix<WeightEntry> {
     }
 }
 
-impl TrainableMatrixExtensions<WeightEntry> for CompositeMatrix<WeightEntry> {
+pub trait TrainableMatrixExtensionsComposite<T: Default + Clone + PersistableValue>:
+    MatrixExtensionsComposite<T>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    );
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64;
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    );
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    );
+}
+
+impl TrainableMatrixExtensionsComposite<WeightEntry> for CompositeMatrix<WeightEntry> {
     fn backward_calculate_gradients(
         &self,
         d_out_vec: &[f64],
@@ -368,5 +413,98 @@ impl TrainableMatrixExtensions<WeightEntry> for CompositeMatrix<WeightEntry> {
                 matrix.mat().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             }
         });
+    }
+}
+
+pub trait MatrixExtensionsWrappedComposite<T: Default + Clone + PersistableValue> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &WrappedCompositeMatrix<T>,
+    ) -> Vec<f64>;
+}
+
+impl MatrixExtensionsWrappedComposite<NumberEntry> for WrappedCompositeMatrix<NumberEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &WrappedCompositeMatrix<NumberEntry>,
+    ) -> Vec<f64> {
+        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+    }
+}
+
+pub trait TrainableMatrixExtensionsWrappedComposite<T: Default + Clone + PersistableValue>:
+    MatrixExtensionsWrappedComposite<T>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    );
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64;
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    );
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    );
+}
+
+impl MatrixExtensionsWrappedComposite<WeightEntry> for WrappedCompositeMatrix<WeightEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &WrappedCompositeMatrix<WeightEntry>,
+    ) -> Vec<f64> {
+        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+    }
+}
+
+impl TrainableMatrixExtensionsWrappedComposite<WeightEntry>
+    for WrappedCompositeMatrix<WeightEntry>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    ) {
+        self.mat().lock().unwrap().backward_calculate_gradients(d_out_vec, input_cache);
+    }
+
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64 {
+        self.mat().lock().unwrap().backward_calculate_weights_sec(j, d_out_vec_sec)
+    }
+
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().update_weights(learning_rate);
+    }
+
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
     }
 }

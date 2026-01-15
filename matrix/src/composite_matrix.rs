@@ -4,6 +4,8 @@ use crate::persistable_matrix::{PersistableMatrix, PersistableValue};
 
 use utils::safer::safe_lock;
 
+use std::sync::{Arc, Mutex};
+
 #[derive(Debug, Clone)]
 pub struct CompositeMatrix<T: PersistableValue> {
     slice_x: usize,
@@ -107,6 +109,20 @@ impl<T: PersistableValue> WrappedCompositeMatrix<T> {
         Self { cm: std::sync::Arc::new(std::sync::Mutex::new(cm)) }
     }
 
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        let cm = safe_lock(&self.cm);
+        let matrix_x = x / cm.get_slice_x();
+        let matrix_y = y / cm.get_slice_y();
+        let within_x = x % cm.get_slice_x();
+        let within_y = y % cm.get_slice_y();
+        let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
+        persistable_matrix.get_unchecked(within_x, within_y)
+    }
+
     pub fn set_mut_unchecked(
         &self,
         x: usize,
@@ -123,5 +139,22 @@ impl<T: PersistableValue> WrappedCompositeMatrix<T> {
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         let cm = safe_lock(&self.cm);
         cm.save()
+    }
+
+    #[must_use]
+    pub fn mat(&self) -> Arc<Mutex<CompositeMatrix<T>>> {
+        self.cm.clone()
+    }
+
+    #[must_use]
+    pub fn rows(&self) -> usize {
+        let cm = safe_lock(&self.cm);
+        cm.rows()
+    }
+
+    #[must_use]
+    pub fn cols(&self) -> usize {
+        let cm = safe_lock(&self.cm);
+        cm.cols()
     }
 }
