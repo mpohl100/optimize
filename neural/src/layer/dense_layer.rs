@@ -2,6 +2,7 @@ use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
 use super::matrix_extensions::MatrixExtensions;
+use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::matrix_extensions::MatrixExtensionsComposite;
 use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
 use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
@@ -153,6 +154,46 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
                 if path.is_file() {
                     std::fs::remove_file(dir).expect("Failed to remove file");
                 }
+            }
+        }
+    }
+
+    fn assign_weights(
+        &mut self,
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights_new.rows() {
+            for j in 0..self.weights_new.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    self.weights_new.set_mut_unchecked(i, j, NumberEntry(v.0));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                self.biases_new.set_mut_unchecked(i, 0, NumberEntry(b.0));
+            }
+        }
+    }
+
+    fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights_new.rows() {
+            for j in 0..self.weights_new.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    self.weights_new.set_mut_unchecked(i, j, NumberEntry(v.0.value));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                self.biases_new.set_mut_unchecked(i, 0, NumberEntry(b.0.value));
             }
         }
     }
@@ -314,6 +355,48 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
             }
         }
     }
+
+    fn assign_weights(
+        &mut self,
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights_new.rows() {
+            for j in 0..self.weights_new.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    let w = Weight { value: v.0, grad: 0.0, m: 0.0, v: 0.0 };
+                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(w));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                let bias = Bias { value: b.0, grad: 0.0, m: 0.0, v: 0.0 };
+                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(bias));
+            }
+        }
+    }
+
+    fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights_new.rows() {
+            for j in 0..self.weights_new.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(v.0));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(b.0));
+            }
+        }
+    }
 }
 
 impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
@@ -376,30 +459,6 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         _grad_output: &[f64],
     ) -> Vec<f64> {
         unimplemented!()
-    }
-
-    fn assign_weights(
-        &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
-    ) {
-        let weights = other.get_weights();
-
-        let biases = other.get_biases();
-
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
-                if i < weights.rows() && j < weights.cols() {
-                    let v = weights.get_unchecked(i, j);
-                    let w = Weight { value: v.0.value, grad: 0.0, m: 0.0, v: 0.0 };
-                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(w));
-                }
-            }
-            if i < biases.rows() {
-                let b = biases.get_unchecked(i, 0);
-                let bias = Bias { value: b.0.value, grad: 0.0, m: 0.0, v: 0.0 };
-                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(bias));
-            }
-        }
     }
 
     fn adjust_adam(

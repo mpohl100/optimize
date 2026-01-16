@@ -1,21 +1,18 @@
 use crate::layer::dense_layer::BiasEntry;
 use crate::layer::dense_layer::NumberEntry;
-use crate::layer::dense_layer::Weight;
 use crate::layer::dense_layer::WeightEntry;
 use crate::utilities::util::WrappedUtils;
 use matrix::composite_matrix::WrappedCompositeMatrix;
-use matrix::mat::WrappedMatrix;
 use matrix::persistable_matrix::PersistableValue;
 use utils::safer::safe_lock;
 
-use dyn_clone::DynClone;
 use std::error::Error;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
 pub trait Layer<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>:
-    Debug + DynClone
+    Debug
 {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
@@ -80,10 +77,19 @@ pub trait Layer<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone 
 
     /// Marks the layer as in use.
     fn cleanup(&self);
-}
 
-dyn_clone::clone_trait_object!(Layer<NumberEntry, NumberEntry>);
-dyn_clone::clone_trait_object!(Layer<WeightEntry, BiasEntry>);
+    /// Assigns the weight of the input other layer
+    fn assign_weights(
+        &mut self,
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    );
+
+    /// Assigns the weight of the input other layer
+    fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    );
+}
 
 #[derive(Debug, Clone)]
 pub struct WrappedLayer<
@@ -163,6 +169,20 @@ impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + Persistab
     pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasT> {
         safe_lock(&self.layer).get_biases()
     }
+
+    pub fn assign_weights(
+        &mut self,
+        other: &WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        safe_lock(&self.layer).assign_weights(other.clone());
+    }
+
+    pub fn assign_trainable_weights(
+        &mut self,
+        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        safe_lock(&self.layer).assign_trainable_weights(other.clone());
+    }
 }
 pub trait TrainableLayer<
     WeightT: Debug + Clone + PersistableValue,
@@ -202,12 +222,6 @@ pub trait TrainableLayer<
         utils: WrappedUtils,
     );
 
-    /// Assigns the weight of the input other layer
-    fn assign_weights(
-        &mut self,
-        other: WrappedTrainableLayer<WeightT, BiasT>,
-    );
-
     /// Adjusts the weights according to the Adam optimizer.
     fn adjust_adam(
         &mut self,
@@ -239,9 +253,6 @@ pub trait TrainableLayer<
         path: String,
     ) -> Result<(), Box<dyn Error>>;
 }
-
-dyn_clone::clone_trait_object!(TrainableLayer<NumberEntry, NumberEntry>);
-dyn_clone::clone_trait_object!(TrainableLayer<WeightEntry, BiasEntry>);
 
 #[derive(Debug, Clone)]
 pub struct WrappedTrainableLayer<
@@ -333,13 +344,6 @@ impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + Persistab
         safe_lock(&self.layer).update_weights(learning_rate, utils);
     }
 
-    pub fn assign_weights(
-        &mut self,
-        other: Self,
-    ) {
-        safe_lock(&self.layer).assign_weights(other);
-    }
-
     pub fn adjust_adam(
         &mut self,
         t: usize,
@@ -374,5 +378,19 @@ impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + Persistab
         path: String,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).read_weight(path)
+    }
+
+    pub fn assign_weights(
+        &mut self,
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        safe_lock(&self.layer).assign_weights(other.clone());
+    }
+
+    pub fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        safe_lock(&self.layer).assign_trainable_weights(other.clone());
     }
 }
