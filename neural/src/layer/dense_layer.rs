@@ -91,14 +91,14 @@ impl DenseLayer {
     }
 }
 
-impl Layer for DenseLayer {
+impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     fn forward(
         &mut self,
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        let weights = self.weights_new;
-        let biases = self.biases_new;
+        let weights = self.weights_new.clone();
+        let biases = self.biases_new.clone();
         let inputs = input.to_vec();
         utils.execute(move || weights.forward(&inputs, &biases))
     }
@@ -245,15 +245,15 @@ impl TrainableDenseLayer {
     }
 }
 
-impl Layer for TrainableDenseLayer {
+impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     fn forward(
         &mut self,
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
-        let weights = self.weights_new;
-        let biases = self.biases_new;
+        let weights = self.weights_new.clone();
+        let biases = self.biases_new.clone();
         let inputs = input.to_vec();
         utils.execute(move || weights.forward(&inputs, &biases))
     }
@@ -292,25 +292,12 @@ impl Layer for TrainableDenseLayer {
         Ok(())
     }
 
-    fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
-        WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_rows,
-            self.matrix_params.slice_cols,
-            self.rows,
-            self.cols,
-            &self.layer_path.expand("weights"),
-        ))
+    fn get_weights(&self) -> WrappedCompositeMatrix<WeightEntry> {
+        self.weights_new.clone()
     }
 
-    fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
-        // self.biases_new.clone()
-        WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_rows,
-            1,
-            self.rows,
-            1,
-            &self.layer_path.expand("biases"),
-        ))
+    fn get_biases(&self) -> WrappedCompositeMatrix<BiasEntry> {
+        self.biases_new.clone()
     }
 
     fn cleanup(&self) {
@@ -329,7 +316,7 @@ impl Layer for TrainableDenseLayer {
     }
 }
 
-impl TrainableLayer for TrainableDenseLayer {
+impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     /// Backward pass for the dense layer
     ///
     /// - `d_out`: Gradient of the loss with respect to the output of this layer
@@ -376,9 +363,11 @@ impl TrainableLayer for TrainableDenseLayer {
         });
 
         // Update biases
-        for bias in self.biases_new.as_mut().unwrap().iter_mut() {
-            bias.value -= learning_rate * bias.grad;
-        }
+        let biases = self.biases_new.clone();
+        let _ = utils.execute(move || {
+            biases.update_weights(learning_rate);
+            0
+        });
     }
 
     #[allow(clippy::needless_range_loop)]
@@ -391,7 +380,7 @@ impl TrainableLayer for TrainableDenseLayer {
 
     fn assign_weights(
         &mut self,
-        other: WrappedTrainableLayer,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
     ) {
         let weights = other.get_weights();
 
@@ -422,14 +411,14 @@ impl TrainableLayer for TrainableDenseLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        let weights = self.weights_new;
+        let weights = self.weights_new.clone();
         // Update weights
         let _ = utils.execute(move || {
             weights.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             0
         });
 
-        let biases = self.biases_new;
+        let biases = self.biases_new.clone();
         // Update biases
         let _ = utils.execute(move || {
             biases.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
@@ -683,39 +672,6 @@ fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<d
     Ok((weights, biases))
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::utilities::util::Utils;
-
-    use super::*;
-
-    #[test]
-    fn test_dense_layer() {
-        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
-        let mut layer = TrainableDenseLayer::new(
-            3,
-            2,
-            Directory::Internal("test_model_unit".to_string()),
-            0,
-            MatrixParams { slice_rows: 10, slice_cols: 10 },
-        );
-
-        let input = vec![1.0, 2.0, 3.0];
-        let output = layer.forward(&input, utils.clone());
-
-        assert_eq!(output.len(), 2);
-
-        let grad_output = vec![0.1, 0.2];
-        let grad_input = layer.backward(&grad_output, utils.clone());
-
-        assert_eq!(grad_input.len(), 3);
-
-        layer.update_weights(0.01, utils);
-
-        std::fs::remove_dir_all("test_model_unit").unwrap();
-    }
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct NumberEntry(pub f64);
 
@@ -778,5 +734,38 @@ impl PersistableValue for BiasEntry {
         let m = parts[2].parse::<f64>()?;
         let v = parts[3].parse::<f64>()?;
         Ok(Self(Bias { value, grad, m, v }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::utilities::util::Utils;
+
+    use super::*;
+
+    #[test]
+    fn test_dense_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableDenseLayer::new(
+            3,
+            2,
+            Directory::Internal("test_model_unit".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+        );
+
+        let input = vec![1.0, 2.0, 3.0];
+        let output = layer.forward(&input, utils.clone());
+
+        assert_eq!(output.len(), 2);
+
+        let grad_output = vec![0.1, 0.2];
+        let grad_input = layer.backward(&grad_output, utils.clone());
+
+        assert_eq!(grad_input.len(), 3);
+
+        layer.update_weights(0.01, utils);
+
+        std::fs::remove_dir_all("test_model_unit").unwrap();
     }
 }

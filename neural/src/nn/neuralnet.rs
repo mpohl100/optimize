@@ -1,8 +1,11 @@
 use crate::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
+use crate::layer::dense_layer::BiasEntry;
 use crate::layer::dense_layer::DenseLayer;
+use crate::layer::dense_layer::NumberEntry;
 use crate::layer::dense_layer::TrainableDenseLayer;
+use crate::layer::dense_layer::WeightEntry;
 use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
@@ -11,7 +14,7 @@ use crate::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
-use num_traits::NumCast;
+use num_traits::{Num, NumCast};
 use rand::prelude::SliceRandom;
 
 use std::path::Path;
@@ -25,7 +28,7 @@ use matrix::directory::Directory;
 /// A neural network.
 #[derive(Debug)]
 pub struct ClassicNeuralNetwork {
-    layers: Vec<WrappedLayer>,
+    layers: Vec<WrappedLayer<NumberEntry, NumberEntry>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
@@ -171,7 +174,7 @@ impl ClassicNeuralNetwork {
     fn add_activation_and_layer(
         &mut self,
         activation: Box<dyn ActivationTrait + Send>,
-        layer: WrappedLayer,
+        layer: WrappedLayer<NumberEntry, NumberEntry>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
@@ -268,7 +271,14 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            let new_layer = layer.clone();
+            let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
+                layer.input_size(),
+                layer.output_size(),
+                Directory::Internal(model_directory.clone()),
+                i,
+                self.shape.layers[i].matrix_params(),
+            )));
+            // todo assign weights from layer to new_layer
             new_layers.push(new_layer);
             layer.cleanup();
         }
@@ -314,7 +324,7 @@ impl Drop for ClassicNeuralNetwork {
 /// A neural network.
 #[derive(Debug)]
 pub struct TrainableClassicNeuralNetwork {
-    layers: Vec<WrappedTrainableLayer>,
+    layers: Vec<WrappedTrainableLayer<WeightEntry, BiasEntry>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
@@ -459,7 +469,7 @@ impl TrainableClassicNeuralNetwork {
     fn add_activation_and_trainable_layer(
         &mut self,
         activation: Box<dyn ActivationTrait + Send>,
-        layer: WrappedTrainableLayer,
+        layer: WrappedTrainableLayer<WeightEntry, BiasEntry>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
@@ -911,7 +921,14 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            let new_layer = layer.clone();
+            let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
+                layer.input_size(),
+                layer.output_size(),
+                Directory::Internal(model_directory.clone()),
+                i,
+                self.shape.layers[i].matrix_params(),
+            )));
+            new_layer.assign_weights(layer.clone());
             new_layers.push(new_layer);
             layer.cleanup();
         }
