@@ -1,17 +1,22 @@
 use crate::layer::dense_layer::BiasEntry;
 use crate::layer::dense_layer::NumberEntry;
+use crate::layer::dense_layer::Weight;
 use crate::layer::dense_layer::WeightEntry;
 use crate::utilities::util::WrappedUtils;
 use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::mat::WrappedMatrix;
+use matrix::persistable_matrix::PersistableValue;
 use utils::safer::safe_lock;
 
 use dyn_clone::DynClone;
 use std::error::Error;
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
-pub trait Layer: std::fmt::Debug + DynClone {
+pub trait Layer<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>:
+    Debug + DynClone
+{
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
     /// # Arguments
@@ -68,25 +73,31 @@ pub trait Layer: std::fmt::Debug + DynClone {
     ) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
-    fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry>;
+    fn get_weights(&self) -> WrappedCompositeMatrix<WeightT>;
 
     /// Returns the biases of the layer.
-    fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry>;
+    fn get_biases(&self) -> WrappedCompositeMatrix<BiasT>;
 
     /// Marks the layer as in use.
     fn cleanup(&self);
 }
 
-dyn_clone::clone_trait_object!(Layer);
+dyn_clone::clone_trait_object!(Layer<NumberEntry, NumberEntry>);
+dyn_clone::clone_trait_object!(Layer<WeightEntry, BiasEntry>);
 
 #[derive(Debug, Clone)]
-pub struct WrappedLayer {
-    layer: Arc<Mutex<Box<dyn Layer + Send>>>,
+pub struct WrappedLayer<
+    WeightT: Debug + Clone + PersistableValue,
+    BiasT: Debug + Clone + PersistableValue,
+> {
+    layer: Arc<Mutex<Box<dyn Layer<WeightT, BiasT> + Send>>>,
 }
 
-impl WrappedLayer {
+impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>
+    WrappedLayer<WeightT, BiasT>
+{
     #[must_use]
-    pub fn new(layer: Box<dyn Layer + Send>) -> Self {
+    pub fn new(layer: Box<dyn Layer<WeightT, BiasT> + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
@@ -144,16 +155,20 @@ impl WrappedLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightT> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasT> {
         safe_lock(&self.layer).get_biases()
     }
 }
-pub trait TrainableLayer: Layer {
+pub trait TrainableLayer<
+    WeightT: Debug + Clone + PersistableValue,
+    BiasT: Debug + Clone + PersistableValue,
+>: Layer<WeightT, BiasT>
+{
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
     ///
     /// # Arguments
@@ -190,7 +205,7 @@ pub trait TrainableLayer: Layer {
     /// Assigns the weight of the input other layer
     fn assign_weights(
         &mut self,
-        other: WrappedTrainableLayer,
+        other: WrappedTrainableLayer<WeightT, BiasT>,
     );
 
     /// Adjusts the weights according to the Adam optimizer.
@@ -225,16 +240,22 @@ pub trait TrainableLayer: Layer {
     ) -> Result<(), Box<dyn Error>>;
 }
 
-dyn_clone::clone_trait_object!(TrainableLayer);
+dyn_clone::clone_trait_object!(TrainableLayer<NumberEntry, NumberEntry>);
+dyn_clone::clone_trait_object!(TrainableLayer<WeightEntry, BiasEntry>);
 
 #[derive(Debug, Clone)]
-pub struct WrappedTrainableLayer {
-    layer: Arc<Mutex<Box<dyn TrainableLayer + Send>>>,
+pub struct WrappedTrainableLayer<
+    WeightT: Debug + Clone + PersistableValue,
+    BiasT: Debug + Clone + PersistableValue,
+> {
+    layer: Arc<Mutex<Box<dyn TrainableLayer<WeightT, BiasT> + Send>>>,
 }
 
-impl WrappedTrainableLayer {
+impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>
+    WrappedTrainableLayer<WeightT, BiasT>
+{
     #[must_use]
-    pub fn new(layer: Box<dyn TrainableLayer + Send>) -> Self {
+    pub fn new(layer: Box<dyn TrainableLayer<WeightT, BiasT> + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
     }
 
@@ -280,12 +301,12 @@ impl WrappedTrainableLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightEntry> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightT> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasEntry> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasT> {
         safe_lock(&self.layer).get_biases()
     }
 
