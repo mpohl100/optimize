@@ -271,14 +271,14 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
+            let mut new_layer = WrappedLayer::new(Box::new(DenseLayer::new(
                 layer.input_size(),
                 layer.output_size(),
                 Directory::Internal(model_directory.clone()),
                 i,
                 self.shape.layers[i].matrix_params(),
             )));
-            // todo assign weights from layer to new_layer
+            new_layer.assign_weights(&layer.clone());
             new_layers.push(new_layer);
             layer.cleanup();
         }
@@ -928,7 +928,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 i,
                 self.shape.layers[i].matrix_params(),
             )));
-            new_layer.assign_weights(layer.clone());
+            new_layer.assign_trainable_weights(layer.clone());
             new_layers.push(new_layer);
             layer.cleanup();
         }
