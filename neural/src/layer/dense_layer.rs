@@ -206,10 +206,10 @@ pub struct Bias {
 pub struct TrainableDenseLayer {
     rows: usize,
     cols: usize,
-    weights_new: WrappedCompositeMatrix<WeightEntry>, // Weight matrix (output_size x input_size)
-    biases_new: WrappedCompositeMatrix<BiasEntry>,    // Bias vector (output_size)
-    input_cache: Option<Vec<f64>>,                    // Cache input for use in backward pass
-    _input_batch_cache: Option<Vec<Vec<f64>>>,        // Cache batch input for use in backward pass
+    weights: WrappedCompositeMatrix<WeightEntry>, // Weight matrix (output_size x input_size)
+    biases: WrappedCompositeMatrix<BiasEntry>,    // Bias vector (output_size)
+    input_cache: Option<Vec<f64>>,                // Cache input for use in backward pass
+    _input_batch_cache: Option<Vec<Vec<f64>>>,    // Cache batch input for use in backward pass
     layer_path: Directory,
 }
 
@@ -242,8 +242,8 @@ impl TrainableDenseLayer {
         let layer = Self {
             rows: output_size,
             cols: input_size,
-            weights_new: weights,
-            biases_new: biases,
+            weights,
+            biases,
             input_cache: None,
             _input_batch_cache: None,
             layer_path,
@@ -256,11 +256,11 @@ impl TrainableDenseLayer {
     fn initialize_weights(&self) {
         let mut rng = rand::thread_rng();
         // initialize weights from -0.5 to 0.5
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
                 let value = rng.gen_range(-0.5..0.5);
                 let w = Weight { value, grad: 0.0, m: 0.0, v: 0.0 };
-                self.weights_new.set_mut_unchecked(i, j, WeightEntry(w));
+                self.weights.set_mut_unchecked(i, j, WeightEntry(w));
             }
         }
     }
@@ -273,8 +273,8 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         utils: WrappedUtils,
     ) -> Vec<f64> {
         self.input_cache = Some(input.to_vec()); // Cache the input for backpropagation
-        let weights = self.weights_new.clone();
-        let biases = self.biases_new.clone();
+        let weights = self.weights.clone();
+        let biases = self.biases.clone();
         let inputs = input.to_vec();
         utils.execute(move || weights.forward(&inputs, &biases))
     }
@@ -300,8 +300,8 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         _path: String,
     ) -> Result<(), Box<dyn Error>> {
         // assign weights and biases to a matrix and vector
-        self.weights_new.save()?;
-        self.biases_new.save()?;
+        self.weights.save()?;
+        self.biases.save()?;
         Ok(())
     }
 
@@ -314,11 +314,11 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     }
 
     fn get_weights(&self) -> WrappedCompositeMatrix<WeightEntry> {
-        self.weights_new.clone()
+        self.weights.clone()
     }
 
     fn get_biases(&self) -> WrappedCompositeMatrix<BiasEntry> {
-        self.biases_new.clone()
+        self.biases.clone()
     }
 
     fn cleanup(&self) {
@@ -342,18 +342,18 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     ) {
         let weights = other.get_weights();
         let biases = other.get_biases();
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
                     let w = Weight { value: v.0, grad: 0.0, m: 0.0, v: 0.0 };
-                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(w));
+                    self.weights.set_mut_unchecked(i, j, WeightEntry(w));
                 }
             }
             if i < biases.rows() {
                 let b = biases.get_unchecked(i, 0);
                 let bias = Bias { value: b.0, grad: 0.0, m: 0.0, v: 0.0 };
-                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(bias));
+                self.biases.set_mut_unchecked(i, 0, BiasEntry(bias));
             }
         }
     }
@@ -364,16 +364,16 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     ) {
         let weights = other.get_weights();
         let biases = other.get_biases();
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    self.weights_new.set_mut_unchecked(i, j, WeightEntry(v.0));
+                    self.weights.set_mut_unchecked(i, j, WeightEntry(v.0));
                 }
             }
             if i < biases.rows() {
                 let b = biases.get_unchecked(i, 0);
-                self.biases_new.set_mut_unchecked(i, 0, BiasEntry(b.0));
+                self.biases.set_mut_unchecked(i, 0, BiasEntry(b.0));
             }
         }
     }
@@ -389,7 +389,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         d_out: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        let weights = self.weights_new.clone();
+        let weights = self.weights.clone();
         let input_cache = self.input_cache.as_ref().unwrap().clone();
         let d_out_vec = d_out.to_vec();
         // Calculate weight gradients
@@ -398,7 +398,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
             0
         });
 
-        let weights_sec = self.weights_new.clone();
+        let weights_sec = self.weights.clone();
         let input_cache_sec = self.input_cache.as_ref().unwrap().clone();
         let d_out_vec_sec = d_out.to_vec();
         // Calculate input gradients
@@ -418,7 +418,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         learning_rate: f64,
         utils: WrappedUtils,
     ) {
-        let weights = self.weights_new.clone();
+        let weights = self.weights.clone();
         // Update weight
         let _ = utils.execute(move || {
             weights.update_weights(learning_rate);
@@ -426,7 +426,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         });
 
         // Update biases
-        let biases = self.biases_new.clone();
+        let biases = self.biases.clone();
         let _ = utils.execute(move || {
             biases.update_weights(learning_rate);
             0
@@ -450,14 +450,14 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         epsilon: f64,
         utils: WrappedUtils,
     ) {
-        let weights = self.weights_new.clone();
+        let weights = self.weights.clone();
         // Update weights
         let _ = utils.execute(move || {
             weights.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             0
         });
 
-        let biases = self.biases_new.clone();
+        let biases = self.biases.clone();
         // Update biases
         let _ = utils.execute(move || {
             biases.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
@@ -469,8 +469,8 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         &self,
         _path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.weights_new.save()?;
-        self.biases_new.save()?;
+        self.weights.save()?;
+        self.biases.save()?;
         Ok(())
     }
 
