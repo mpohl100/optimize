@@ -951,14 +951,6 @@ mod tests {
                 },
                 LayerShape {
                     layer_type: LayerType::Dense {
-                        input_size: 128,
-                        output_size: 64,
-                        matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
-                    },
-                    activation: ActivationData::new(ActivationType::ReLU),
-                },
-                LayerShape {
-                    layer_type: LayerType::Dense {
                         input_size: 64,
                         output_size: 10,
                         matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
