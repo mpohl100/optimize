@@ -109,6 +109,7 @@ impl<T: PersistableValue> WrappedCompositeMatrix<T> {
         Self { cm: std::sync::Arc::new(std::sync::Mutex::new(cm)) }
     }
 
+    #[must_use]
     pub fn get_unchecked(
         &self,
         x: usize,
@@ -120,6 +121,7 @@ impl<T: PersistableValue> WrappedCompositeMatrix<T> {
         let within_x = x % cm.get_slice_x();
         let within_y = y % cm.get_slice_y();
         let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
+        drop(cm);
         persistable_matrix.get_unchecked(within_x, within_y)
     }
 

@@ -14,7 +14,7 @@ use crate::utilities::util::WrappedUtils;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
-use num_traits::{Num, NumCast};
+use num_traits::NumCast;
 use rand::prelude::SliceRandom;
 
 use std::path::Path;
@@ -66,7 +66,7 @@ impl ClassicNeuralNetwork {
                 layer_shape.output_size(),
                 network.model_directory.clone(),
                 i,
-                layer_shape.matrix_params().clone(),
+                layer_shape.matrix_params(),
             );
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
@@ -118,7 +118,7 @@ impl ClassicNeuralNetwork {
                         *output_size,
                         network.model_directory.clone(),
                         i,
-                        matrix_params.clone(),
+                        *matrix_params,
                     );
                     WrappedLayer::new(Box::new(layer))
                 },
@@ -360,9 +360,9 @@ impl TrainableClassicNeuralNetwork {
             let layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
-                network.model_directory.clone(),
+                &network.model_directory,
                 i,
-                layer_shape.matrix_params().clone(),
+                layer_shape.matrix_params(),
             )));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -562,9 +562,9 @@ impl TrainableClassicNeuralNetwork {
                     let layer = TrainableDenseLayer::new(
                         *input_size,
                         *output_size,
-                        network.model_directory.clone(),
+                        &network.model_directory,
                         i,
-                        matrix_params.clone(),
+                        *matrix_params,
                     );
                     WrappedTrainableLayer::new(Box::new(layer))
                 },
@@ -924,11 +924,11 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
             let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
                 layer.input_size(),
                 layer.output_size(),
-                Directory::Internal(model_directory.clone()),
+                &Directory::Internal(model_directory.clone()),
                 i,
                 self.shape.layers[i].matrix_params(),
             )));
-            new_layer.assign_trainable_weights(layer.clone());
+            new_layer.assign_trainable_weights(layer);
             new_layers.push(new_layer);
             layer.cleanup();
         }

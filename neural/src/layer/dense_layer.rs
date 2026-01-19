@@ -1,9 +1,7 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
 use super::layer_trait::WrappedTrainableLayer;
-use super::matrix_extensions::MatrixExtensions;
 use crate::layer::layer_trait::WrappedLayer;
-use crate::layer::matrix_extensions::MatrixExtensionsComposite;
 use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
 use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
 use crate::utilities::util::WrappedUtils;
@@ -12,23 +10,15 @@ use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::directory::Directory;
 
 pub use matrix::mat::Matrix;
-use matrix::mat::WrappedMatrix;
 
 use matrix::persistable_matrix::PersistableValue;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
-use num_traits::cast::NumCast;
-
-use fs2::FileExt;
 use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;
-use std::fs::File;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Write;
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
@@ -43,9 +33,7 @@ pub struct DenseLayer {
     cols: usize,
     weights_new: WrappedCompositeMatrix<NumberEntry>,
     biases_new: WrappedCompositeMatrix<NumberEntry>,
-    in_use: bool,
     layer_path: Directory,
-    matrix_params: MatrixParams,
 }
 
 impl DenseLayer {
@@ -85,9 +73,7 @@ impl DenseLayer {
             cols: input_size,
             weights_new: weights,
             biases_new: biases,
-            in_use: false,
             layer_path,
-            matrix_params,
         }
     }
 }
@@ -121,7 +107,7 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
 
     fn save(
         &self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         self.weights_new.save()?;
         self.biases_new.save()?;
@@ -130,7 +116,7 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
 
     fn read(
         &mut self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
@@ -221,14 +207,10 @@ pub struct TrainableDenseLayer {
     rows: usize,
     cols: usize,
     weights_new: WrappedCompositeMatrix<WeightEntry>, // Weight matrix (output_size x input_size)
-    weight_directory: Directory,
-    biases_new: WrappedCompositeMatrix<BiasEntry>, // Bias vector (output_size)
-    bias_directory: Directory,
-    input_cache: Option<Vec<f64>>, // Cache input for use in backward pass
-    input_batch_cache: Option<Vec<Vec<f64>>>, // Cache batch input for use in backward pass
-    in_use: bool,
+    biases_new: WrappedCompositeMatrix<BiasEntry>,    // Bias vector (output_size)
+    input_cache: Option<Vec<f64>>,                    // Cache input for use in backward pass
+    _input_batch_cache: Option<Vec<Vec<f64>>>,        // Cache batch input for use in backward pass
     layer_path: Directory,
-    matrix_params: MatrixParams,
 }
 
 impl TrainableDenseLayer {
@@ -237,12 +219,12 @@ impl TrainableDenseLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: Directory,
+        model_directory: &Directory,
         position_in_nn: usize,
         matrix_params: MatrixParams,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = model_directory.clone().expand(&format!("layer_{position_in_nn}"));
+        let layer_path = model_directory.expand(&format!("layer_{position_in_nn}"));
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
@@ -257,19 +239,17 @@ impl TrainableDenseLayer {
             1,
             &layer_path.expand("biases"),
         ));
-        Self {
+        let layer = Self {
             rows: output_size,
             cols: input_size,
             weights_new: weights,
             biases_new: biases,
-            weight_directory: layer_path.expand("weights"),
-            bias_directory: layer_path.expand("biases"),
             input_cache: None,
-            input_batch_cache: None,
-            in_use: false,
+            _input_batch_cache: None,
             layer_path,
-            matrix_params,
-        }
+        };
+        layer.initialize_weights();
+        layer
     }
 
     /// Initialize the weights with random values in the range [-0.5, 0.5]
@@ -317,7 +297,7 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn save(
         &self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         // assign weights and biases to a matrix and vector
         self.weights_new.save()?;
@@ -327,7 +307,7 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn read(
         &mut self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         Ok(())
@@ -487,7 +467,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn save_weight(
         &self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         self.weights_new.save()?;
         self.biases_new.save()?;
@@ -496,239 +476,10 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn read_weight(
         &mut self,
-        path: String,
+        _path: String,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
-}
-
-fn save(
-    path: String,
-    weights: &WrappedMatrix<f64>,
-    biases: &[f64],
-) -> Result<(), Box<dyn Error>> {
-    // Ensure the directory exists
-    let p = Path::new(&path);
-    if let Some(dir) = p.parent() {
-        std::fs::create_dir_all(dir).expect("Failed to create directory");
-    }
-    // create a lock file which acts as a lock
-    let lock_file_path = format!("{path}.lock");
-    let lock_file = File::create(&lock_file_path)?;
-    lock_file.lock_exclusive()?;
-    // Save weights and biases to a file at the specified path
-    let mut file = File::create(path)?;
-    writeln!(file, "{} {}", weights.rows(), weights.cols())?;
-    for i in 0..weights.rows() {
-        for j in 0..weights.cols() {
-            write!(file, "{};", weights.get_unchecked(i, j))?;
-        }
-        writeln!(file)?;
-    }
-    for bias in biases {
-        write!(file, "{bias}; ")?;
-    }
-    writeln!(file)?;
-    Ok(())
-}
-
-fn save_weight(
-    path: String,
-    weights: &WrappedMatrix<Weight>,
-    biases: &[Bias],
-) -> Result<(), Box<dyn Error>> {
-    // Ensure the directory exists
-    let p = Path::new(&path);
-    if let Some(dir) = p.parent() {
-        std::fs::create_dir_all(dir).expect("Failed to create directory");
-    }
-
-    // create a lock file which acts as a lock
-    let lock_file_path = format!("{path}.lock");
-    let lock_file = File::create(&lock_file_path)?;
-    lock_file.lock_exclusive()?;
-
-    // Save weights and biases to a file at the specified path
-    let mut file = File::create(path)?;
-    writeln!(file, "{} {}", weights.rows(), weights.cols())?;
-    for i in 0..weights.rows() {
-        for j in 0..weights.cols() {
-            let weight = weights.get_unchecked(i, j);
-            write!(file, "{} {} {} {};", weight.value, weight.grad, weight.m, weight.v)?;
-        }
-        writeln!(file)?;
-    }
-    for bias in biases {
-        write!(file, "{} {} {} {};", bias.value, bias.grad, bias.m, bias.v)?;
-    }
-    writeln!(file)?;
-    Ok(())
-}
-
-fn read(path: String) -> Result<(WrappedMatrix<f64>, Vec<f64>), Box<dyn Error>> {
-    // create a lock file which acts as a lock
-    let lock_file_path = format!("{path}.lock");
-    let lock_file = File::create(&lock_file_path)?;
-    lock_file.lock_exclusive()?;
-
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let mut lines = reader.lines();
-    let mut weights = WrappedMatrix::new(1, 1);
-    let mut biases = vec![0.0; 1];
-    if let Some(Ok(line)) = lines.next() {
-        let mut parts = line.split_whitespace();
-        let rows = parts.next().unwrap().parse::<usize>()?;
-        let cols = parts.next().unwrap().parse::<usize>()?;
-        weights = WrappedMatrix::new(rows, cols);
-        for i in 0..rows {
-            if let Some(Ok(line)) = lines.next() {
-                let parts = line.split(';').collect::<Vec<_>>();
-                // parts len must be euqal to cols
-                if parts.len() - 1 != cols {
-                    return Err(format!(
-                        "Invalid weight format cause of cols: expected {}, found {}",
-                        cols,
-                        parts.len() - 1
-                    )
-                    .into());
-                }
-                for j in 0..cols {
-                    let part = parts.get(j);
-                    if let Some(p) = part {
-                        let figures = p.split_whitespace().collect::<Vec<_>>();
-                        if figures.len() == 1 || figures.len() == 4 {
-                            weights.set_mut_unchecked(i, j, figures[0].parse::<f64>()?);
-                        } else {
-                            return Err("Invalid weight format".into());
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if let Some(Ok(line)) = lines.next() {
-        let parts = line.split(';').collect::<Vec<_>>();
-        biases = vec![0.0; weights.rows()];
-        // parts len must be equal to rows
-        if parts.len() - 1 != weights.rows() {
-            return Err(format!(
-                "Invalid bias format amount of values: expected {}, found {}",
-                weights.rows(),
-                parts.len() - 1
-            )
-            .into());
-        }
-        for (i, bias) in biases.iter_mut().enumerate() {
-            let part = parts.get(i);
-            if let Some(p) = part {
-                let figures = p.split_whitespace().collect::<Vec<_>>();
-                if figures.len() == 1 || figures.len() == 4 {
-                    *bias = figures[0].parse::<f64>()?;
-                } else {
-                    return Err("Invalid bias format".into());
-                }
-            }
-        }
-    }
-    Ok((weights, biases))
-}
-
-fn read_weight(path: String) -> Result<(WrappedMatrix<Weight>, Vec<Bias>), Box<dyn Error>> {
-    // create a lock file which acts as a lock
-    let lock_file_path = format!("{path}.lock");
-    let lock_file = File::create(&lock_file_path)?;
-    lock_file.lock_exclusive()?;
-
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let mut lines = reader.lines();
-    let mut weights = WrappedMatrix::new(1, 1);
-    let mut biases = vec![Bias::default(); 1];
-    if let Some(Ok(line)) = lines.next() {
-        let mut dim_parts = line.split_whitespace();
-        let rows = dim_parts.next().unwrap().parse::<usize>()?;
-        let cols = dim_parts.next().unwrap().parse::<usize>()?;
-        weights = WrappedMatrix::new(rows, cols);
-        for i in 0..rows {
-            if let Some(Ok(line)) = lines.next() {
-                let parts = line.split(';').collect::<Vec<_>>();
-                // parts len must be euqal to cols
-                if parts.len() - 1 != cols {
-                    return Err(format!(
-                        "Invalid weight format cause of cols: expected {}, found {}",
-                        cols,
-                        parts.len() - 1
-                    )
-                    .into());
-                }
-                for j in 0..cols {
-                    let part = parts.get(j);
-                    if let Some(p) = part {
-                        let figures = p.split_whitespace().collect::<Vec<_>>();
-                        if figures.len() == 4 {
-                            weights.set_mut_unchecked(
-                                i,
-                                j,
-                                Weight {
-                                    value: figures[0].parse::<f64>()?,
-                                    grad: figures[1].parse::<f64>()?,
-                                    m: figures[2].parse::<f64>()?,
-                                    v: figures[3].parse::<f64>()?,
-                                },
-                            );
-                        } else if figures.len() == 1 {
-                            weights.set_mut_unchecked(
-                                i,
-                                j,
-                                Weight {
-                                    value: figures[0].parse::<f64>()?,
-                                    grad: 0.0,
-                                    m: 0.0,
-                                    v: 0.0,
-                                },
-                            );
-                        } else {
-                            return Err("Invalid weight format".into());
-                        }
-                    }
-                }
-            }
-        }
-    }
-    if let Some(Ok(line)) = lines.next() {
-        let parts = line.split(';').collect::<Vec<_>>();
-        biases = vec![Bias::default(); weights.rows()];
-        // parts len must be equal to rows
-        if parts.len() - 1 != weights.rows() {
-            return Err(format!(
-                "Invalid bias format amount of values: expected {}, found {}",
-                weights.rows(),
-                parts.len() - 1
-            )
-            .into());
-        }
-        for (i, bias) in biases.iter_mut().enumerate() {
-            let part = parts.get(i);
-            if let Some(p) = part {
-                let figures = p.split_whitespace().collect::<Vec<_>>();
-                if figures.len() == 4 {
-                    bias.value = figures[0].parse::<f64>()?;
-                    bias.grad = figures[1].parse::<f64>()?;
-                    bias.m = figures[2].parse::<f64>()?;
-                    bias.v = figures[3].parse::<f64>()?;
-                } else if figures.len() == 1 {
-                    bias.value = figures[0].parse::<f64>()?;
-                    bias.grad = 0.0;
-                    bias.m = 0.0;
-                    bias.v = 0.0;
-                } else {
-                    return Err("Invalid bias format".into());
-                }
-            }
-        }
-    }
-    Ok((weights, biases))
 }
 
 #[derive(Debug, Default, Clone)]
@@ -808,7 +559,7 @@ mod tests {
         let mut layer = TrainableDenseLayer::new(
             3,
             2,
-            Directory::Internal("test_model_unit".to_string()),
+            &Directory::Internal("test_model_unit".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
         );

@@ -382,14 +382,14 @@ impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + Persistab
 
     pub fn assign_weights(
         &mut self,
-        other: WrappedLayer<NumberEntry, NumberEntry>,
+        other: &WrappedLayer<NumberEntry, NumberEntry>,
     ) {
         safe_lock(&self.layer).assign_weights(other.clone());
     }
 
     pub fn assign_trainable_weights(
         &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
     ) {
         safe_lock(&self.layer).assign_trainable_weights(other.clone());
     }
