@@ -27,9 +27,9 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         cols: usize,
         directory: &Directory,
     ) -> Self {
-        let matrices = WrappedMatrix::new(rows / slice_x, cols / slice_y);
-        for i in 0..(rows / slice_x) {
-            for j in 0..(cols / slice_y) {
+        let matrices = WrappedMatrix::new(rows / slice_x + 1, cols / slice_y + 1);
+        for i in 0..=(rows / slice_x) {
+            for j in 0..=(cols / slice_y) {
                 let persistable_matrix = PersistableMatrix::new(
                     directory.clone(),
                     &format!("composite_{}_{}_{}", i, j, std::any::type_name::<T>()),
