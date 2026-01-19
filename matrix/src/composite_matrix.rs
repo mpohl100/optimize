@@ -27,14 +27,18 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         cols: usize,
         directory: &Directory,
     ) -> Self {
-        let matrices = WrappedMatrix::new(rows / slice_x + 1, cols / slice_y + 1);
-        for i in 0..=(rows / slice_x) {
-            for j in 0..=(cols / slice_y) {
+        let mat_rows = rows / slice_x + 1;
+        let mat_cols = cols / slice_y + 1;
+        let matrices = WrappedMatrix::new(mat_rows, mat_cols);
+        for i in 0..mat_rows {
+            for j in 0..mat_cols {
+                let persistable_rows = if i == mat_rows { rows % slice_x } else { slice_x };
+                let persistable_cols = if j == mat_cols { cols % slice_y } else { slice_y };
                 let persistable_matrix = PersistableMatrix::new(
                     directory.clone(),
                     &format!("composite_{}_{}_{}", i, j, std::any::type_name::<T>()),
-                    slice_x,
-                    slice_y,
+                    persistable_rows,
+                    persistable_cols,
                 );
                 matrices.mat().lock().unwrap().set_mut_unchecked(i, j, persistable_matrix);
             }
@@ -51,10 +55,10 @@ impl<T: PersistableValue> CompositeMatrix<T> {
         y: usize,
         value: T,
     ) {
-        let matrix_x = x / self.slice_x;
-        let matrix_y = y / self.slice_y;
-        let within_x = x % self.slice_x;
-        let within_y = y % self.slice_y;
+        let matrix_x = x % self.slice_x;
+        let matrix_y = y % self.slice_y;
+        let within_x = x / self.slice_x;
+        let within_y = y / self.slice_y;
         let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
