@@ -2,9 +2,6 @@ use utils::safer::safe_lock;
 
 use std::sync::{Arc, Mutex};
 
-use crate::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer};
-use alloc::alloc_manager::{AllocManager, WrappedAllocManager};
-
 use indicatif::MultiProgress;
 use rayon::ThreadPoolBuilder;
 
@@ -47,7 +44,7 @@ pub struct Utils {
 impl Utils {
     #[must_use]
     pub fn new(
-        cpu_memory: usize,
+        _cpu_memory: usize,
         num_threads: usize,
     ) -> Self {
         Self {
@@ -60,7 +57,7 @@ impl Utils {
 
     #[must_use]
     pub fn new_with_test_mode(
-        cpu_memory: usize,
+        _cpu_memory: usize,
         num_threads: usize,
         workspace: String,
     ) -> Self {

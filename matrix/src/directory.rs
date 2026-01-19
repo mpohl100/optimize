@@ -59,11 +59,11 @@ impl Directory {
     ) -> Self {
         match self {
             Self::Internal(path) => {
-                let new_path = format!("{}/{}", path, subdirectory);
+                let new_path = format!("{path}/{subdirectory}");
                 Self::Internal(new_path)
             },
             Self::User(path) => {
-                let new_path = format!("{}/{}", path, subdirectory);
+                let new_path = format!("{path}/{subdirectory}");
                 Self::User(new_path)
             },
         }

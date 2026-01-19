@@ -105,9 +105,10 @@ impl LayerShape {
         self.layer_type.clone()
     }
 
-    pub fn matrix_params(&self) -> MatrixParams {
+    #[must_use]
+    pub const fn matrix_params(&self) -> MatrixParams {
         match self.layer_type {
-            LayerType::Dense { matrix_params, .. } => matrix_params.clone(),
+            LayerType::Dense { matrix_params, .. } => matrix_params,
         }
     }
 
@@ -293,7 +294,7 @@ impl NeuralNetworkShape {
             layer_type: LayerType::Dense {
                 input_size: merge_layer_input_size,
                 output_size: merge_layer_output_size,
-                matrix_params: matrix_params.clone(),
+                matrix_params,
             },
             activation: middle_activation_data,
         };

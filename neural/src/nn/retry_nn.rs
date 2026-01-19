@@ -135,7 +135,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
         layer_type: LayerType::Dense {
             input_size: internal_layer.input_size(),
             output_size: internal_layer.output_size() + 1,
-            matrix_params: internal_layer.matrix_params().clone(),
+            matrix_params: internal_layer.matrix_params(),
         },
         activation: internal_layer.activation,
     };
@@ -149,7 +149,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
             layer_type: LayerType::Dense {
                 input_size: internal_layer.input_size() + 1,
                 output_size: internal_layer.output_size() + 1,
-                matrix_params: internal_layer.matrix_params().clone(),
+                matrix_params: internal_layer.matrix_params(),
             },
             activation: internal_layer.activation.clone(),
         };

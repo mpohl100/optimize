@@ -15,8 +15,6 @@ use rayon::iter::ParallelIterator;
 
 use num_traits::cast::NumCast;
 
-use utils::safer::safe_lock;
-
 pub trait MatrixExtensions<WeightT: Default + Clone, BiasT: Default + Clone> {
     fn forward(
         &self,
@@ -29,7 +27,7 @@ impl MatrixExtensions<f64, f64> for WrappedMatrix<f64> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &WrappedMatrix<f64>,
+        biases: &Self,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -164,7 +162,7 @@ impl MatrixExtensions<NumberEntry, NumberEntry> for WrappedMatrix<NumberEntry> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &WrappedMatrix<NumberEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -272,7 +270,7 @@ impl MatrixExtensions<BiasEntry, BiasEntry> for WrappedMatrix<BiasEntry> {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &WrappedMatrix<BiasEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         self.mat()
             .lock()
@@ -373,7 +371,7 @@ impl MatrixExtensionsComposite<NumberEntry, NumberEntry> for CompositeMatrix<Num
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &CompositeMatrix<NumberEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
@@ -383,7 +381,7 @@ impl MatrixExtensionsComposite<NumberEntry, NumberEntry> for CompositeMatrix<Num
                 b.allocate();
                 let local_outputs = matrix.mat().unwrap().forward(
                     &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    &b.mat().unwrap(),
+                    b.mat().unwrap(),
                 );
                 for (k, &val) in local_outputs.iter().enumerate() {
                     outputs[i * self.get_slice_x() + k] += val;
@@ -408,7 +406,7 @@ impl MatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMatrix<Weigh
                 b.allocate();
                 let local_outputs = matrix.mat().unwrap().forward(
                     &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    &b.mat().unwrap(),
+                    b.mat().unwrap(),
                 );
                 for (k, &val) in local_outputs.iter().enumerate() {
                     outputs[i * self.get_slice_x() + k] += val;
@@ -423,7 +421,7 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &CompositeMatrix<BiasEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
@@ -433,7 +431,7 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
                 b.allocate();
                 let local_outputs = matrix.mat().unwrap().forward(
                     &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    &b.mat().unwrap(),
+                    b.mat().unwrap(),
                 );
                 for (k, &val) in local_outputs.iter().enumerate() {
                     outputs[i * self.get_slice_x() + k] += val;
@@ -623,7 +621,7 @@ impl MatrixExtensionsWrappedComposite<NumberEntry, NumberEntry>
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &WrappedCompositeMatrix<NumberEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
     }
@@ -674,7 +672,7 @@ impl MatrixExtensionsWrappedComposite<BiasEntry, BiasEntry> for WrappedComposite
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &WrappedCompositeMatrix<BiasEntry>,
+        biases: &Self,
     ) -> Vec<f64> {
         self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
     }
