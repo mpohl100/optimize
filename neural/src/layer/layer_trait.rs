@@ -1,7 +1,7 @@
-use crate::layer::dense_layer::BiasEntry;
-use crate::layer::dense_layer::NumberEntry;
-use crate::layer::dense_layer::WeightEntry;
 use crate::utilities::util::WrappedUtils;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::NumberEntry;
+use matrix::ai_types::WeightEntry;
 use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::persistable_matrix::PersistableValue;
 use utils::safer::safe_lock;
@@ -11,8 +11,10 @@ use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
-pub trait Layer<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>:
-    Debug
+pub trait Layer<
+    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+>: Debug
 {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
@@ -99,8 +101,10 @@ pub struct WrappedLayer<
     layer: Arc<Mutex<Box<dyn Layer<WeightT, BiasT> + Send>>>,
 }
 
-impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>
-    WrappedLayer<WeightT, BiasT>
+impl<
+        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    > WrappedLayer<WeightT, BiasT>
 {
     #[must_use]
     pub fn new(layer: Box<dyn Layer<WeightT, BiasT> + Send>) -> Self {
@@ -185,8 +189,8 @@ impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + Persistab
     }
 }
 pub trait TrainableLayer<
-    WeightT: Debug + Clone + PersistableValue,
-    BiasT: Debug + Clone + PersistableValue,
+    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
 >: Layer<WeightT, BiasT>
 {
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
@@ -262,8 +266,10 @@ pub struct WrappedTrainableLayer<
     layer: Arc<Mutex<Box<dyn TrainableLayer<WeightT, BiasT> + Send>>>,
 }
 
-impl<WeightT: Debug + Clone + PersistableValue, BiasT: Debug + Clone + PersistableValue>
-    WrappedTrainableLayer<WeightT, BiasT>
+impl<
+        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    > WrappedTrainableLayer<WeightT, BiasT>
 {
     #[must_use]
     pub fn new(layer: Box<dyn TrainableLayer<WeightT, BiasT> + Send>) -> Self {

@@ -78,6 +78,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::multiple_crate_versions)]
 
+pub mod ai_types;
 pub mod composite_matrix;
 pub mod directory;
 pub mod mat;

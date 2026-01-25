@@ -1,4 +1,5 @@
 use matrix::mat::WrappedMatrix;
+use matrix::sum_mat::MyInteger;
 use matrix::sum_mat::SumMatrix;
 use proptest::prelude::*;
 // Property-based tests for WrappedMatrix
@@ -54,7 +55,7 @@ proptest! {
         cols in 1..10usize,
         values in prop::collection::vec(-100..100i64, 1..10),
     ) {
-        let base_matrix = WrappedMatrix::<i64>::new(rows, cols);
+        let base_matrix = WrappedMatrix::<MyInteger>::new(rows, cols);
         let mut sum_matrix = SumMatrix::new(base_matrix);
 
         let row = rows / 2;
@@ -68,7 +69,7 @@ proptest! {
         }
 
         let actual_sum = sum_matrix.get_row_sum(row);
-        assert_eq!(actual_sum, expected_sum);
+        assert_eq!(actual_sum, MyInteger(expected_sum));
     }
 
     #[test]
@@ -78,7 +79,7 @@ proptest! {
         value1 in 1..100i64,
         value2 in 1..100i64,
     ) {
-        let base_matrix = WrappedMatrix::<i64>::new(rows, cols);
+        let base_matrix = WrappedMatrix::<MyInteger>::new(rows, cols);
         let mut sum_matrix = SumMatrix::new(base_matrix);
 
         let row = 0;

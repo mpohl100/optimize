@@ -1,8 +1,8 @@
-use super::dense_layer::Weight;
-use super::dense_layer::WeightEntry;
-use crate::layer::dense_layer::Bias;
-use crate::layer::dense_layer::BiasEntry;
-use crate::layer::dense_layer::NumberEntry;
+pub use matrix::ai_types::Bias;
+pub use matrix::ai_types::BiasEntry;
+pub use matrix::ai_types::NumberEntry;
+pub use matrix::ai_types::Weight;
+pub use matrix::ai_types::WeightEntry;
 
 use alloc::allocatable::Allocatable;
 
@@ -15,7 +15,11 @@ use rayon::iter::ParallelIterator;
 
 use num_traits::cast::NumCast;
 
-pub trait MatrixExtensions<WeightT: Default + Clone, BiasT: Default + Clone> {
+pub trait MatrixExtensions<
+    WeightT: Default + Clone + From<f64> + 'static,
+    BiasT: Default + Clone + From<f64> + 'static,
+>
+{
     fn forward(
         &self,
         inputs: &[f64],
@@ -62,8 +66,10 @@ impl MatrixExtensions<Weight, Bias> for WrappedMatrix<Weight> {
     }
 }
 
-pub trait TrainableMatrixExtensions<WeightT: Default + Clone, BiasT: Default + Clone>:
-    MatrixExtensions<WeightT, BiasT>
+pub trait TrainableMatrixExtensions<
+    WeightT: Default + Clone + From<f64> + 'static,
+    BiasT: Default + Clone + From<f64> + 'static,
+>: MatrixExtensions<WeightT, BiasT>
 {
     fn backward_calculate_gradients(
         &self,
@@ -356,8 +362,8 @@ impl TrainableMatrixExtensions<BiasEntry, BiasEntry> for WrappedMatrix<BiasEntry
 }
 
 pub trait MatrixExtensionsComposite<
-    WeightT: Default + Clone + PersistableValue,
-    BiasT: Default + Clone + PersistableValue,
+    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
 >
 {
     fn forward(
@@ -443,8 +449,8 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
 }
 
 pub trait TrainableMatrixExtensionsComposite<
-    WeightT: Default + Clone + PersistableValue,
-    BiasT: Default + Clone + PersistableValue,
+    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
 >: MatrixExtensionsComposite<WeightT, BiasT>
 {
     fn backward_calculate_gradients(
@@ -612,8 +618,8 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
 }
 
 pub trait MatrixExtensionsWrappedComposite<
-    WeightT: Default + Clone + PersistableValue,
-    BiasT: Default + Clone + PersistableValue,
+    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
 >
 {
     fn forward(
@@ -636,8 +642,8 @@ impl MatrixExtensionsWrappedComposite<NumberEntry, NumberEntry>
 }
 
 pub trait TrainableMatrixExtensionsWrappedComposite<
-    WeightT: Default + Clone + PersistableValue,
-    BiasT: Default + Clone + PersistableValue,
+    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
 >: MatrixExtensionsWrappedComposite<WeightT, BiasT>
 {
     fn backward_calculate_gradients(

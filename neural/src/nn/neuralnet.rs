@@ -1,16 +1,16 @@
 use crate::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
-use crate::layer::dense_layer::BiasEntry;
 use crate::layer::dense_layer::DenseLayer;
-use crate::layer::dense_layer::NumberEntry;
 use crate::layer::dense_layer::TrainableDenseLayer;
-use crate::layer::dense_layer::WeightEntry;
 use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 use crate::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
 use crate::utilities::util::WrappedUtils;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::NumberEntry;
+use matrix::ai_types::WeightEntry;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
