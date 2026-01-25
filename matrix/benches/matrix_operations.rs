@@ -1,5 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use matrix::mat::WrappedMatrix;
+use matrix::sum_mat::MyInteger;
 use matrix::sum_mat::SumMatrix;
 
 fn benchmark_matrix_creation(c: &mut Criterion) {
@@ -57,7 +58,7 @@ fn benchmark_sum_matrix_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("sum_matrix_operations");
 
     for size in [50, 100, 200].iter() {
-        let base_matrix = WrappedMatrix::<i64>::new(*size, *size);
+        let base_matrix = WrappedMatrix::<MyInteger>::new(*size, *size);
         let mut sum_matrix = SumMatrix::new(base_matrix);
 
         // Initialize with test data

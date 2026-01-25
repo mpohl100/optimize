@@ -70,10 +70,6 @@ impl NeuralNetworkPhenotype {
         self.right_half_shape = None;
     }
 
-    pub fn allocate(&mut self) {
-        self.nn.allocate();
-    }
-
     fn mutate_classic_nn(
         &mut self,
         rng_wrapper: &mut RealRng,

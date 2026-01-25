@@ -2,9 +2,6 @@ use utils::safer::safe_lock;
 
 use std::sync::{Arc, Mutex};
 
-use crate::layer::layer_trait::{WrappedLayer, WrappedTrainableLayer};
-use alloc::alloc_manager::{AllocManager, WrappedAllocManager};
-
 use indicatif::MultiProgress;
 use rayon::ThreadPoolBuilder;
 
@@ -38,8 +35,6 @@ impl WrappedThreadPool {
 
 #[derive(Debug, Clone)]
 pub struct Utils {
-    layer_alloc_manager: WrappedAllocManager<WrappedLayer>,
-    trainable_layer_alloc_manager: WrappedAllocManager<WrappedTrainableLayer>,
     mutli_progress: Arc<MultiProgress>,
     thread_pool: WrappedThreadPool,
     test_mode: bool,
@@ -49,18 +44,10 @@ pub struct Utils {
 impl Utils {
     #[must_use]
     pub fn new(
-        cpu_memory: usize,
+        _cpu_memory: usize,
         num_threads: usize,
     ) -> Self {
         Self {
-            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
-                WrappedLayer,
-            >::new(
-                cpu_memory
-            )),
-            trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
-                AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
-            ),
             mutli_progress: Arc::new(MultiProgress::new()),
             thread_pool: WrappedThreadPool::new(num_threads),
             test_mode: false,
@@ -70,57 +57,16 @@ impl Utils {
 
     #[must_use]
     pub fn new_with_test_mode(
-        cpu_memory: usize,
+        _cpu_memory: usize,
         num_threads: usize,
         workspace: String,
     ) -> Self {
         Self {
-            layer_alloc_manager: WrappedAllocManager::<WrappedLayer>::new(AllocManager::<
-                WrappedLayer,
-            >::new(
-                cpu_memory
-            )),
-            trainable_layer_alloc_manager: WrappedAllocManager::<WrappedTrainableLayer>::new(
-                AllocManager::<WrappedTrainableLayer>::new(cpu_memory),
-            ),
             mutli_progress: Arc::new(MultiProgress::new()),
             thread_pool: WrappedThreadPool::new(num_threads),
             test_mode: true,
             workspace,
         }
-    }
-
-    pub fn allocate(
-        &mut self,
-        allocatable: &WrappedLayer,
-    ) -> bool {
-        self.layer_alloc_manager.allocate(allocatable)
-    }
-
-    pub fn deallocate(
-        &mut self,
-        allocatable: &WrappedLayer,
-    ) {
-        self.layer_alloc_manager.deallocate(allocatable);
-    }
-
-    pub fn allocate_trainable(
-        &mut self,
-        allocatable: &WrappedTrainableLayer,
-    ) -> bool {
-        self.trainable_layer_alloc_manager.allocate(allocatable)
-    }
-
-    pub fn deallocate_trainable(
-        &mut self,
-        allocatable: &WrappedTrainableLayer,
-    ) {
-        self.trainable_layer_alloc_manager.deallocate(allocatable);
-    }
-
-    #[must_use]
-    pub fn get_max_allocated_size(&self) -> usize {
-        self.layer_alloc_manager.get_max_allocated_size()
     }
 
     #[must_use]
@@ -159,39 +105,6 @@ impl WrappedUtils {
     #[must_use]
     pub fn new(utils: Utils) -> Self {
         Self { utils: Arc::new(Mutex::new(utils)) }
-    }
-
-    pub fn allocate(
-        &mut self,
-        allocatable: &WrappedLayer,
-    ) -> bool {
-        safe_lock(&self.utils).allocate(allocatable)
-    }
-
-    pub fn deallocate(
-        &mut self,
-        allocatable: &WrappedLayer,
-    ) {
-        safe_lock(&self.utils).deallocate(allocatable);
-    }
-
-    pub fn allocate_trainable(
-        &mut self,
-        allocatable: &WrappedTrainableLayer,
-    ) -> bool {
-        safe_lock(&self.utils).allocate_trainable(allocatable)
-    }
-
-    pub fn deallocate_trainable(
-        &mut self,
-        allocatable: &WrappedTrainableLayer,
-    ) {
-        safe_lock(&self.utils).deallocate_trainable(allocatable);
-    }
-
-    #[must_use]
-    pub fn get_max_allocated_size(&self) -> usize {
-        safe_lock(&self.utils).get_max_allocated_size()
     }
 
     #[must_use]

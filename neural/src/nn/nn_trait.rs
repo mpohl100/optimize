@@ -19,8 +19,6 @@ pub trait NeuralNetwork: std::fmt::Debug {
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>>;
     fn get_model_directory(&self) -> Directory;
-    fn allocate(&mut self);
-    fn deallocate(&mut self);
     fn set_internal(&mut self);
     fn duplicate(&self) -> WrappedNeuralNetwork;
     fn get_utils(&self) -> WrappedUtils;
@@ -58,14 +56,6 @@ impl WrappedNeuralNetwork {
         user_model_directory: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
         safe_lock(&self.nn).save(user_model_directory)
-    }
-
-    pub fn allocate(&self) {
-        safe_lock(&self.nn).allocate();
-    }
-
-    pub fn deallocate(&self) {
-        safe_lock(&self.nn).deallocate();
     }
 
     pub fn set_internal(&mut self) {
@@ -210,14 +200,6 @@ impl WrappedTrainableNeuralNetwork {
     #[must_use]
     pub fn get_model_directory(&self) -> Directory {
         safe_lock(&self.nn).get_model_directory()
-    }
-
-    pub fn allocate(&self) {
-        safe_lock(&self.nn).allocate();
-    }
-
-    pub fn deallocate(&self) {
-        safe_lock(&self.nn).deallocate();
     }
 
     pub fn set_internal(&mut self) {

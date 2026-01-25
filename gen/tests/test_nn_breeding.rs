@@ -9,6 +9,7 @@ use gen::strategy::nn_strategy::NeuralNetworkStrategy;
 use evol::evolution::EvolutionOptions;
 use evol::evolution::LogLevel;
 use evol::strategy::BreedStrategy;
+use neural::layer::dense_layer::MatrixParams;
 use neural::utilities::util::{Utils, WrappedUtils};
 
 #[test]
@@ -17,15 +18,27 @@ fn test_neural_network_breeding() {
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 128,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 64,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 64,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
@@ -63,7 +76,6 @@ fn test_neural_network_breeding() {
         for child in children.iter().take(4) {
             parents.push(child.clone());
         }
-        parents[0].allocate();
     }
 
     // Remove model directory

@@ -1,14 +1,21 @@
 use crate::utilities::util::WrappedUtils;
-use alloc::allocatable::{Allocatable, WrappedAllocatableTrait};
-use matrix::mat::WrappedMatrix;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::NumberEntry;
+use matrix::ai_types::WeightEntry;
+use matrix::composite_matrix::WrappedCompositeMatrix;
+use matrix::persistable_matrix::PersistableValue;
 use utils::safer::safe_lock;
 
-use dyn_clone::DynClone;
 use std::error::Error;
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
-pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
+pub trait Layer<
+    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+>: Debug
+{
     /// Performs the forward pass of the layer, computing the output based on the input vector.
     ///
     /// # Arguments
@@ -65,51 +72,43 @@ pub trait Layer: std::fmt::Debug + DynClone + Allocatable {
     ) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
-    fn get_weights(&self) -> WrappedMatrix<f64>;
+    fn get_weights(&self) -> WrappedCompositeMatrix<WeightT>;
 
     /// Returns the biases of the layer.
-    fn get_biases(&self) -> Vec<f64>;
+    fn get_biases(&self) -> WrappedCompositeMatrix<BiasT>;
 
     /// Marks the layer as in use.
     fn cleanup(&self);
-}
 
-dyn_clone::clone_trait_object!(Layer);
-
-pub trait AllocatableLayer: Allocatable + Layer {
-    /// Duplicates the layer, creating a new instance with the same parameters.
-    fn duplicate(
+    /// Assigns the weight of the input other layer
+    fn assign_weights(
         &mut self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Box<dyn AllocatableLayer + Send>;
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    );
 
-    /// Copy the layer on the filesystem
-    fn copy_on_filesystem(
-        &self,
-        layer_path: String,
+    /// Assigns the weight of the input other layer
+    fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
     );
 }
 
 #[derive(Debug, Clone)]
-pub struct WrappedLayer {
-    layer: Arc<Mutex<Box<dyn AllocatableLayer + Send>>>,
+pub struct WrappedLayer<
+    WeightT: Debug + Clone + PersistableValue,
+    BiasT: Debug + Clone + PersistableValue,
+> {
+    layer: Arc<Mutex<Box<dyn Layer<WeightT, BiasT> + Send>>>,
 }
 
-impl WrappedLayer {
+impl<
+        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    > WrappedLayer<WeightT, BiasT>
+{
     #[must_use]
-    pub fn new(layer: Box<dyn AllocatableLayer + Send>) -> Self {
+    pub fn new(layer: Box<dyn Layer<WeightT, BiasT> + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
-    }
-
-    #[must_use]
-    pub fn duplicate(
-        &self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Self {
-        let new_layer = safe_lock(&self.layer).duplicate(model_directory, position_in_nn);
-        Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
@@ -166,47 +165,34 @@ impl WrappedLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightT> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> Vec<f64> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasT> {
         safe_lock(&self.layer).get_biases()
     }
-}
 
-impl WrappedAllocatableTrait for WrappedLayer {
-    fn allocate(&self) {
-        self.layer.lock().unwrap().allocate();
+    pub fn assign_weights(
+        &mut self,
+        other: &WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        safe_lock(&self.layer).assign_weights(other.clone());
     }
 
-    fn deallocate(&self) {
-        self.layer.lock().unwrap().deallocate();
-    }
-
-    fn is_allocated(&self) -> bool {
-        self.layer.lock().unwrap().is_allocated()
-    }
-
-    fn get_size(&self) -> usize {
-        self.layer.lock().unwrap().get_size()
-    }
-
-    fn mark_for_use(&mut self) {
-        self.layer.lock().unwrap().mark_for_use();
-    }
-
-    fn free_from_use(&mut self) {
-        self.layer.lock().unwrap().free_from_use();
-    }
-
-    fn is_in_use(&self) -> bool {
-        self.layer.lock().unwrap().is_in_use()
+    pub fn assign_trainable_weights(
+        &mut self,
+        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        safe_lock(&self.layer).assign_trainable_weights(other.clone());
     }
 }
-
-pub trait TrainableLayer: Layer {
+pub trait TrainableLayer<
+    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+>: Layer<WeightT, BiasT>
+{
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
     ///
     /// # Arguments
@@ -238,12 +224,6 @@ pub trait TrainableLayer: Layer {
         &mut self,
         learning_rate: f64,
         utils: WrappedUtils,
-    );
-
-    /// Assigns the weight of the input other layer
-    fn assign_weights(
-        &mut self,
-        other: WrappedTrainableLayer,
     );
 
     /// Adjusts the weights according to the Adam optimizer.
@@ -278,42 +258,22 @@ pub trait TrainableLayer: Layer {
     ) -> Result<(), Box<dyn Error>>;
 }
 
-dyn_clone::clone_trait_object!(TrainableLayer);
-
-pub trait TrainableAllocatableLayer: Allocatable + TrainableLayer {
-    /// Duplicates the layer, creating a new instance with the same parameters.
-    fn duplicate(
-        &mut self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Box<dyn TrainableAllocatableLayer + Send>;
-
-    /// Copy the layer on the filesystem
-    fn copy_on_filesystem(
-        &self,
-        layer_path: String,
-    );
-}
-
 #[derive(Debug, Clone)]
-pub struct WrappedTrainableLayer {
-    layer: Arc<Mutex<Box<dyn TrainableAllocatableLayer + Send>>>,
+pub struct WrappedTrainableLayer<
+    WeightT: Debug + Clone + PersistableValue,
+    BiasT: Debug + Clone + PersistableValue,
+> {
+    layer: Arc<Mutex<Box<dyn TrainableLayer<WeightT, BiasT> + Send>>>,
 }
 
-impl WrappedTrainableLayer {
+impl<
+        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    > WrappedTrainableLayer<WeightT, BiasT>
+{
     #[must_use]
-    pub fn new(layer: Box<dyn TrainableAllocatableLayer + Send>) -> Self {
+    pub fn new(layer: Box<dyn TrainableLayer<WeightT, BiasT> + Send>) -> Self {
         Self { layer: Arc::new(Mutex::new(layer)) }
-    }
-
-    #[must_use]
-    pub fn duplicate(
-        &self,
-        model_directory: String,
-        position_in_nn: usize,
-    ) -> Self {
-        let new_layer = safe_lock(&self.layer).duplicate(model_directory, position_in_nn);
-        Self { layer: Arc::new(Mutex::new(new_layer)) }
     }
 
     pub fn cleanup(&self) {
@@ -358,12 +318,12 @@ impl WrappedTrainableLayer {
     }
 
     #[must_use]
-    pub fn get_weights(&self) -> WrappedMatrix<f64> {
+    pub fn get_weights(&self) -> WrappedCompositeMatrix<WeightT> {
         safe_lock(&self.layer).get_weights()
     }
 
     #[must_use]
-    pub fn get_biases(&self) -> Vec<f64> {
+    pub fn get_biases(&self) -> WrappedCompositeMatrix<BiasT> {
         safe_lock(&self.layer).get_biases()
     }
 
@@ -388,13 +348,6 @@ impl WrappedTrainableLayer {
         utils: WrappedUtils,
     ) {
         safe_lock(&self.layer).update_weights(learning_rate, utils);
-    }
-
-    pub fn assign_weights(
-        &mut self,
-        other: Self,
-    ) {
-        safe_lock(&self.layer).assign_weights(other);
     }
 
     pub fn adjust_adam(
@@ -432,34 +385,18 @@ impl WrappedTrainableLayer {
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).read_weight(path)
     }
-}
 
-impl WrappedAllocatableTrait for WrappedTrainableLayer {
-    fn allocate(&self) {
-        safe_lock(&self.layer).allocate();
+    pub fn assign_weights(
+        &mut self,
+        other: &WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        safe_lock(&self.layer).assign_weights(other.clone());
     }
 
-    fn deallocate(&self) {
-        safe_lock(&self.layer).deallocate();
-    }
-
-    fn is_allocated(&self) -> bool {
-        safe_lock(&self.layer).is_allocated()
-    }
-
-    fn get_size(&self) -> usize {
-        safe_lock(&self.layer).get_size()
-    }
-
-    fn mark_for_use(&mut self) {
-        safe_lock(&self.layer).mark_for_use();
-    }
-
-    fn free_from_use(&mut self) {
-        safe_lock(&self.layer).free_from_use();
-    }
-
-    fn is_in_use(&self) -> bool {
-        safe_lock(&self.layer).is_in_use()
+    pub fn assign_trainable_weights(
+        &mut self,
+        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        safe_lock(&self.layer).assign_trainable_weights(other.clone());
     }
 }

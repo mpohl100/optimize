@@ -155,26 +155,6 @@ impl NeuralNetwork for EitherNeuralNetwork {
         self.model_directory.clone()
     }
 
-    fn allocate(&mut self) {
-        self.pre_nn.allocate();
-        if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.allocate();
-        }
-        if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.allocate();
-        }
-    }
-
-    fn deallocate(&mut self) {
-        self.pre_nn.deallocate();
-        if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.deallocate();
-        }
-        if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.deallocate();
-        }
-    }
-
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
@@ -211,7 +191,6 @@ impl Drop for EitherNeuralNetwork {
             if std::fs::metadata(self.model_directory.path()).is_err() {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
-            self.deallocate();
         }
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
@@ -555,26 +534,6 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
         self.model_directory.clone()
     }
 
-    fn allocate(&mut self) {
-        self.pre_nn.allocate();
-        if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.allocate();
-        }
-        if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.allocate();
-        }
-    }
-
-    fn deallocate(&mut self) {
-        self.pre_nn.deallocate();
-        if let Some(ref mut left_nn) = self.left_nn {
-            left_nn.deallocate();
-        }
-        if let Some(ref mut right_nn) = self.right_nn {
-            right_nn.deallocate();
-        }
-    }
-
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.pre_nn.set_internal();
@@ -729,7 +688,6 @@ impl Drop for TrainableEitherNeuralNetwork {
             if std::fs::metadata(self.model_directory.path()).is_err() {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
-            self.deallocate();
         }
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
@@ -749,6 +707,7 @@ impl Drop for TrainableEitherNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape, LayerType},
         utilities::util::Utils,
@@ -761,18 +720,30 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],
             },
             NeuralNetworkShape {
                 layers: vec![LayerShape {
-                    layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                    layer_type: LayerType::Dense {
+                        input_size: 3,
+                        output_size: 3,
+                        matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                    },
                     activation: ActivationData::new_softmax(1.0),
                 }],
             },

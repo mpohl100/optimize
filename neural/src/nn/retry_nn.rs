@@ -135,6 +135,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
         layer_type: LayerType::Dense {
             input_size: internal_layer.input_size(),
             output_size: internal_layer.output_size() + 1,
+            matrix_params: internal_layer.matrix_params(),
         },
         activation: internal_layer.activation,
     };
@@ -148,6 +149,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
             layer_type: LayerType::Dense {
                 input_size: internal_layer.input_size() + 1,
                 output_size: internal_layer.output_size() + 1,
+                matrix_params: internal_layer.matrix_params(),
             },
             activation: internal_layer.activation.clone(),
         };
@@ -197,16 +199,6 @@ impl NeuralNetwork for RetryNeuralNetwork {
         self.model_directory.clone()
     }
 
-    fn allocate(&mut self) {
-        self.primary_nn.allocate();
-        self.backup_nn.allocate();
-    }
-
-    fn deallocate(&mut self) {
-        self.primary_nn.deallocate();
-        self.backup_nn.deallocate();
-    }
-
     fn set_internal(&mut self) {
         self.model_directory = Directory::Internal(self.model_directory.path());
         self.primary_nn.set_internal();
@@ -238,7 +230,6 @@ impl Drop for RetryNeuralNetwork {
             if std::fs::metadata(self.model_directory.path()).is_err() {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
-            self.deallocate();
         }
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
@@ -390,16 +381,6 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
-    }
-
-    fn allocate(&mut self) {
-        self.primary_nn.allocate();
-        self.backup_nn.allocate();
-    }
-
-    fn deallocate(&mut self) {
-        self.primary_nn.deallocate();
-        self.backup_nn.deallocate();
     }
 
     fn set_internal(&mut self) {
@@ -576,7 +557,6 @@ impl Drop for TrainableRetryNeuralNetwork {
             if std::fs::metadata(self.model_directory.path()).is_err() {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
-            self.deallocate();
         }
         // Remove the internal model directory from disk
         if let Directory::Internal(dir) = &self.model_directory {
@@ -596,6 +576,7 @@ impl Drop for TrainableRetryNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
@@ -608,11 +589,19 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],

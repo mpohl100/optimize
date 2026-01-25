@@ -18,8 +18,8 @@ pub trait PersistableValue: Default + Clone {
         Self: Sized;
 }
 
-#[derive(Default, Clone)]
-pub struct PersistableMatrix<T: PersistableValue> {
+#[derive(Default, Debug, Clone)]
+pub struct PersistableMatrix<T: PersistableValue + From<f64> + 'static> {
     matrix_file_path: Directory,
     rows: usize,
     cols: usize,
@@ -27,7 +27,13 @@ pub struct PersistableMatrix<T: PersistableValue> {
     in_use: bool,
 }
 
-impl<T: PersistableValue> PersistableMatrix<T> {
+impl<T: PersistableValue + From<f64> + 'static> From<f64> for PersistableMatrix<T> {
+    fn from(_value: f64) -> Self {
+        panic!("Cannot convert f64 to PersistableMatrix");
+    }
+}
+
+impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
     #[must_use]
     pub fn new(
         matrix_file_path: Directory,
@@ -41,6 +47,23 @@ impl<T: PersistableValue> PersistableMatrix<T> {
         };
 
         Self { matrix_file_path: matrix_path, rows, cols, mat: None, in_use: false }
+    }
+
+    /// # Panics
+    /// Panics if the matrix is not allocated.
+    /// Returns the value at the specified (x, y) position.
+    #[must_use]
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        self.mat.as_ref().map_or_else(
+            || {
+                panic!("Matrix is not allocated");
+            },
+            |mat| mat.get_unchecked(x, y),
+        )
     }
 
     pub fn set_mut_unchecked(
@@ -74,9 +97,26 @@ impl<T: PersistableValue> PersistableMatrix<T> {
     pub const fn cols(&self) -> usize {
         self.cols
     }
+
+    /// Save the matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(mat) = &self.mat {
+            save(self.matrix_file_path.path(), mat)?;
+        }
+        Ok(())
+    }
+
+    pub fn initialize_for_ai(&mut self) {
+        self.allocate();
+        if let Some(mat) = &mut self.mat {
+            mat.initialize_for_ai();
+        }
+    }
 }
 
-impl<T: PersistableValue> Drop for PersistableMatrix<T> {
+impl<T: PersistableValue + From<f64>> Drop for PersistableMatrix<T> {
     fn drop(&mut self) {
         // Save the model to ensure that everything is on disk if it is a user_model_directory
         if let Directory::User(dir) = &self.matrix_file_path {
@@ -97,7 +137,7 @@ impl<T: PersistableValue> Drop for PersistableMatrix<T> {
     }
 }
 
-impl<T: PersistableValue> Allocatable for PersistableMatrix<T> {
+impl<T: PersistableValue + From<f64>> Allocatable for PersistableMatrix<T> {
     fn allocate(&mut self) {
         if self.is_allocated() {
             return;
@@ -113,6 +153,7 @@ impl<T: PersistableValue> Allocatable for PersistableMatrix<T> {
             }
         } else {
             self.mat = Some(WrappedMatrix::new(self.rows, self.cols));
+            self.initialize_for_ai();
             save(self.matrix_file_path.path(), self.mat.as_ref().unwrap())
                 .expect("Failed to save layer weights");
         }
@@ -147,7 +188,7 @@ impl<T: PersistableValue> Allocatable for PersistableMatrix<T> {
     }
 }
 
-fn save<T: PersistableValue>(
+fn save<T: PersistableValue + From<f64>>(
     path: String,
     matrix: &WrappedMatrix<T>,
 ) -> Result<(), Box<dyn Error>> {
@@ -173,7 +214,7 @@ fn save<T: PersistableValue>(
     Ok(())
 }
 
-fn read<T: PersistableValue>(path: String) -> Result<WrappedMatrix<T>, Box<dyn Error>> {
+fn read<T: PersistableValue + From<f64>>(path: String) -> Result<WrappedMatrix<T>, Box<dyn Error>> {
     // create a lock file which acts as a lock
     let lock_file_path = format!("{path}.lock");
     let lock_file = File::create(&lock_file_path)?;
@@ -234,6 +275,12 @@ mod tests {
         }
         fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>> {
             Ok(Self(s.parse::<f64>()?))
+        }
+    }
+
+    impl From<f64> for TestValue {
+        fn from(value: f64) -> Self {
+            Self(value)
         }
     }
 

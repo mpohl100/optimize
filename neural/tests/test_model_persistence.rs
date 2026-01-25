@@ -1,4 +1,5 @@
 use matrix::directory::Directory;
+use neural::layer::dense_layer::MatrixParams;
 use neural::nn::neuralnet::ClassicNeuralNetwork;
 use neural::nn::nn_trait::NeuralNetwork;
 use neural::nn::shape::NeuralNetworkShape;
@@ -66,19 +67,35 @@ fn train_model(
     let nn_shape = NeuralNetworkShape {
         layers: vec![
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 128 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 128,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 128, output_size: 64 },
+                layer_type: LayerType::Dense {
+                    input_size: 128,
+                    output_size: 64,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::ReLU),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 64, output_size: 64 },
+                layer_type: LayerType::Dense {
+                    input_size: 64,
+                    output_size: 64,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new_softmax(2.0),
             },
             LayerShape {
-                layer_type: LayerType::Dense { input_size: 64, output_size: 10 },
+                layer_type: LayerType::Dense {
+                    input_size: 64,
+                    output_size: 10,
+                    matrix_params: MatrixParams { slice_rows: 50, slice_cols: 50 },
+                },
                 activation: ActivationData::new(ActivationType::Sigmoid),
             },
         ],
@@ -200,15 +217,12 @@ fn trained_model_is_convertible_to_ordinary_model_and_back() {
 
     let mut ordinary_model =
         ClassicNeuralNetwork::from_disk(expected_model_path, utils.clone()).unwrap();
-    ordinary_model.allocate();
     // Act
     ordinary_model.save(new_model_directory.clone()).expect("Failed to save model");
 
     let expected_new_model_path = format!("{workspace}/{new_model_directory}");
     let mut trainable_ordinary_model =
         ClassicNeuralNetwork::from_disk(expected_new_model_path, utils.clone()).unwrap();
-
-    trainable_ordinary_model.allocate();
 
     trainable_ordinary_model
         .save(new_model_directory.clone())

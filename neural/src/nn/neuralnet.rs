@@ -8,7 +8,9 @@ use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 use crate::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
 use crate::utilities::util::WrappedUtils;
-use alloc::allocatable::WrappedAllocatableTrait;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::NumberEntry;
+use matrix::ai_types::WeightEntry;
 
 use indicatif::ProgressDrawTarget;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -26,7 +28,7 @@ use matrix::directory::Directory;
 /// A neural network.
 #[derive(Debug)]
 pub struct ClassicNeuralNetwork {
-    layers: Vec<WrappedLayer>,
+    layers: Vec<WrappedLayer<NumberEntry, NumberEntry>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
@@ -64,6 +66,7 @@ impl ClassicNeuralNetwork {
                 layer_shape.output_size(),
                 network.model_directory.clone(),
                 i,
+                layer_shape.matrix_params(),
             );
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
@@ -109,12 +112,13 @@ impl ClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size } => {
+                LayerType::Dense { input_size, output_size, matrix_params } => {
                     let layer = DenseLayer::new(
                         *input_size,
                         *output_size,
                         network.model_directory.clone(),
                         i,
+                        *matrix_params,
                     );
                     WrappedLayer::new(Box::new(layer))
                 },
@@ -170,7 +174,7 @@ impl ClassicNeuralNetwork {
     fn add_activation_and_layer(
         &mut self,
         activation: Box<dyn ActivationTrait + Send>,
-        layer: WrappedLayer,
+        layer: WrappedLayer<NumberEntry, NumberEntry>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
@@ -202,10 +206,7 @@ impl ClassicNeuralNetwork {
     ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.mark_for_use();
-            self.utils.allocate(layer);
             output = layer.forward(&output, self.utils.clone());
-            layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
         }
@@ -257,20 +258,6 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         self.model_directory.clone()
     }
 
-    /// Allocates the layers of the neural network.
-    fn allocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.allocate(layer);
-        }
-    }
-
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.deallocate(layer);
-        }
-    }
-
     fn set_internal(&mut self) {
         // set the model directory to internal
         self.model_directory = Directory::Internal(self.model_directory.path());
@@ -284,7 +271,15 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            new_layers.push(layer.duplicate(model_directory.clone(), i));
+            let mut new_layer = WrappedLayer::new(Box::new(DenseLayer::new(
+                layer.input_size(),
+                layer.output_size(),
+                Directory::Internal(model_directory.clone()),
+                i,
+                self.shape.layers[i].matrix_params(),
+            )));
+            new_layer.assign_weights(&layer.clone());
+            new_layers.push(new_layer);
             layer.cleanup();
         }
         WrappedNeuralNetwork::new(Box::new(Self {
@@ -311,7 +306,6 @@ impl Drop for ClassicNeuralNetwork {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
             self.save_layout();
-            self.deallocate();
         }
         // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
@@ -330,7 +324,7 @@ impl Drop for ClassicNeuralNetwork {
 /// A neural network.
 #[derive(Debug)]
 pub struct TrainableClassicNeuralNetwork {
-    layers: Vec<WrappedTrainableLayer>,
+    layers: Vec<WrappedTrainableLayer<WeightEntry, BiasEntry>>,
     activations: Vec<Box<dyn ActivationTrait + Send>>,
     shape: NeuralNetworkShape,
     model_directory: Directory,
@@ -366,8 +360,9 @@ impl TrainableClassicNeuralNetwork {
             let layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
-                network.model_directory.clone(),
+                &network.model_directory,
                 i,
+                layer_shape.matrix_params(),
             )));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -474,7 +469,7 @@ impl TrainableClassicNeuralNetwork {
     fn add_activation_and_trainable_layer(
         &mut self,
         activation: Box<dyn ActivationTrait + Send>,
-        layer: WrappedTrainableLayer,
+        layer: WrappedTrainableLayer<WeightEntry, BiasEntry>,
     ) {
         self.activations.push(activation);
         self.layers.push(layer);
@@ -487,10 +482,7 @@ impl TrainableClassicNeuralNetwork {
     ) -> Vec<f64> {
         let mut output = input.to_vec();
         for (layer, activation) in self.layers.iter_mut().zip(&mut self.activations) {
-            layer.mark_for_use();
-            self.utils.allocate_trainable(layer);
             output = layer.forward(&output, self.utils.clone());
-            layer.free_from_use();
             // this operation should not change the dimension of output
             output = activation.forward(&output);
         }
@@ -520,10 +512,7 @@ impl TrainableClassicNeuralNetwork {
             self.layers.iter_mut().rev().zip(self.activations.iter_mut().rev())
         {
             grad = activation.backward(&grad);
-            layer.mark_for_use();
-            self.utils.allocate_trainable(layer);
             grad = layer.backward(&grad, self.utils.clone());
-            layer.free_from_use();
         }
     }
 
@@ -569,12 +558,13 @@ impl TrainableClassicNeuralNetwork {
 
         for i in 0..sh.layers.len() {
             let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size } => {
+                LayerType::Dense { input_size, output_size, matrix_params } => {
                     let layer = TrainableDenseLayer::new(
                         *input_size,
                         *output_size,
-                        network.model_directory.clone(),
+                        &network.model_directory,
                         i,
+                        *matrix_params,
                     );
                     WrappedTrainableLayer::new(Box::new(layer))
                 },
@@ -695,20 +685,6 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 
     fn get_model_directory(&self) -> Directory {
         self.model_directory.clone()
-    }
-
-    /// Allocates the layers of the neural network.
-    fn allocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.allocate_trainable(layer);
-        }
-    }
-
-    /// Deallocates the layers of the neural network.
-    fn deallocate(&mut self) {
-        for layer in &self.layers {
-            self.utils.deallocate_trainable(layer);
-        }
     }
 
     fn set_internal(&mut self) {
@@ -945,7 +921,15 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            new_layers.push(layer.duplicate(model_directory.clone(), i));
+            let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
+                layer.input_size(),
+                layer.output_size(),
+                &Directory::Internal(model_directory.clone()),
+                i,
+                self.shape.layers[i].matrix_params(),
+            )));
+            new_layer.assign_trainable_weights(layer);
+            new_layers.push(new_layer);
             layer.cleanup();
         }
         WrappedTrainableNeuralNetwork::new(Box::new(Self {
@@ -968,7 +952,6 @@ impl Drop for TrainableClassicNeuralNetwork {
                 std::fs::create_dir_all(self.model_directory.path()).unwrap();
             }
             self.save_layout();
-            self.deallocate();
         }
         // Interne Verzeichnisse immer entfernen, unabhängig vom Testmodus
         if let Directory::Internal(dir) = &self.model_directory {
@@ -987,6 +970,7 @@ impl Drop for TrainableClassicNeuralNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::layer::dense_layer::MatrixParams;
     use crate::{
         nn::shape::{ActivationData, ActivationType, LayerShape},
         utilities::util::Utils,
@@ -1009,11 +993,19 @@ mod tests {
             NeuralNetworkShape {
                 layers: vec![
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::Sigmoid),
                     },
                     LayerShape {
-                        layer_type: LayerType::Dense { input_size: 3, output_size: 3 },
+                        layer_type: LayerType::Dense {
+                            input_size: 3,
+                            output_size: 3,
+                            matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+                        },
                         activation: ActivationData::new(ActivationType::ReLU),
                     },
                 ],
