@@ -55,10 +55,10 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         y: usize,
         value: T,
     ) {
-        let matrix_x = x % self.slice_x;
-        let matrix_y = y % self.slice_y;
-        let within_x = x / self.slice_x;
-        let within_y = y / self.slice_y;
+        let matrix_x = x / self.slice_x;
+        let matrix_y = y / self.slice_y;
+        let within_x = x % self.slice_x;
+        let within_y = y % self.slice_y;
         let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
