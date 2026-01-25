@@ -7,7 +7,7 @@ use utils::safer::safe_lock;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
-pub struct CompositeMatrix<T: PersistableValue> {
+pub struct CompositeMatrix<T: PersistableValue + From<f64> + 'static> {
     slice_x: usize,
     slice_y: usize,
     rows: usize,
@@ -15,7 +15,7 @@ pub struct CompositeMatrix<T: PersistableValue> {
     matrices: WrappedMatrix<PersistableMatrix<T>>,
 }
 
-impl<T: PersistableValue> CompositeMatrix<T> {
+impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     ///  Create a new ``CompositeMatrix``
     /// # Panics
     /// Panics if ``set_mut_unchecked`` fails
@@ -103,11 +103,11 @@ impl<T: PersistableValue> CompositeMatrix<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct WrappedCompositeMatrix<T: PersistableValue> {
+pub struct WrappedCompositeMatrix<T: PersistableValue + From<f64> + 'static> {
     cm: std::sync::Arc<std::sync::Mutex<CompositeMatrix<T>>>,
 }
 
-impl<T: PersistableValue> WrappedCompositeMatrix<T> {
+impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
     #[must_use]
     pub fn new(cm: CompositeMatrix<T>) -> Self {
         Self { cm: std::sync::Arc::new(std::sync::Mutex::new(cm)) }

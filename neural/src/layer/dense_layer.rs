@@ -5,13 +5,16 @@ use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
 use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
 use crate::utilities::util::WrappedUtils;
+use matrix::ai_types::Bias;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::Weight;
+use matrix::ai_types::WeightEntry;
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::directory::Directory;
 
+use matrix::ai_types::NumberEntry;
 pub use matrix::mat::Matrix;
-
-use matrix::persistable_matrix::PersistableValue;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
@@ -183,22 +186,6 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
             }
         }
     }
-}
-
-#[derive(Default, Debug, Clone, Copy)]
-pub struct Weight {
-    pub value: f64,
-    pub grad: f64,
-    pub m: f64,
-    pub v: f64,
-}
-
-#[derive(Default, Debug, Clone, Copy)]
-pub struct Bias {
-    pub value: f64,
-    pub grad: f64,
-    pub m: f64,
-    pub v: f64,
 }
 
 /// A fully connected neural network layer (Dense layer).
@@ -479,71 +466,6 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         _path: String,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct NumberEntry(pub f64);
-
-impl PersistableValue for NumberEntry {
-    fn to_string_for_matrix(&self) -> String {
-        format!("{}", self.0)
-    }
-
-    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
-    where
-        Self: Sized,
-    {
-        let value = s.parse::<f64>()?;
-        Ok(Self(value))
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct WeightEntry(pub Weight);
-
-impl PersistableValue for WeightEntry {
-    fn to_string_for_matrix(&self) -> String {
-        format!("{} {} {} {}", self.0.value, self.0.grad, self.0.m, self.0.v)
-    }
-
-    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
-    where
-        Self: Sized,
-    {
-        let parts: Vec<&str> = s.split_whitespace().collect();
-        if parts.len() != 4 {
-            return Err("Invalid weight entry format".into());
-        }
-        let value = parts[0].parse::<f64>()?;
-        let grad = parts[1].parse::<f64>()?;
-        let m = parts[2].parse::<f64>()?;
-        let v = parts[3].parse::<f64>()?;
-        Ok(Self(Weight { value, grad, m, v }))
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct BiasEntry(pub Bias);
-
-impl PersistableValue for BiasEntry {
-    fn to_string_for_matrix(&self) -> String {
-        format!("{} {} {} {}", self.0.value, self.0.grad, self.0.m, self.0.v)
-    }
-
-    fn from_string_for_matrix(s: &str) -> Result<Self, Box<dyn Error>>
-    where
-        Self: Sized,
-    {
-        let parts: Vec<&str> = s.split_whitespace().collect();
-        if parts.len() != 4 {
-            return Err("Invalid bias entry format".into());
-        }
-        let value = parts[0].parse::<f64>()?;
-        let grad = parts[1].parse::<f64>()?;
-        let m = parts[2].parse::<f64>()?;
-        let v = parts[3].parse::<f64>()?;
-        Ok(Self(Bias { value, grad, m, v }))
     }
 }
 

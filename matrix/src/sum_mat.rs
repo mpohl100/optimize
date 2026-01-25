@@ -3,16 +3,32 @@ use crate::mat::{OutOfRangeError, WrappedMatrix};
 use num_traits::NumCast;
 use utils::safer::safe_lock;
 
+#[derive(Clone, Debug, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MyInteger(pub i64);
+
+impl From<f64> for MyInteger {
+    fn from(value: f64) -> Self {
+        Self(value as i64)
+    }
+}
+
 #[derive(Clone)]
 pub struct SumMatrix {
-    matrix: WrappedMatrix<i64>,
-    row_sum: Vec<i64>,
+    matrix: WrappedMatrix<MyInteger>,
+    row_sum: Vec<MyInteger>,
 }
 
 impl SumMatrix {
     #[must_use]
-    pub fn new(matrix: WrappedMatrix<i64>) -> Self {
-        let row_sum = safe_lock(&matrix.mat).iter().map(|row| row.iter().sum()).collect::<Vec<_>>();
+    pub fn new(matrix: WrappedMatrix<MyInteger>) -> Self {
+        let rows = matrix.rows();
+        let mut row_sum = vec![MyInteger(0); rows];
+        for r in 0..rows {
+            for c in 0..matrix.cols() {
+                let val = matrix.get_unchecked(r, c);
+                row_sum[r].0 += val.0;
+            }
+        }
         Self { matrix, row_sum }
     }
 
@@ -20,7 +36,7 @@ impl SumMatrix {
     pub fn get_row_sum(
         &self,
         row: usize,
-    ) -> i64 {
+    ) -> MyInteger {
         self.row_sum[row]
     }
 
@@ -32,9 +48,9 @@ impl SumMatrix {
         val: i64,
     ) {
         let previous_val = self.matrix.get_unchecked(row, col);
-        let delta = val - previous_val;
-        self.matrix.set_mut_unchecked(row, col, val);
-        self.row_sum[row] += delta;
+        let delta = val - previous_val.0;
+        self.matrix.set_mut_unchecked(row, col, MyInteger(val));
+        self.row_sum[row].0 += delta;
     }
 
     /// Set the value at the specified row and column.
@@ -64,7 +80,7 @@ impl SumMatrix {
         &self,
         row: usize,
         col: usize,
-    ) -> Result<i64, OutOfRangeError> {
+    ) -> Result<MyInteger, OutOfRangeError> {
         self.matrix.get(row, col)
     }
 
@@ -74,7 +90,7 @@ impl SumMatrix {
         &self,
         row: usize,
         col: usize,
-    ) -> i64 {
+    ) -> MyInteger {
         self.matrix.get_unchecked(row, col)
     }
 
@@ -98,11 +114,11 @@ impl SumMatrix {
         }
         let val = self.matrix.get_unchecked(row, col);
         let row_sum = self.row_sum[row];
-        if row_sum == 0 {
+        if row_sum == MyInteger(0) {
             return Err("Division by zero".to_string());
         }
-        let val_f64: f64 = NumCast::from(val).unwrap();
-        let row_sum_f64: f64 = NumCast::from(row_sum).unwrap();
+        let val_f64: f64 = NumCast::from(val.0).unwrap();
+        let row_sum_f64: f64 = NumCast::from(row_sum.0).unwrap();
         Ok(val_f64 / row_sum_f64)
     }
 }
@@ -122,17 +138,17 @@ mod tests {
         sum_matrix.set_val(0, 1, 2).unwrap();
         sum_matrix.set_val(0, 2, 3).unwrap();
 
-        assert_eq!(sum_matrix.get_row_sum(0), 6);
-        assert_eq!(sum_matrix.get_val(0, 0).unwrap(), 1);
-        assert_eq!(sum_matrix.get_val(0, 1).unwrap(), 2);
-        assert_eq!(sum_matrix.get_val(0, 2).unwrap(), 3);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(6));
+        assert_eq!(sum_matrix.get_val(0, 0).unwrap(), MyInteger(1));
+        assert_eq!(sum_matrix.get_val(0, 1).unwrap(), MyInteger(2));
+        assert_eq!(sum_matrix.get_val(0, 2).unwrap(), MyInteger(3));
 
         sum_matrix.set_val(0, 1, 5).unwrap();
 
-        assert_eq!(sum_matrix.get_row_sum(0), 9);
-        assert_eq!(sum_matrix.get_val(0, 0).unwrap(), 1);
-        assert_eq!(sum_matrix.get_val(0, 1).unwrap(), 5);
-        assert_eq!(sum_matrix.get_val(0, 2).unwrap(), 3);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(9));
+        assert_eq!(sum_matrix.get_val(0, 0).unwrap(), MyInteger(1));
+        assert_eq!(sum_matrix.get_val(0, 1).unwrap(), MyInteger(5));
+        assert_eq!(sum_matrix.get_val(0, 2).unwrap(), MyInteger(3));
     }
 
     #[test]
@@ -144,17 +160,17 @@ mod tests {
         sum_matrix.set_val_unchecked(0, 1, 2);
         sum_matrix.set_val_unchecked(0, 2, 3);
 
-        assert_eq!(sum_matrix.get_row_sum(0), 6);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 0), 1);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 1), 2);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 2), 3);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(6));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 0), MyInteger(1));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 1), MyInteger(2));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 2), MyInteger(3));
 
         sum_matrix.set_val_unchecked(0, 1, 5);
 
-        assert_eq!(sum_matrix.get_row_sum(0), 9);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 0), 1);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 1), 5);
-        assert_eq!(sum_matrix.get_val_unchecked(0, 2), 3);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(9));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 0), MyInteger(1));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 1), MyInteger(5));
+        assert_eq!(sum_matrix.get_val_unchecked(0, 2), MyInteger(3));
     }
 
     #[test]
@@ -177,7 +193,7 @@ mod tests {
         sum_matrix.set_val(0, 1, 2).unwrap();
         sum_matrix.set_val(0, 2, 3).unwrap();
 
-        assert_eq!(sum_matrix.get_row_sum(0), 6);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(6));
         let epsilon = 1e-6;
         assert!((sum_matrix.get_ratio(0, 0).unwrap() - 1.0 / 6.0).abs() < epsilon);
         assert!((sum_matrix.get_ratio(0, 1).unwrap() - 2.0 / 6.0).abs() < epsilon);
@@ -193,7 +209,7 @@ mod tests {
         sum_matrix.set_val(0, 1, 0).unwrap();
         sum_matrix.set_val(0, 2, 0).unwrap();
 
-        assert_eq!(sum_matrix.get_row_sum(0), 0);
+        assert_eq!(sum_matrix.get_row_sum(0), MyInteger(0));
         assert!(sum_matrix.get_ratio(0, 0).is_err());
         assert!(sum_matrix.get_ratio(0, 1).is_err());
         assert!(sum_matrix.get_ratio(0, 2).is_err());

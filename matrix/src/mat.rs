@@ -6,10 +6,13 @@ use std::sync::Mutex;
 
 use utils::safer::safe_lock;
 
+use rand::Rng;
 use rayon::prelude::*;
 
+use crate::ai_types::{BiasEntry, WeightEntry};
+
 #[derive(Debug, Clone)]
-pub struct Matrix<T> {
+pub struct Matrix<T: From<f64> + 'static> {
     rows: usize,
     cols: usize,
     data: Vec<T>,
@@ -31,7 +34,7 @@ impl fmt::Display for OutOfRangeError {
 
 impl Error for OutOfRangeError {}
 
-impl<T> Matrix<T>
+impl<T: From<f64> + 'static> Matrix<T>
 where
     T: Default + Clone,
 {
@@ -123,21 +126,42 @@ where
     pub const fn cols(&self) -> usize {
         self.cols
     }
+
+    pub fn initialize_for_ai(&mut self) {
+        // only do something here if T is of Type f64, WeightEntry or BiasEntry
+        if !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<f64>())
+            && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<WeightEntry>())
+            && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<BiasEntry>())
+        {
+            return;
+        }
+
+        let mut rng = rand::thread_rng();
+        let rows = self.rows;
+        let cols = self.cols;
+        for i in 0..rows {
+            for j in 0..cols {
+                let value = rng.gen_range(-0.5..0.5);
+                // SAFETY: Indices are within bounds
+                self.set_mut_unchecked(i, j, T::from(value));
+            }
+        }
+    }
 }
 
 /// Immutable row iterator
-pub struct RowIter<'a, T> {
+pub struct RowIter<'a, T: From<f64> + 'static> {
     matrix: &'a Matrix<T>,
     current_row: usize,
 }
 
 /// Mutable row iterator
-pub struct RowIterMut<'a, T> {
+pub struct RowIterMut<'a, T: From<f64> + 'static> {
     matrix: &'a mut Matrix<T>,
     current_row: usize,
 }
 
-impl<T> Matrix<T> {
+impl<T: From<f64> + 'static> Matrix<T> {
     /// Returns an iterator over the rows of the matrix (immutable)
     #[must_use]
     pub const fn iter(&self) -> RowIter<'_, T> {
@@ -151,7 +175,7 @@ impl<T> Matrix<T> {
 }
 
 // Implement IntoIterator for &Matrix<T>
-impl<'a, T> IntoIterator for &'a Matrix<T> {
+impl<'a, T: From<f64>> IntoIterator for &'a Matrix<T> {
     type Item = &'a [T];
     type IntoIter = RowIter<'a, T>;
 
@@ -161,7 +185,7 @@ impl<'a, T> IntoIterator for &'a Matrix<T> {
 }
 
 // Implement IntoIterator for &mut Matrix<T>
-impl<'a, T> IntoIterator for &'a mut Matrix<T> {
+impl<'a, T: From<f64>> IntoIterator for &'a mut Matrix<T> {
     type Item = &'a mut [T];
     type IntoIter = RowIterMut<'a, T>;
 
@@ -171,7 +195,7 @@ impl<'a, T> IntoIterator for &'a mut Matrix<T> {
 }
 
 // Implement `Iterator` for `RowIter`
-impl<'a, T> Iterator for RowIter<'a, T> {
+impl<'a, T: From<f64>> Iterator for RowIter<'a, T> {
     type Item = &'a [T];
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -187,7 +211,7 @@ impl<'a, T> Iterator for RowIter<'a, T> {
 }
 
 // Implement `Iterator` for `RowIterMut`
-impl<'a, T> Iterator for RowIterMut<'a, T> {
+impl<'a, T: From<f64>> Iterator for RowIterMut<'a, T> {
     type Item = &'a mut [T];
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -207,7 +231,7 @@ impl<'a, T> Iterator for RowIterMut<'a, T> {
     }
 }
 
-impl<T: Sync> Matrix<T> {
+impl<T: Sync + From<f64>> Matrix<T> {
     #[must_use]
     pub fn par_iter(&self) -> rayon::slice::Chunks<'_, T> {
         self.data.par_chunks(self.cols)
@@ -219,7 +243,7 @@ impl<T: Sync> Matrix<T> {
     }
 }
 
-impl<T: Send> Matrix<T> {
+impl<T: Send + From<f64>> Matrix<T> {
     pub fn par_iter_mut(&mut self) -> rayon::slice::ChunksMut<'_, T> {
         self.data.par_chunks_mut(self.cols)
     }
@@ -230,13 +254,13 @@ impl<T: Send> Matrix<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct WrappedMatrix<T: Default + Clone> {
+pub struct WrappedMatrix<T: Default + Clone + From<f64> + 'static> {
     pub mat: Arc<Mutex<Matrix<T>>>,
 }
 
 impl<T> WrappedMatrix<T>
 where
-    T: Default + Clone,
+    T: Default + Clone + From<f64> + 'static,
 {
     #[must_use]
     pub fn new(
@@ -244,6 +268,12 @@ where
         cols: usize,
     ) -> Self {
         Self { mat: Arc::new(Mutex::new(Matrix::<T>::new(rows, cols))) }
+    }
+
+    /// Initialize the matrix with random values for AI applications
+    pub fn initialize_for_ai(&self) {
+        let mut mat = safe_lock(&self.mat);
+        mat.initialize_for_ai();
     }
 
     /// Get a copy of the element at (x, y).
