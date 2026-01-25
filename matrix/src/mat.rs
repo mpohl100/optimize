@@ -9,7 +9,7 @@ use utils::safer::safe_lock;
 use rand::Rng;
 use rayon::prelude::*;
 
-use crate::ai_types::{BiasEntry, WeightEntry};
+use crate::ai_types::{Bias, BiasEntry, NumberEntry, Weight, WeightEntry};
 
 #[derive(Debug, Clone)]
 pub struct Matrix<T: From<f64> + 'static> {
@@ -34,9 +34,9 @@ impl fmt::Display for OutOfRangeError {
 
 impl Error for OutOfRangeError {}
 
-impl<T: From<f64> + 'static> Matrix<T>
+impl<T> Matrix<T>
 where
-    T: Default + Clone,
+    T: Default + Clone + From<f64> + 'static,
 {
     // Constructor with specified rows and columns
     #[must_use]
@@ -132,6 +132,9 @@ where
         if !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<f64>())
             && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<WeightEntry>())
             && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<BiasEntry>())
+            && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<NumberEntry>())
+            && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<Bias>())
+            && !std::any::TypeId::of::<T>().eq(&std::any::TypeId::of::<Weight>())
         {
             return;
         }
