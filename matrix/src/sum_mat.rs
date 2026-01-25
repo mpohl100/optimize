@@ -7,6 +7,7 @@ use utils::safer::safe_lock;
 pub struct MyInteger(pub i64);
 
 impl From<f64> for MyInteger {
+    #[allow(clippy::cast_possible_truncation)]
     fn from(value: f64) -> Self {
         Self(value as i64)
     }
