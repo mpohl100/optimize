@@ -1,3 +1,5 @@
+use core::num;
+
 pub use matrix::ai_types::Bias;
 pub use matrix::ai_types::BiasEntry;
 pub use matrix::ai_types::NumberEntry;
@@ -381,19 +383,20 @@ impl MatrixExtensionsComposite<NumberEntry, NumberEntry> for CompositeMatrix<Num
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            let mut local_outputs = vec![0.0; self.get_slice_x()];
-            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
-            row.iter_mut().enumerate().for_each(|(j, matrix)| {
+            let mut local_outputs = vec![0.0; self.get_slice_num_rows()];
+            let local_inputs =
+                &inputs[i * self.get_slice_num_rows()..(i + 1) * self.get_slice_num_rows()];
+            for matrix in row.iter_mut() {
                 matrix.allocate();
                 matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
                     |(weight_row_index, weight_row)| {
-                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
-                            local_outputs[weight_index] +=
+                        for weight in weight_row.iter_mut() {
+                            local_outputs[weight_row_index] +=
                                 weight.0 * local_inputs[weight_row_index];
-                        });
+                        }
                     },
                 );
-            });
+            }
             // add local biases
             let mut local_biases = biases.matrices().get_unchecked(i, 0);
             local_biases.allocate();
@@ -406,7 +409,7 @@ impl MatrixExtensionsComposite<NumberEntry, NumberEntry> for CompositeMatrix<Num
             );
 
             for (k, val) in local_outputs.iter().enumerate() {
-                outputs[i * self.get_slice_x() + k] += val;
+                outputs[i * self.get_slice_num_rows() + k] += val;
             }
         });
         outputs
@@ -421,19 +424,20 @@ impl MatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMatrix<Weigh
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            let mut local_outputs = vec![0.0; self.get_slice_x()];
-            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
-            row.iter_mut().enumerate().for_each(|(j, matrix)| {
+            let mut local_outputs = vec![0.0; self.get_slice_num_rows()];
+            let local_inputs =
+                &inputs[i * self.get_slice_num_rows()..(i + 1) * self.get_slice_num_rows()];
+            for matrix in row.iter_mut() {
                 matrix.allocate();
                 matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
                     |(weight_row_index, weight_row)| {
-                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
-                            local_outputs[weight_index] +=
+                        for weight in weight_row.iter_mut() {
+                            local_outputs[weight_row_index] +=
                                 weight.0.value * local_inputs[weight_row_index];
-                        });
+                        }
                     },
                 );
-            });
+            }
             // add local biases
             let mut local_biases = biases.matrices().get_unchecked(i, 0);
             local_biases.allocate();
@@ -446,7 +450,7 @@ impl MatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMatrix<Weigh
             );
 
             for (k, val) in local_outputs.iter().enumerate() {
-                outputs[i * self.get_slice_x() + k] += val;
+                outputs[i * self.get_slice_num_rows() + k] += val;
             }
         });
         outputs
@@ -461,19 +465,20 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            let mut local_outputs = vec![0.0; self.get_slice_x()];
-            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
-            row.iter_mut().enumerate().for_each(|(j, matrix)| {
+            let mut local_outputs = vec![0.0; self.get_slice_num_rows()];
+            let local_inputs =
+                &inputs[i * self.get_slice_num_rows()..(i + 1) * self.get_slice_num_rows()];
+            for matrix in row.iter_mut() {
                 matrix.allocate();
                 matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
                     |(weight_row_index, weight_row)| {
-                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
-                            local_outputs[weight_index] +=
+                        for weight in weight_row.iter_mut() {
+                            local_outputs[weight_row_index] +=
                                 weight.0.value * local_inputs[weight_row_index];
-                        });
+                        }
                     },
                 );
-            });
+            }
             // add local biases
             let mut local_biases = biases.matrices().get_unchecked(i, 0);
             local_biases.allocate();
@@ -486,7 +491,7 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
             );
 
             for (k, val) in local_outputs.iter().enumerate() {
-                outputs[i * self.get_slice_x() + k] += val;
+                outputs[i * self.get_slice_num_rows() + k] += val;
             }
         });
         outputs
@@ -528,10 +533,10 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         d_out_vec: &[f64],
         input_cache: &[f64],
     ) {
-        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let row_start = j * self.get_slice_y();
+                let row_start = j * self.get_slice_num_rows();
                 let row_end = row_start + matrix.rows();
                 matrix.mat().unwrap().backward_calculate_gradients(
                     &d_out_vec[row_start..row_end],
@@ -547,11 +552,11 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         d_out_vec_sec: &[f64],
     ) -> f64 {
         let mut result = 0.0;
-        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             row.iter_mut().enumerate().for_each(|(k, matrix)| {
                 if k == j {
                     matrix.allocate();
-                    let row_start = j * self.get_slice_y();
+                    let row_start = j * self.get_slice_num_rows();
                     let row_end = row_start + matrix.rows();
                     result += matrix
                         .mat()
@@ -599,15 +604,15 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         input_cache: &[f64],
     ) {
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            row.iter_mut().enumerate().for_each(|(j, matrix)| {
+            for matrix in row.iter_mut() {
                 matrix.allocate();
-                let row_start = j * self.get_slice_y();
+                let row_start = i * self.get_slice_num_rows();
                 let row_end = row_start + matrix.rows();
                 matrix.mat().unwrap().backward_calculate_gradients(
                     &d_out_vec[row_start..row_end],
                     &input_cache[row_start..row_end],
                 );
-            });
+            }
         });
     }
 
@@ -617,11 +622,11 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         d_out_vec_sec: &[f64],
     ) -> f64 {
         let mut result = 0.0;
-        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             row.iter_mut().enumerate().for_each(|(k, matrix)| {
                 if k == j {
                     matrix.allocate();
-                    let row_start = j * self.get_slice_y();
+                    let row_start = j * self.get_slice_num_rows();
                     let row_end = row_start + matrix.rows();
                     result += matrix
                         .mat()
