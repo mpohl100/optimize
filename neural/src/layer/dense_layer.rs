@@ -226,7 +226,7 @@ impl TrainableDenseLayer {
             1,
             &layer_path.expand("biases"),
         ));
-        let layer = Self {
+        Self {
             rows: output_size,
             cols: input_size,
             weights,
@@ -234,21 +234,6 @@ impl TrainableDenseLayer {
             input_cache: None,
             _input_batch_cache: None,
             layer_path,
-        };
-        layer.initialize_weights();
-        layer
-    }
-
-    /// Initialize the weights with random values in the range [-0.5, 0.5]
-    fn initialize_weights(&self) {
-        let mut rng = rand::thread_rng();
-        // initialize weights from -0.5 to 0.5
-        for i in 0..self.weights.rows() {
-            for j in 0..self.weights.cols() {
-                let value = rng.gen_range(-0.5..0.5);
-                let w = Weight { value, grad: 0.0, m: 0.0, v: 0.0 };
-                self.weights.set_mut_unchecked(i, j, WeightEntry(w));
-            }
         }
     }
 }

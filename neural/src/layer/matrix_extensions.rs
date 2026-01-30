@@ -381,18 +381,33 @@ impl MatrixExtensionsComposite<NumberEntry, NumberEntry> for CompositeMatrix<Num
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+            let mut local_outputs = vec![0.0; self.get_slice_x()];
+            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let mut b = biases.matrices().get_unchecked(i, j);
-                b.allocate();
-                let local_outputs = matrix.mat().unwrap().forward(
-                    &inputs[j * self.get_slice_y()..(j + 1) * self.get_slice_y()],
-                    b.mat().unwrap(),
+                matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                    |(weight_row_index, weight_row)| {
+                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
+                            local_outputs[weight_index] +=
+                                weight.0 * local_inputs[weight_row_index];
+                        });
+                    },
                 );
-                for (k, &val) in local_outputs.iter().enumerate() {
-                    outputs[i * self.get_slice_x() + k] += val;
-                }
             });
+            // add local biases
+            let mut local_biases = biases.matrices().get_unchecked(i, 0);
+            local_biases.allocate();
+            local_biases.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                |(bias_index, bias_row)| {
+                    for bias in bias_row.iter_mut() {
+                        local_outputs[bias_index] += bias.0;
+                    }
+                },
+            );
+
+            for (k, val) in local_outputs.iter().enumerate() {
+                outputs[i * self.get_slice_x() + k] += val;
+            }
         });
         outputs
     }
@@ -406,18 +421,33 @@ impl MatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMatrix<Weigh
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+            let mut local_outputs = vec![0.0; self.get_slice_x()];
+            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let mut b = biases.matrices().get_unchecked(i, j);
-                b.allocate();
-                let row_start = j * self.get_slice_y();
-                let row_end = row_start + matrix.rows();
-                let local_outputs =
-                    matrix.mat().unwrap().forward(&inputs[row_start..row_end], b.mat().unwrap());
-                for (k, &val) in local_outputs.iter().enumerate() {
-                    outputs[i * self.get_slice_x() + k] += val;
-                }
+                matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                    |(weight_row_index, weight_row)| {
+                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
+                            local_outputs[weight_index] +=
+                                weight.0.value * local_inputs[weight_row_index];
+                        });
+                    },
+                );
             });
+            // add local biases
+            let mut local_biases = biases.matrices().get_unchecked(i, 0);
+            local_biases.allocate();
+            local_biases.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                |(bias_index, bias_row)| {
+                    for bias in bias_row.iter_mut() {
+                        local_outputs[bias_index] += bias.0.value;
+                    }
+                },
+            );
+
+            for (k, val) in local_outputs.iter().enumerate() {
+                outputs[i * self.get_slice_x() + k] += val;
+            }
         });
         outputs
     }
@@ -431,18 +461,33 @@ impl MatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatrix<BiasEnt
     ) -> Vec<f64> {
         let mut outputs = vec![0.0; self.rows()];
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+            let mut local_outputs = vec![0.0; self.get_slice_x()];
+            let local_inputs = &inputs[i * self.get_slice_y()..(i + 1) * self.get_slice_y()];
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let mut b = biases.matrices().get_unchecked(i, j);
-                b.allocate();
-                let row_start = j * self.get_slice_y();
-                let row_end = row_start + matrix.rows();
-                let local_outputs =
-                    matrix.mat().unwrap().forward(&inputs[row_start..row_end], b.mat().unwrap());
-                for (k, &val) in local_outputs.iter().enumerate() {
-                    outputs[i * self.get_slice_x() + k] += val;
-                }
+                matrix.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                    |(weight_row_index, weight_row)| {
+                        weight_row.iter_mut().enumerate().for_each(|(weight_index, weight)| {
+                            local_outputs[weight_index] +=
+                                weight.0.value * local_inputs[weight_row_index];
+                        });
+                    },
+                );
             });
+            // add local biases
+            let mut local_biases = biases.matrices().get_unchecked(i, 0);
+            local_biases.allocate();
+            local_biases.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
+                |(bias_index, bias_row)| {
+                    for bias in bias_row.iter_mut() {
+                        local_outputs[bias_index] += bias.0.value;
+                    }
+                },
+            );
+
+            for (k, val) in local_outputs.iter().enumerate() {
+                outputs[i * self.get_slice_x() + k] += val;
+            }
         });
         outputs
     }
