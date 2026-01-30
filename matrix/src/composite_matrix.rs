@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct CompositeMatrix<T: PersistableValue + From<f64> + 'static> {
-    slice_x: usize,
-    slice_y: usize,
+    slice_num_cols: usize,
+    slice_num_rows: usize,
     rows: usize,
     cols: usize,
     matrices: WrappedMatrix<PersistableMatrix<T>>,
@@ -43,7 +43,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
                 matrices.mat().lock().unwrap().set_mut_unchecked(i, j, persistable_matrix);
             }
         }
-        Self { slice_x, slice_y, rows, cols, matrices }
+        Self { slice_num_cols: slice_x, slice_num_rows: slice_y, rows, cols, matrices }
     }
 
     /// Set the value at (x, y) without bounds checking.
@@ -55,10 +55,10 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         y: usize,
         value: T,
     ) {
-        let matrix_x = x / self.slice_x;
-        let matrix_y = y / self.slice_y;
-        let within_x = x % self.slice_x;
-        let within_y = y % self.slice_y;
+        let matrix_x = x / self.slice_num_cols;
+        let matrix_y = y / self.slice_num_rows;
+        let within_x = x % self.slice_num_cols;
+        let within_y = y % self.slice_num_rows;
         let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
@@ -69,13 +69,13 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     }
 
     #[must_use]
-    pub const fn get_slice_x(&self) -> usize {
-        self.slice_x
+    pub const fn get_slice_num_cols(&self) -> usize {
+        self.slice_num_cols
     }
 
     #[must_use]
-    pub const fn get_slice_y(&self) -> usize {
-        self.slice_y
+    pub const fn get_slice_num_rows(&self) -> usize {
+        self.slice_num_rows
     }
 
     #[must_use]
@@ -92,8 +92,8 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     /// # Errors
     /// Returns an error if saving fails
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        for i in 0..(self.rows / self.slice_x) {
-            for j in 0..(self.cols / self.slice_y) {
+        for i in 0..(self.rows / self.slice_num_cols) {
+            for j in 0..(self.cols / self.slice_num_rows) {
                 let persistable_matrix = self.matrices.get_unchecked(i, j);
                 persistable_matrix.save()?;
             }
@@ -120,10 +120,10 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         y: usize,
     ) -> T {
         let cm = safe_lock(&self.cm);
-        let matrix_x = x / cm.get_slice_x();
-        let matrix_y = y / cm.get_slice_y();
-        let within_x = x % cm.get_slice_x();
-        let within_y = y % cm.get_slice_y();
+        let matrix_x = x / cm.get_slice_num_cols();
+        let matrix_y = y / cm.get_slice_num_rows();
+        let within_x = x % cm.get_slice_num_cols();
+        let within_y = y % cm.get_slice_num_rows();
         let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
         drop(cm);
         persistable_matrix.get_unchecked(within_x, within_y)

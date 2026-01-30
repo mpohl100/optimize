@@ -18,7 +18,6 @@ pub use matrix::mat::Matrix;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 
-use rand::Rng;
 use serde::Deserialize;
 use serde::Serialize;
 use std::error::Error;

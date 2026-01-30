@@ -1,7 +1,6 @@
 use crate::mat::{OutOfRangeError, WrappedMatrix};
 
 use num_traits::NumCast;
-use utils::safer::safe_lock;
 
 #[derive(Clone, Debug, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MyInteger(pub i64);
