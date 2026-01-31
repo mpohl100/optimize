@@ -65,7 +65,7 @@ impl DenseLayer {
         ));
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
-            1,
+            matrix_params.slice_cols,
             output_size,
             1,
             &layer_path.expand("biases"),
@@ -220,7 +220,7 @@ impl TrainableDenseLayer {
         ));
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
-            1,
+            matrix_params.slice_cols,
             output_size,
             1,
             &layer_path.expand("biases"),
