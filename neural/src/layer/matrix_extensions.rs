@@ -438,16 +438,25 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         d_out_vec: &[f64],
         input_cache: &[f64],
     ) {
+        /*
+        self.mat().lock().unwrap().par_indexed_iter_mut().for_each(|(i, row_grad)| {
+            row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
+                grad.0.grad = d_out_vec[i] * input_cache[j];
+            });
+        });
+        */
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            for matrix in row.iter_mut() {
+            row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let row_start = i * self.get_slice_num_rows();
-                let row_end = row_start + matrix.rows();
+                let d_out_row_start = i * self.get_slice_num_rows();
+                let d_out_row_end = d_out_row_start + matrix.rows();
+                let input_cache_row_start = j * self.get_slice_num_cols();
+                let input_cache_row_end = input_cache_row_start + matrix.cols();
                 matrix.mat().unwrap().backward_calculate_gradients(
-                    &d_out_vec[row_start..row_end],
-                    &input_cache[row_start..row_end],
+                    &d_out_vec[d_out_row_start..d_out_row_end],
+                    &input_cache[input_cache_row_start..input_cache_row_end],
                 );
-            }
+            });
         });
     }
 
