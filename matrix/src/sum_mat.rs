@@ -23,10 +23,10 @@ impl SumMatrix {
     pub fn new(matrix: WrappedMatrix<MyInteger>) -> Self {
         let rows = matrix.rows();
         let mut row_sum = vec![MyInteger(0); rows];
-        for r in 0..rows {
+        for (r, row_sum_val) in row_sum.iter_mut().enumerate().take(rows) {
             for c in 0..matrix.cols() {
                 let val = matrix.get_unchecked(r, c);
-                row_sum[r].0 += val.0;
+                row_sum_val.0 += val.0;
             }
         }
         Self { matrix, row_sum }
