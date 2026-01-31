@@ -27,6 +27,7 @@ pub struct PersistableMatrix<T: PersistableValue + From<f64> + 'static> {
     in_use: bool,
 }
 
+#[allow(clippy::fallible_impl_from)]
 impl<T: PersistableValue + From<f64> + 'static> From<f64> for PersistableMatrix<T> {
     fn from(_value: f64) -> Self {
         panic!("Cannot convert f64 to PersistableMatrix");
