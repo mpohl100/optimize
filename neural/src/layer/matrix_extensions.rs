@@ -763,8 +763,14 @@ fn forward_impl<
             mat.get_slice_num_rows()
         };
         let mut local_outputs = vec![0.0; num_rows];
+
+        let num_cols = if (i + 1) * mat.get_slice_num_cols() > mat.cols() {
+            mat.cols() - i * mat.get_slice_num_cols()
+        } else {
+            mat.get_slice_num_cols()
+        };
         let local_inputs =
-            &inputs[i * mat.get_slice_num_rows()..i * mat.get_slice_num_rows() + num_rows];
+            &inputs[i * mat.get_slice_num_cols()..i * mat.get_slice_num_cols() + num_cols];
         for matrix in row.iter_mut() {
             matrix.allocate();
             let col_outputs = matrix
