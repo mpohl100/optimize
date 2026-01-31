@@ -120,13 +120,15 @@ impl NeuralNetwork for EitherNeuralNetwork {
     }
 
     fn shape(&self) -> NeuralNetworkShape {
-        if self.left_nn.is_some() {
-            self.left_nn.as_ref().unwrap().shape()
-        } else if self.right_nn.is_some() {
-            self.right_nn.as_ref().unwrap().shape()
-        } else {
-            self.shape.clone()
-        }
+        self.left_nn.as_ref().map_or_else(
+            || {
+                self.right_nn.as_ref().map_or_else(
+                    || self.shape.clone(),
+                    super::nn_trait::WrappedNeuralNetwork::shape,
+                )
+            },
+            super::nn_trait::WrappedNeuralNetwork::shape,
+        )
     }
 
     fn save(
