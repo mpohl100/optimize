@@ -438,16 +438,16 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         d_out_vec: &[f64],
         input_cache: &[f64],
     ) {
-        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
-            row.iter_mut().enumerate().for_each(|(j, matrix)| {
+        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
+            for matrix in row.iter_mut() {
                 matrix.allocate();
-                let row_start = j * self.get_slice_num_rows();
+                let row_start = i * self.get_slice_num_rows();
                 let row_end = row_start + matrix.rows();
                 matrix.mat().unwrap().backward_calculate_gradients(
                     &d_out_vec[row_start..row_end],
                     &input_cache[row_start..row_end],
                 );
-            });
+            }
         });
     }
 
@@ -457,11 +457,11 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         d_out_vec_sec: &[f64],
     ) -> f64 {
         let mut result = 0.0;
-        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
+        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
             row.iter_mut().enumerate().for_each(|(k, matrix)| {
                 if k == j {
                     matrix.allocate();
-                    let row_start = j * self.get_slice_num_rows();
+                    let row_start = i * self.get_slice_num_rows();
                     let row_end = row_start + matrix.rows();
                     result += matrix
                         .mat()
