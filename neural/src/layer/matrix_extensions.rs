@@ -465,20 +465,33 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         j: usize,
         d_out_vec_sec: &[f64],
     ) -> f64 {
+        /*
+            self.mat()
+            .lock()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(i, row)| row[j].0.value * d_out_vec_sec[i])
+            .sum::<f64>()
+        */
         let mut result = 0.0;
-        self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            row.iter_mut().enumerate().for_each(|(k, matrix)| {
-                if k == j {
-                    matrix.allocate();
-                    let row_start = i * self.get_slice_num_rows();
-                    let row_end = row_start + matrix.rows();
-                    result += matrix
-                        .mat()
-                        .unwrap()
-                        .backward_calculate_weights_sec(j, &d_out_vec_sec[row_start..row_end]);
-                }
-            });
-        });
+        // sum the jth column across all sub-matrices
+        let num_cols_per_matrix = self.get_slice_num_cols();
+        let persistable_col = j / num_cols_per_matrix;
+        let local_col_index = j % num_cols_per_matrix;
+        let binding = self.matrices().mat();
+        let mut matrices_guard = binding.lock().unwrap();
+        for i in 0..matrices_guard.rows() {
+            let matrix = matrices_guard.get_mut_unchecked(i, persistable_col);
+            matrix.allocate();
+            let row_start = i * self.get_slice_num_rows();
+            let row_end = row_start + matrix.rows();
+            result += matrix.mat().unwrap().backward_calculate_weights_sec(
+                local_col_index,
+                &d_out_vec_sec[row_start..row_end],
+            );
+        }
+        drop(matrices_guard);
         result
     }
 
