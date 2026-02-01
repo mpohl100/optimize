@@ -530,16 +530,25 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         d_out_vec: &[f64],
         input_cache: &[f64],
     ) {
+        /*
+        self.mat().lock().unwrap().par_indexed_iter_mut().for_each(|(i, row_grad)| {
+            row_grad.iter_mut().enumerate().for_each(|(j, grad)| {
+                grad.0.grad = d_out_vec[i] * input_cache[j];
+            });
+        });
+        */
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
-            for matrix in row.iter_mut() {
+            row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 matrix.allocate();
-                let row_start = i * self.get_slice_num_rows();
-                let row_end = row_start + matrix.rows();
+                let d_out_row_start = i * self.get_slice_num_rows();
+                let d_out_row_end = d_out_row_start + matrix.rows();
+                let input_cache_row_start = j * self.get_slice_num_cols();
+                let input_cache_row_end = input_cache_row_start + matrix.cols();
                 matrix.mat().unwrap().backward_calculate_gradients(
-                    &d_out_vec[row_start..row_end],
-                    &input_cache[row_start..row_end],
+                    &d_out_vec[d_out_row_start..d_out_row_end],
+                    &input_cache[input_cache_row_start..input_cache_row_end],
                 );
-            }
+            });
         });
     }
 
@@ -548,20 +557,33 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         j: usize,
         d_out_vec_sec: &[f64],
     ) -> f64 {
+        /*
+            self.mat()
+            .lock()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(i, row)| row[j].0.value * d_out_vec_sec[i])
+            .sum::<f64>()
+        */
         let mut result = 0.0;
-        self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
-            row.iter_mut().enumerate().for_each(|(k, matrix)| {
-                if k == j {
-                    matrix.allocate();
-                    let row_start = j * self.get_slice_num_rows();
-                    let row_end = row_start + matrix.rows();
-                    result += matrix
-                        .mat()
-                        .unwrap()
-                        .backward_calculate_weights_sec(j, &d_out_vec_sec[row_start..row_end]);
-                }
-            });
-        });
+        // sum the jth column across all sub-matrices
+        let num_cols_per_matrix = self.get_slice_num_cols();
+        let persistable_col = j / num_cols_per_matrix;
+        let local_col_index = j % num_cols_per_matrix;
+        let binding = self.matrices().mat();
+        let mut matrices_guard = binding.lock().unwrap();
+        for i in 0..matrices_guard.rows() {
+            let matrix = matrices_guard.get_mut_unchecked(i, persistable_col);
+            matrix.allocate();
+            let row_start = i * self.get_slice_num_rows();
+            let row_end = row_start + matrix.rows();
+            result += matrix.mat().unwrap().backward_calculate_weights_sec(
+                local_col_index,
+                &d_out_vec_sec[row_start..row_end],
+            );
+        }
+        drop(matrices_guard);
         result
     }
 
