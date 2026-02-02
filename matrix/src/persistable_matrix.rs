@@ -1,6 +1,7 @@
 use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use alloc::allocatable::Allocatable;
+use alloc::allocatable::WrappedAllocatableTrait;
 use fs2::FileExt;
 use std::error::Error;
 use std::fs::File;
@@ -8,6 +9,11 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 use std::path::Path;
+
+use std::sync::Arc;
+use std::sync::Mutex;
+
+use utils::safer::safe_lock;
 
 pub trait PersistableValue: Default + Clone {
     fn to_string_for_matrix(&self) -> String;
@@ -258,6 +264,92 @@ fn read<T: PersistableValue + From<f64>>(path: String) -> Result<WrappedMatrix<T
         }
     }
     Ok(weights)
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct WrappedPersistableMatrix<T: PersistableValue + From<f64> + 'static> {
+    pm: Arc<Mutex<PersistableMatrix<T>>>,
+}
+
+#[allow(clippy::fallible_impl_from)]
+impl<T: PersistableValue + From<f64> + 'static> From<f64> for WrappedPersistableMatrix<T> {
+    fn from(_value: f64) -> Self {
+        panic!("Cannot convert f64 to WrappedPersistableMatrix");
+    }
+}
+
+impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
+    #[must_use]
+    pub fn new(pm: PersistableMatrix<T>) -> Self {
+        Self { pm: Arc::new(Mutex::new(pm)) }
+    }
+
+    #[must_use]
+    pub fn get_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        let pm = safe_lock(&self.pm);
+        pm.get_unchecked(x, y)
+    }
+
+    pub fn set_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+        value: T,
+    ) {
+        let mut pm = safe_lock(&self.pm);
+        pm.set_mut_unchecked(x, y, value);
+    }
+
+    /// Save the matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let pm = safe_lock(&self.pm);
+        pm.save()
+    }
+}
+
+impl<T: PersistableValue + From<f64> + 'static> WrappedAllocatableTrait
+    for WrappedPersistableMatrix<T>
+{
+    fn allocate(&self) {
+        let mut pm = safe_lock(&self.pm);
+        pm.allocate();
+    }
+
+    fn deallocate(&self) {
+        let mut pm = safe_lock(&self.pm);
+        pm.deallocate();
+    }
+
+    fn is_allocated(&self) -> bool {
+        let pm = safe_lock(&self.pm);
+        pm.is_allocated()
+    }
+
+    fn get_size(&self) -> usize {
+        let pm = safe_lock(&self.pm);
+        pm.get_size()
+    }
+
+    fn mark_for_use(&mut self) {
+        let mut pm = safe_lock(&self.pm);
+        pm.mark_for_use();
+    }
+
+    fn free_from_use(&mut self) {
+        let mut pm = safe_lock(&self.pm);
+        pm.free_from_use();
+    }
+
+    fn is_in_use(&self) -> bool {
+        let pm = safe_lock(&self.pm);
+        pm.is_in_use()
+    }
 }
 
 #[cfg(test)]

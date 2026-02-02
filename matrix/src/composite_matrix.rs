@@ -1,6 +1,6 @@
 use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
-use crate::persistable_matrix::{PersistableMatrix, PersistableValue};
+use crate::persistable_matrix::{PersistableMatrix, PersistableValue, WrappedPersistableMatrix};
 
 use utils::safer::safe_lock;
 
@@ -12,7 +12,7 @@ pub struct CompositeMatrix<T: PersistableValue + From<f64> + 'static> {
     slice_num_rows: usize,
     rows: usize,
     cols: usize,
-    matrices: WrappedMatrix<PersistableMatrix<T>>,
+    matrices: WrappedMatrix<WrappedPersistableMatrix<T>>,
 }
 
 impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
@@ -34,12 +34,12 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
             for j in 0..mat_cols {
                 let persistable_rows = if i == mat_rows - 1 { rows % slice_x } else { slice_x };
                 let persistable_cols = if j == mat_cols - 1 { cols % slice_y } else { slice_y };
-                let persistable_matrix = PersistableMatrix::new(
+                let persistable_matrix = WrappedPersistableMatrix::new(PersistableMatrix::new(
                     directory.clone(),
                     &format!("composite_{}_{}_{}", i, j, std::any::type_name::<T>()),
                     persistable_rows,
                     persistable_cols,
-                );
+                ));
                 matrices.mat().lock().unwrap().set_mut_unchecked(i, j, persistable_matrix);
             }
         }
@@ -59,12 +59,12 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         let matrix_y = y / self.slice_num_rows;
         let within_x = x % self.slice_num_cols;
         let within_y = y % self.slice_num_rows;
-        let mut persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
+        let persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 
     #[must_use]
-    pub const fn matrices(&self) -> &WrappedMatrix<PersistableMatrix<T>> {
+    pub const fn matrices(&self) -> &WrappedMatrix<WrappedPersistableMatrix<T>> {
         &self.matrices
     }
 
