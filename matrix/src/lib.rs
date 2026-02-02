@@ -40,9 +40,10 @@
 //! ```rust
 //! use matrix::mat::WrappedMatrix;
 //! use matrix::sum_mat::SumMatrix;
+//! use matrix::sum_mat::MyInteger;
 //!
 //! // Create a sum matrix that maintains row sums automatically
-//! let base_matrix = WrappedMatrix::<i64>::new(2, 3);
+//! let base_matrix = WrappedMatrix::<MyInteger>::new(2, 3);
 //! let mut sum_matrix = SumMatrix::new(base_matrix);
 //!
 //! // Set values - row sums are updated automatically
