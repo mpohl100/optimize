@@ -119,6 +119,7 @@ impl NeuralNetwork for EitherNeuralNetwork {
         self.forward(input)
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     fn shape(&self) -> NeuralNetworkShape {
         if self.left_nn.is_some() {
             self.left_nn.as_ref().unwrap().shape()
