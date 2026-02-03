@@ -7,3 +7,4 @@
 #![allow(clippy::multiple_crate_versions)]
 pub mod alloc_manager;
 pub mod allocatable;
+pub mod memory_counter;

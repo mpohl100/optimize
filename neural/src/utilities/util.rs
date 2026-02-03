@@ -1,5 +1,6 @@
 use alloc::alloc_manager::AllocManager;
 use alloc::alloc_manager::WrappedAllocManager;
+use alloc::memory_counter;
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
 use matrix::ai_types::WeightEntry;
@@ -57,15 +58,20 @@ impl Utils {
         cpu_memory: usize,
         num_threads: usize,
     ) -> Self {
+        let memory_counter = memory_counter::WrappedMemoryCounter::new(
+            memory_counter::MemoryCounter::new(cpu_memory),
+        );
         Self {
             mutli_progress: Arc::new(MultiProgress::new()),
             thread_pool: WrappedThreadPool::new(num_threads),
-            matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(cpu_memory)),
+            matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
+                memory_counter.clone(),
+            )),
             trainable_weight_matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
-                cpu_memory,
+                memory_counter.clone(),
             )),
             trainable_bias_matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
-                cpu_memory,
+                memory_counter,
             )),
             test_mode: false,
             workspace: String::new(),
@@ -78,15 +84,20 @@ impl Utils {
         num_threads: usize,
         workspace: String,
     ) -> Self {
+        let memory_counter = memory_counter::WrappedMemoryCounter::new(
+            memory_counter::MemoryCounter::new(cpu_memory),
+        );
         Self {
             mutli_progress: Arc::new(MultiProgress::new()),
             thread_pool: WrappedThreadPool::new(num_threads),
-            matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(cpu_memory)),
+            matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
+                memory_counter.clone(),
+            )),
             trainable_weight_matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
-                cpu_memory,
+                memory_counter.clone(),
             )),
             trainable_bias_matrix_alloc_manager: WrappedAllocManager::new(AllocManager::new(
-                cpu_memory,
+                memory_counter,
             )),
             test_mode: true,
             workspace,
@@ -109,19 +120,22 @@ impl Utils {
         self.thread_pool.execute(f)
     }
 
-    pub fn get_matrix_alloc_manager(
+    #[must_use]
+    pub const fn get_matrix_alloc_manager(
         &self
     ) -> &WrappedAllocManager<WrappedPersistableMatrix<NumberEntry>> {
         &self.matrix_alloc_manager
     }
 
-    pub fn get_trainable_weight_matrix_alloc_manager(
+    #[must_use]
+    pub const fn get_trainable_weight_matrix_alloc_manager(
         &self
     ) -> &WrappedAllocManager<WrappedPersistableMatrix<WeightEntry>> {
         &self.trainable_weight_matrix_alloc_manager
     }
 
-    pub fn get_trainable_bias_matrix_alloc_manager(
+    #[must_use]
+    pub const fn get_trainable_bias_matrix_alloc_manager(
         &self
     ) -> &WrappedAllocManager<WrappedPersistableMatrix<BiasEntry>> {
         &self.trainable_bias_matrix_alloc_manager
@@ -165,18 +179,21 @@ impl WrappedUtils {
         safe_lock(&self.utils).execute(f)
     }
 
+    #[must_use]
     pub fn get_matrix_alloc_manager(
         &self
     ) -> WrappedAllocManager<WrappedPersistableMatrix<NumberEntry>> {
         safe_lock(&self.utils).get_matrix_alloc_manager().clone()
     }
 
+    #[must_use]
     pub fn get_trainable_weight_matrix_alloc_manager(
         &self
     ) -> WrappedAllocManager<WrappedPersistableMatrix<WeightEntry>> {
         safe_lock(&self.utils).get_trainable_weight_matrix_alloc_manager().clone()
     }
 
+    #[must_use]
     pub fn get_trainable_bias_matrix_alloc_manager(
         &self
     ) -> WrappedAllocManager<WrappedPersistableMatrix<BiasEntry>> {
