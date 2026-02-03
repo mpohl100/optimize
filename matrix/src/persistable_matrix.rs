@@ -304,6 +304,23 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
         pm.set_mut_unchecked(x, y, value);
     }
 
+    #[must_use]
+    pub fn rows(&self) -> usize {
+        let pm = safe_lock(&self.pm);
+        pm.rows()
+    }
+
+    #[must_use]
+    pub fn cols(&self) -> usize {
+        let pm = safe_lock(&self.pm);
+        pm.cols()
+    }
+
+    #[must_use]
+    pub fn mat(&self) -> Arc<Mutex<PersistableMatrix<T>>> {
+        self.pm.clone()
+    }
+
     /// Save the matrix to disk
     /// # Errors
     /// Returns an error if saving fails

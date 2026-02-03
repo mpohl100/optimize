@@ -46,6 +46,7 @@ impl DenseLayer {
         model_directory: Directory,
         position_in_nn: usize,
         matrix_params: MatrixParams,
+        utils: &WrappedUtils,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = match model_directory {
@@ -62,6 +63,7 @@ impl DenseLayer {
             output_size,
             input_size,
             &layer_path.expand("weights"),
+            utils.get_matrix_alloc_manager(),
         ));
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
@@ -69,6 +71,7 @@ impl DenseLayer {
             output_size,
             1,
             &layer_path.expand("biases"),
+            utils.get_matrix_alloc_manager(),
         ));
         Self {
             rows: output_size,
@@ -208,6 +211,7 @@ impl TrainableDenseLayer {
         model_directory: &Directory,
         position_in_nn: usize,
         matrix_params: MatrixParams,
+        utils: &WrappedUtils,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
         let layer_path = model_directory.expand(&format!("layer_{position_in_nn}"));
@@ -217,6 +221,7 @@ impl TrainableDenseLayer {
             output_size,
             input_size,
             &layer_path.expand("weights"),
+            utils.get_trainable_weight_matrix_alloc_manager(),
         ));
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
@@ -224,6 +229,7 @@ impl TrainableDenseLayer {
             output_size,
             1,
             &layer_path.expand("biases"),
+            utils.get_trainable_bias_matrix_alloc_manager(),
         ));
         Self {
             rows: output_size,
@@ -468,6 +474,7 @@ mod tests {
             &Directory::Internal("test_model_unit".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
         );
 
         let input = vec![1.0, 2.0, 3.0];

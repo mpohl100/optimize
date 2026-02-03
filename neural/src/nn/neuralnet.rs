@@ -67,6 +67,7 @@ impl ClassicNeuralNetwork {
                 network.model_directory.clone(),
                 i,
                 layer_shape.matrix_params(),
+                &network.utils,
             );
             let layer = WrappedLayer::new(Box::new(dense_layer));
             let activation = match layer_shape.activation.activation_type() {
@@ -119,6 +120,7 @@ impl ClassicNeuralNetwork {
                         network.model_directory.clone(),
                         i,
                         *matrix_params,
+                        &network.utils,
                     );
                     WrappedLayer::new(Box::new(layer))
                 },
@@ -277,6 +279,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
                 Directory::Internal(model_directory.clone()),
                 i,
                 self.shape.layers[i].matrix_params(),
+                &self.utils,
             )));
             new_layer.assign_weights(&layer.clone());
             new_layers.push(new_layer);
@@ -363,6 +366,7 @@ impl TrainableClassicNeuralNetwork {
                 &network.model_directory,
                 i,
                 layer_shape.matrix_params(),
+                &network.utils,
             )));
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -565,6 +569,7 @@ impl TrainableClassicNeuralNetwork {
                         &network.model_directory,
                         i,
                         *matrix_params,
+                        &network.utils,
                     );
                     WrappedTrainableLayer::new(Box::new(layer))
                 },
@@ -927,6 +932,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 &Directory::Internal(model_directory.clone()),
                 i,
                 self.shape.layers[i].matrix_params(),
+                &self.utils,
             )));
             new_layer.assign_trainable_weights(layer);
             new_layers.push(new_layer);
