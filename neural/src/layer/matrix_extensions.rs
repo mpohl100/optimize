@@ -1,3 +1,4 @@
+use alloc::allocatable::WrappedAllocatableTrait;
 pub use matrix::ai_types::Bias;
 pub use matrix::ai_types::BiasEntry;
 pub use matrix::ai_types::NumberEntry;
@@ -746,6 +747,7 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 let d_out_row_start = i * self.get_slice_num_rows();
                 let d_out_row_end = d_out_row_start + matrix.rows();
                 let input_cache_row_start = j * self.get_slice_num_cols();
@@ -754,6 +756,7 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
                     &d_out_vec[d_out_row_start..d_out_row_end],
                     &input_cache[input_cache_row_start..input_cache_row_end],
                 );
+                matrix.free_from_use();
             });
         });
     }
@@ -783,12 +786,14 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
             let matrix = matrices_guard.get_mut_unchecked(i, persistable_col);
             let mut alloc_manager = self.get_alloc_manager();
             alloc_manager.allocate(matrix);
+            matrix.mark_for_use();
             let row_start = i * self.get_slice_num_rows();
             let row_end = row_start + matrix.rows();
             result += matrix.backward_calculate_weights_sec(
                 local_col_index,
                 &d_out_vec_sec[row_start..row_end],
             );
+            matrix.free_from_use();
         }
         drop(matrices_guard);
         result
@@ -802,7 +807,9 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
             for matrix in row.iter_mut() {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 matrix.update_weights(learning_rate);
+                matrix.free_from_use();
             }
         });
     }
@@ -819,7 +826,9 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
             for matrix in row.iter_mut() {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 matrix.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+                matrix.free_from_use();
             }
         });
     }
@@ -842,6 +851,7 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 let d_out_row_start = i * self.get_slice_num_rows();
                 let d_out_row_end = d_out_row_start + matrix.rows();
                 let input_cache_row_start = j * self.get_slice_num_cols();
@@ -850,6 +860,7 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
                     &d_out_vec[d_out_row_start..d_out_row_end],
                     &input_cache[input_cache_row_start..input_cache_row_end],
                 );
+                matrix.free_from_use();
             });
         });
     }
@@ -880,12 +891,14 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
 
             let mut alloc_manager = self.get_alloc_manager();
             alloc_manager.allocate(matrix);
+            matrix.mark_for_use();
             let row_start = i * self.get_slice_num_rows();
             let row_end = row_start + matrix.rows();
             result += matrix.backward_calculate_weights_sec(
                 local_col_index,
                 &d_out_vec_sec[row_start..row_end],
             );
+            matrix.free_from_use();
         }
         drop(matrices_guard);
         result
@@ -899,7 +912,9 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
             for matrix in row.iter_mut() {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 matrix.update_weights(learning_rate);
+                matrix.free_from_use();
             }
         });
     }
@@ -916,7 +931,9 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
             for matrix in row.iter_mut() {
                 let mut alloc_manager = self.get_alloc_manager();
                 alloc_manager.allocate(matrix);
+                matrix.mark_for_use();
                 matrix.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+                matrix.free_from_use();
             }
         });
     }
@@ -1102,6 +1119,7 @@ fn forward_impl<
         for matrix in row.iter_mut() {
             let mut alloc_manager = mat.get_alloc_manager();
             alloc_manager.allocate(matrix);
+            matrix.mark_for_use();
             let col_outputs = matrix
                 .mat()
                 .lock()
@@ -1121,15 +1139,17 @@ fn forward_impl<
                     value
                 })
                 .collect::<Vec<f64>>();
+            matrix.free_from_use();
             for (k, val) in col_outputs.iter().enumerate() {
                 local_outputs[k] += val;
             }
         }
         // add local biases
-        let local_biases = biases.matrices().get_unchecked(i, 0);
+        let mut local_biases = biases.matrices().get_unchecked(i, 0);
 
         let mut alloc_manager = biases.get_alloc_manager();
         alloc_manager.allocate(&local_biases);
+        local_biases.mark_for_use();
         local_biases
             .mat()
             .lock()
@@ -1146,6 +1166,7 @@ fn forward_impl<
                     local_outputs[bias_index] += bias_value_retriever(bias);
                 }
             });
+        local_biases.free_from_use();
 
         for (k, val) in local_outputs.iter().enumerate() {
             outputs[i * mat.get_slice_num_rows() + k] += val;
