@@ -1,3 +1,5 @@
+use crate::memory_counter::WrappedMemoryCounter;
+
 use super::allocatable::WrappedAllocatableTrait;
 
 use utils::safer::safe_lock;
@@ -10,14 +12,13 @@ use std::{
 #[derive(Default, Debug, Clone)]
 pub struct AllocManager<WrappedType: WrappedAllocatableTrait> {
     currently_allocated: Vec<WrappedType>,
-    max_allocated_size: usize,
-    currently_allocated_size: usize,
+    memory_counter: WrappedMemoryCounter,
 }
 
 impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
     #[must_use]
-    pub const fn new(max_allocated_size: usize) -> Self {
-        Self { currently_allocated: Vec::new(), max_allocated_size, currently_allocated_size: 0 }
+    pub const fn new(memory_counter: WrappedMemoryCounter) -> Self {
+        Self { currently_allocated: Vec::new(), memory_counter }
     }
 
     pub fn allocate(
@@ -27,22 +28,26 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
         if allocatable.is_allocated() {
             return false;
         }
-        if self.currently_allocated_size + allocatable.get_size() <= self.max_allocated_size {
+        if self.memory_counter.get_current_memory() + allocatable.get_size()
+            <= self.memory_counter.get_capacity_memory()
+        {
             // a not yet allocated allocatable can not yet be in use
             // that is why one does not need to check if it is in use
             allocatable.allocate();
             self.currently_allocated.push(allocatable.clone());
-            self.currently_allocated_size += allocatable.get_size();
+            let _ = self.memory_counter.try_allocate(allocatable.get_size());
             return true;
         }
         // too much is allocated, try cleaning up and to then do the allocation
         self.cleanup();
-        if self.currently_allocated_size + allocatable.get_size() <= self.max_allocated_size {
+        if self.memory_counter.get_current_memory() + allocatable.get_size()
+            <= self.memory_counter.get_capacity_memory()
+        {
             // a not yet allocated allocatable can not yet be in use
             // that is why one does not need to check if it is in use
             allocatable.allocate();
             self.currently_allocated.push(allocatable.clone());
-            self.currently_allocated_size += allocatable.get_size();
+            let _ = self.memory_counter.try_allocate(allocatable.get_size());
             return true;
         }
         false
@@ -56,7 +61,7 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
             return;
         }
         allocatable.deallocate();
-        self.currently_allocated_size -= allocatable.get_size();
+        self.memory_counter.free(allocatable.get_size());
         self.currently_allocated.retain(|x| !ptr::eq(x, allocatable));
     }
 
@@ -75,8 +80,8 @@ impl<WrappedType: WrappedAllocatableTrait> AllocManager<WrappedType> {
     }
 
     #[must_use]
-    pub const fn get_max_allocated_size(&self) -> usize {
-        self.max_allocated_size
+    pub fn get_max_allocated_size(&self) -> usize {
+        self.memory_counter.get_capacity_memory()
     }
 }
 
@@ -127,6 +132,8 @@ mod tests {
     use crate::alloc_manager::AllocManager;
     use crate::allocatable::Allocatable;
     use crate::allocatable::WrappedAllocatableTrait;
+    use crate::memory_counter::MemoryCounter;
+    use crate::memory_counter::WrappedMemoryCounter;
 
     struct TestAllocatable {
         size: usize,
@@ -213,7 +220,8 @@ mod tests {
 
     #[test]
     fn test_alloc_manager_only_allocates_once() {
-        let mut alloc_manager = AllocManager::new(100);
+        let mut alloc_manager =
+            AllocManager::new(WrappedMemoryCounter::new(MemoryCounter::new(100)));
         let allocatable = WrappedTestAllocatable::new(TestAllocatable::new(50));
         assert!(alloc_manager.allocate(&allocatable));
         assert!(!alloc_manager.allocate(&allocatable));
@@ -221,7 +229,8 @@ mod tests {
 
     #[test]
     fn test_alloc_manager_gets_through_loop_with_not_much_memory() {
-        let mut alloc_manager = AllocManager::new(60);
+        let mut alloc_manager =
+            AllocManager::new(WrappedMemoryCounter::new(MemoryCounter::new(60)));
         let mut allocatable1 = WrappedTestAllocatable::new(TestAllocatable::new(50));
         let mut allocatable2 = WrappedTestAllocatable::new(TestAllocatable::new(50));
         let mut allocatable3 = WrappedTestAllocatable::new(TestAllocatable::new(50));

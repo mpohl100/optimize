@@ -183,6 +183,6 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
     #[must_use]
     pub fn get_alloc_manager(&self) -> WrappedAllocManager<WrappedPersistableMatrix<T>> {
         let cm = safe_lock(&self.cm);
-        cm.get_alloc_manager().clone()
+        cm.get_alloc_manager()
     }
 }
