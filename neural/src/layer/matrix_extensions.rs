@@ -3,8 +3,8 @@ pub use matrix::ai_types::BiasEntry;
 pub use matrix::ai_types::NumberEntry;
 pub use matrix::ai_types::Weight;
 pub use matrix::ai_types::WeightEntry;
-
-use alloc::allocatable::Allocatable;
+use matrix::persistable_matrix::PersistableMatrix;
+use matrix::persistable_matrix::WrappedPersistableMatrix;
 
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::composite_matrix::WrappedCompositeMatrix;
@@ -361,6 +361,303 @@ impl TrainableMatrixExtensions<BiasEntry, BiasEntry> for WrappedMatrix<BiasEntry
     }
 }
 
+pub trait MatrixExtensionsPersistable<
+    WeightT: PersistableValue + Default + Clone + From<f64> + 'static,
+    BiasT: PersistableValue + Default + Clone + From<f64> + 'static,
+>
+{
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &PersistableMatrix<BiasT>,
+    ) -> Vec<f64>;
+}
+
+impl MatrixExtensionsPersistable<NumberEntry, NumberEntry> for PersistableMatrix<NumberEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &Self,
+    ) -> Vec<f64> {
+        self.mat().unwrap().forward(inputs, biases.mat().unwrap())
+    }
+}
+
+impl MatrixExtensionsPersistable<WeightEntry, BiasEntry> for PersistableMatrix<WeightEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &PersistableMatrix<BiasEntry>,
+    ) -> Vec<f64> {
+        self.mat().unwrap().forward(inputs, biases.mat().unwrap())
+    }
+}
+
+impl MatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &Self,
+    ) -> Vec<f64> {
+        self.mat().unwrap().forward(inputs, biases.mat().unwrap())
+    }
+}
+pub trait MatrixExtensionsWrappedPersistable<
+    WeightT: PersistableValue + Default + Clone + From<f64> + 'static,
+    BiasT: PersistableValue + Default + Clone + From<f64> + 'static,
+>
+{
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &WrappedPersistableMatrix<BiasT>,
+    ) -> Vec<f64>;
+}
+
+impl MatrixExtensionsWrappedPersistable<NumberEntry, NumberEntry>
+    for WrappedPersistableMatrix<NumberEntry>
+{
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &Self,
+    ) -> Vec<f64> {
+        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+    }
+}
+
+impl MatrixExtensionsWrappedPersistable<WeightEntry, BiasEntry>
+    for WrappedPersistableMatrix<WeightEntry>
+{
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &WrappedPersistableMatrix<BiasEntry>,
+    ) -> Vec<f64> {
+        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+    }
+}
+
+impl MatrixExtensionsWrappedPersistable<BiasEntry, BiasEntry>
+    for WrappedPersistableMatrix<BiasEntry>
+{
+    fn forward(
+        &self,
+        inputs: &[f64],
+        biases: &Self,
+    ) -> Vec<f64> {
+        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+    }
+}
+
+pub trait TrainableMatrixExtensionsPersistable<
+    WeightT: PersistableValue + Default + Clone + From<f64> + 'static,
+    BiasT: PersistableValue + Default + Clone + From<f64> + 'static,
+>: MatrixExtensionsPersistable<WeightT, BiasT>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    );
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64;
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    );
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    );
+}
+
+impl TrainableMatrixExtensionsPersistable<WeightEntry, BiasEntry>
+    for PersistableMatrix<WeightEntry>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    ) {
+        self.mat().unwrap().backward_calculate_gradients(d_out_vec, input_cache);
+    }
+
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64 {
+        self.mat().unwrap().backward_calculate_weights_sec(j, d_out_vec_sec)
+    }
+
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    ) {
+        self.mat().unwrap().update_weights(learning_rate);
+    }
+
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    ) {
+        self.mat().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+    }
+}
+
+impl TrainableMatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    ) {
+        self.mat().unwrap().backward_calculate_gradients(d_out_vec, input_cache);
+    }
+
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64 {
+        self.mat().unwrap().backward_calculate_weights_sec(j, d_out_vec_sec)
+    }
+
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    ) {
+        self.mat().unwrap().update_weights(learning_rate);
+    }
+
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    ) {
+        self.mat().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+    }
+}
+
+pub trait TrainableMatrixExtensionsWrappedPersistable<
+    WeightT: PersistableValue + Default + Clone + From<f64> + 'static,
+    BiasT: PersistableValue + Default + Clone + From<f64> + 'static,
+>: MatrixExtensionsWrappedPersistable<WeightT, BiasT>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    );
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64;
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    );
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    );
+}
+
+impl TrainableMatrixExtensionsWrappedPersistable<WeightEntry, BiasEntry>
+    for WrappedPersistableMatrix<WeightEntry>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    ) {
+        self.mat().lock().unwrap().backward_calculate_gradients(d_out_vec, input_cache);
+    }
+
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64 {
+        self.mat().lock().unwrap().backward_calculate_weights_sec(j, d_out_vec_sec)
+    }
+
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().update_weights(learning_rate);
+    }
+
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+    }
+}
+
+impl TrainableMatrixExtensionsWrappedPersistable<BiasEntry, BiasEntry>
+    for WrappedPersistableMatrix<BiasEntry>
+{
+    fn backward_calculate_gradients(
+        &self,
+        d_out_vec: &[f64],
+        input_cache: &[f64],
+    ) {
+        self.mat().lock().unwrap().backward_calculate_gradients(d_out_vec, input_cache);
+    }
+
+    fn backward_calculate_weights_sec(
+        &self,
+        j: usize,
+        d_out_vec_sec: &[f64],
+    ) -> f64 {
+        self.mat().lock().unwrap().backward_calculate_weights_sec(j, d_out_vec_sec)
+    }
+
+    fn update_weights(
+        &self,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().update_weights(learning_rate);
+    }
+
+    fn adjust_adam(
+        &self,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        t: usize,
+        learning_rate: f64,
+    ) {
+        self.mat().lock().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+    }
+}
+
 pub trait MatrixExtensionsComposite<
     WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
     BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
@@ -447,12 +744,13 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         */
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
-                matrix.allocate();
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
                 let d_out_row_start = i * self.get_slice_num_rows();
                 let d_out_row_end = d_out_row_start + matrix.rows();
                 let input_cache_row_start = j * self.get_slice_num_cols();
                 let input_cache_row_end = input_cache_row_start + matrix.cols();
-                matrix.mat().unwrap().backward_calculate_gradients(
+                matrix.backward_calculate_gradients(
                     &d_out_vec[d_out_row_start..d_out_row_end],
                     &input_cache[input_cache_row_start..input_cache_row_end],
                 );
@@ -483,10 +781,11 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
         let mut matrices_guard = binding.lock().unwrap();
         for i in 0..matrices_guard.rows() {
             let matrix = matrices_guard.get_mut_unchecked(i, persistable_col);
-            matrix.allocate();
+            let mut alloc_manager = self.get_alloc_manager();
+            alloc_manager.allocate(matrix);
             let row_start = i * self.get_slice_num_rows();
             let row_end = row_start + matrix.rows();
-            result += matrix.mat().unwrap().backward_calculate_weights_sec(
+            result += matrix.backward_calculate_weights_sec(
                 local_col_index,
                 &d_out_vec_sec[row_start..row_end],
             );
@@ -501,8 +800,9 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
     ) {
         self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             for matrix in row.iter_mut() {
-                matrix.allocate();
-                matrix.mat().unwrap().update_weights(learning_rate);
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
+                matrix.update_weights(learning_rate);
             }
         });
     }
@@ -517,8 +817,9 @@ impl TrainableMatrixExtensionsComposite<WeightEntry, BiasEntry> for CompositeMat
     ) {
         self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             for matrix in row.iter_mut() {
-                matrix.allocate();
-                matrix.mat().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
+                matrix.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             }
         });
     }
@@ -539,12 +840,13 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         */
         self.matrices().mat().lock().unwrap().iter_mut().enumerate().for_each(|(i, row)| {
             row.iter_mut().enumerate().for_each(|(j, matrix)| {
-                matrix.allocate();
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
                 let d_out_row_start = i * self.get_slice_num_rows();
                 let d_out_row_end = d_out_row_start + matrix.rows();
                 let input_cache_row_start = j * self.get_slice_num_cols();
                 let input_cache_row_end = input_cache_row_start + matrix.cols();
-                matrix.mat().unwrap().backward_calculate_gradients(
+                matrix.backward_calculate_gradients(
                     &d_out_vec[d_out_row_start..d_out_row_end],
                     &input_cache[input_cache_row_start..input_cache_row_end],
                 );
@@ -575,10 +877,12 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
         let mut matrices_guard = binding.lock().unwrap();
         for i in 0..matrices_guard.rows() {
             let matrix = matrices_guard.get_mut_unchecked(i, persistable_col);
-            matrix.allocate();
+
+            let mut alloc_manager = self.get_alloc_manager();
+            alloc_manager.allocate(matrix);
             let row_start = i * self.get_slice_num_rows();
             let row_end = row_start + matrix.rows();
-            result += matrix.mat().unwrap().backward_calculate_weights_sec(
+            result += matrix.backward_calculate_weights_sec(
                 local_col_index,
                 &d_out_vec_sec[row_start..row_end],
             );
@@ -593,8 +897,9 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
     ) {
         self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             for matrix in row.iter_mut() {
-                matrix.allocate();
-                matrix.mat().unwrap().update_weights(learning_rate);
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
+                matrix.update_weights(learning_rate);
             }
         });
     }
@@ -609,8 +914,9 @@ impl TrainableMatrixExtensionsComposite<BiasEntry, BiasEntry> for CompositeMatri
     ) {
         self.matrices().mat().lock().unwrap().iter_mut().for_each(|row| {
             for matrix in row.iter_mut() {
-                matrix.allocate();
-                matrix.mat().unwrap().adjust_adam(beta1, beta2, epsilon, t, learning_rate);
+                let mut alloc_manager = self.get_alloc_manager();
+                alloc_manager.allocate(matrix);
+                matrix.adjust_adam(beta1, beta2, epsilon, t, learning_rate);
             }
         });
     }
@@ -794,8 +1100,12 @@ fn forward_impl<
         let local_inputs =
             &inputs[i * mat.get_slice_num_cols()..i * mat.get_slice_num_cols() + num_cols];
         for matrix in row.iter_mut() {
-            matrix.allocate();
+            let mut alloc_manager = mat.get_alloc_manager();
+            alloc_manager.allocate(matrix);
             let col_outputs = matrix
+                .mat()
+                .lock()
+                .unwrap()
                 .mat()
                 .unwrap()
                 .mat()
@@ -816,15 +1126,26 @@ fn forward_impl<
             }
         }
         // add local biases
-        let mut local_biases = biases.matrices().get_unchecked(i, 0);
-        local_biases.allocate();
-        local_biases.mat().unwrap().mat().lock().unwrap().iter_mut().enumerate().for_each(
-            |(bias_index, bias_row)| {
+        let local_biases = biases.matrices().get_unchecked(i, 0);
+
+        let mut alloc_manager = biases.get_alloc_manager();
+        alloc_manager.allocate(&local_biases);
+        local_biases
+            .mat()
+            .lock()
+            .unwrap()
+            .mat()
+            .unwrap()
+            .mat()
+            .lock()
+            .unwrap()
+            .iter_mut()
+            .enumerate()
+            .for_each(|(bias_index, bias_row)| {
                 for bias in bias_row.iter_mut() {
                     local_outputs[bias_index] += bias_value_retriever(bias);
                 }
-            },
-        );
+            });
 
         for (k, val) in local_outputs.iter().enumerate() {
             outputs[i * mat.get_slice_num_rows() + k] += val;

@@ -2,6 +2,7 @@ use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use crate::persistable_matrix::{PersistableMatrix, PersistableValue, WrappedPersistableMatrix};
 
+use alloc::alloc_manager::WrappedAllocManager;
 use utils::safer::safe_lock;
 
 use std::sync::{Arc, Mutex};
@@ -13,6 +14,7 @@ pub struct CompositeMatrix<T: PersistableValue + From<f64> + 'static> {
     rows: usize,
     cols: usize,
     matrices: WrappedMatrix<WrappedPersistableMatrix<T>>,
+    wrapped_alloc_manager: WrappedAllocManager<WrappedPersistableMatrix<T>>,
 }
 
 impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
@@ -26,6 +28,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         rows: usize,
         cols: usize,
         directory: &Directory,
+        wrapped_alloc_manager: WrappedAllocManager<WrappedPersistableMatrix<T>>,
     ) -> Self {
         let mat_rows = rows / slice_x + 1;
         let mat_cols = cols / slice_y + 1;
@@ -43,7 +46,14 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
                 matrices.mat().lock().unwrap().set_mut_unchecked(i, j, persistable_matrix);
             }
         }
-        Self { slice_num_cols: slice_x, slice_num_rows: slice_y, rows, cols, matrices }
+        Self {
+            slice_num_cols: slice_x,
+            slice_num_rows: slice_y,
+            rows,
+            cols,
+            matrices,
+            wrapped_alloc_manager,
+        }
     }
 
     /// Set the value at (x, y) without bounds checking.
@@ -99,6 +109,11 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
             }
         }
         Ok(())
+    }
+
+    #[must_use]
+    pub fn get_alloc_manager(&self) -> WrappedAllocManager<WrappedPersistableMatrix<T>> {
+        self.wrapped_alloc_manager.clone()
     }
 }
 
@@ -162,5 +177,12 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
     pub fn cols(&self) -> usize {
         let cm = safe_lock(&self.cm);
         cm.cols()
+    }
+
+    /// Get the underlying allocation manager
+    #[must_use]
+    pub fn get_alloc_manager(&self) -> WrappedAllocManager<WrappedPersistableMatrix<T>> {
+        let cm = safe_lock(&self.cm);
+        cm.get_alloc_manager().clone()
     }
 }
