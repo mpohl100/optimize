@@ -48,14 +48,18 @@ impl PersistableValue for WeightEntry {
         Self: Sized,
     {
         let parts: Vec<&str> = s.split_whitespace().collect();
-        if parts.len() != 4 {
-            return Err("Invalid weight entry format".into());
+        if parts.len() == 4 {
+            let value = parts[0].parse::<f64>()?;
+            let grad = parts[1].parse::<f64>()?;
+            let m = parts[2].parse::<f64>()?;
+            let v = parts[3].parse::<f64>()?;
+            Ok(Self(Weight { value, grad, m, v }))
+        } else if parts.len() == 1 {
+            let value = parts[0].parse::<f64>()?;
+            Ok(Self(Weight { value, grad: 0.0, m: 0.0, v: 0.0 }))
+        } else {
+            Err("Invalid weight entry format".into())
         }
-        let value = parts[0].parse::<f64>()?;
-        let grad = parts[1].parse::<f64>()?;
-        let m = parts[2].parse::<f64>()?;
-        let v = parts[3].parse::<f64>()?;
-        Ok(Self(Weight { value, grad, m, v }))
     }
 }
 
@@ -78,14 +82,18 @@ impl PersistableValue for BiasEntry {
         Self: Sized,
     {
         let parts: Vec<&str> = s.split_whitespace().collect();
-        if parts.len() != 4 {
-            return Err("Invalid bias entry format".into());
+        if parts.len() == 4 {
+            let value = parts[0].parse::<f64>()?;
+            let grad = parts[1].parse::<f64>()?;
+            let m = parts[2].parse::<f64>()?;
+            let v = parts[3].parse::<f64>()?;
+            Ok(Self(Bias { value, grad, m, v }))
+        } else if parts.len() == 1 {
+            let value = parts[0].parse::<f64>()?;
+            Ok(Self(Bias { value, grad: 0.0, m: 0.0, v: 0.0 }))
+        } else {
+            Err("Invalid bias entry format".into())
         }
-        let value = parts[0].parse::<f64>()?;
-        let grad = parts[1].parse::<f64>()?;
-        let m = parts[2].parse::<f64>()?;
-        let v = parts[3].parse::<f64>()?;
-        Ok(Self(Bias { value, grad, m, v }))
     }
 }
 
@@ -107,7 +115,12 @@ impl PersistableValue for NumberEntry {
     where
         Self: Sized,
     {
-        let value = s.parse::<f64>()?;
-        Ok(Self(value))
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() == 4 || parts.len() == 1 {
+            let value = parts[0].parse::<f64>()?;
+            Ok(Self(value))
+        } else {
+            Err("Invalid number entry format".into())
+        }
     }
 }
