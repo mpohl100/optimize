@@ -141,6 +141,7 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         let within_y = y % cm.get_slice_num_rows();
         let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
         drop(cm);
+        self.get_alloc_manager().allocate(&persistable_matrix);
         persistable_matrix.get_unchecked(within_x, within_y)
     }
 
@@ -151,7 +152,14 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         value: T,
     ) {
         let cm = safe_lock(&self.cm);
-        cm.set_mut_unchecked(x, y, value);
+        let matrix_x = x / cm.get_slice_num_cols();
+        let matrix_y = y / cm.get_slice_num_rows();
+        let within_x = x % cm.get_slice_num_cols();
+        let within_y = y % cm.get_slice_num_rows();
+        let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
+        drop(cm);
+        self.get_alloc_manager().allocate(&persistable_matrix);
+        persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 
     /// Save the composite matrix to disk
