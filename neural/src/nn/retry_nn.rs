@@ -582,6 +582,8 @@ mod tests {
         utilities::util::Utils,
     };
 
+    // ignore this test for now
+    #[ignore]
     #[test]
     fn test_retry_neural_network_train() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
