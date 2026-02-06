@@ -33,8 +33,8 @@ pub struct MatrixParams {
 pub struct DenseLayer {
     rows: usize,
     cols: usize,
-    weights_new: WrappedCompositeMatrix<NumberEntry>,
-    biases_new: WrappedCompositeMatrix<NumberEntry>,
+    weights: WrappedCompositeMatrix<NumberEntry>,
+    biases: WrappedCompositeMatrix<NumberEntry>,
     layer_path: Directory,
 }
 
@@ -73,13 +73,7 @@ impl DenseLayer {
             &layer_path.expand("biases"),
             utils.get_matrix_alloc_manager(),
         ));
-        Self {
-            rows: output_size,
-            cols: input_size,
-            weights_new: weights,
-            biases_new: biases,
-            layer_path,
-        }
+        Self { rows: output_size, cols: input_size, weights, biases, layer_path }
     }
 }
 
@@ -89,8 +83,8 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
         input: &[f64],
         utils: WrappedUtils,
     ) -> Vec<f64> {
-        let weights = self.weights_new.clone();
-        let biases = self.biases_new.clone();
+        let weights = self.weights.clone();
+        let biases = self.biases.clone();
         let inputs = input.to_vec();
         utils.execute(move || weights.forward(&inputs, &biases))
     }
@@ -114,8 +108,8 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
         &self,
         _path: String,
     ) -> Result<(), Box<dyn Error>> {
-        self.weights_new.save()?;
-        self.biases_new.save()?;
+        self.weights.save()?;
+        self.biases.save()?;
         Ok(())
     }
 
@@ -127,11 +121,11 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     }
 
     fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
-        self.weights_new.clone()
+        self.weights.clone()
     }
 
     fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
-        self.biases_new.clone()
+        self.biases.clone()
     }
 
     fn cleanup(&self) {
@@ -155,16 +149,16 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     ) {
         let weights = other.get_weights();
         let biases = other.get_biases();
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    self.weights_new.set_mut_unchecked(i, j, NumberEntry(v.0));
+                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0));
                 }
             }
             if i < biases.rows() {
                 let b = biases.get_unchecked(i, 0);
-                self.biases_new.set_mut_unchecked(i, 0, NumberEntry(b.0));
+                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0));
             }
         }
     }
@@ -175,16 +169,16 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     ) {
         let weights = other.get_weights();
         let biases = other.get_biases();
-        for i in 0..self.weights_new.rows() {
-            for j in 0..self.weights_new.cols() {
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
                     let v = weights.get_unchecked(i, j);
-                    self.weights_new.set_mut_unchecked(i, j, NumberEntry(v.0.value));
+                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0.value));
                 }
             }
             if i < biases.rows() {
                 let b = biases.get_unchecked(i, 0);
-                self.biases_new.set_mut_unchecked(i, 0, NumberEntry(b.0.value));
+                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0.value));
             }
         }
     }
