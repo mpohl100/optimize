@@ -1,9 +1,18 @@
 use crate::layer::dense_layer::DenseLayer;
 use crate::layer::dense_layer::MatrixParams;
+use crate::layer::layer_trait::Layer;
+use crate::layer::layer_trait::WrappedLayer;
 use crate::utilities::util::WrappedUtils;
 
+use alloc::alloc_manager::WrappedAllocManager;
+use matrix::ai_types::NumberEntry;
+use matrix::composite_matrix::CompositeMatrix;
+use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::directory::Directory;
+use matrix::persistable_matrix::WrappedPersistableMatrix;
 use num_traits::NumCast;
+
+use std::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct StretchLayer {
@@ -11,6 +20,8 @@ pub struct StretchLayer {
     output_size: usize,
     dense_layers: Vec<DenseLayer>,
     layer_path: Directory,
+    matrix_params: MatrixParams,
+    alloc_manager: WrappedAllocManager<WrappedPersistableMatrix<NumberEntry>>,
 }
 
 impl StretchLayer {
@@ -49,6 +60,158 @@ impl StretchLayer {
             );
             dense_layers.push(dense_layer);
         }
-        Self { input_size, output_size, dense_layers, layer_path: model_directory }
+        Self {
+            input_size,
+            output_size,
+            dense_layers,
+            layer_path: model_directory,
+            matrix_params,
+            alloc_manager: utils.get_matrix_alloc_manager().clone(),
+        }
+    }
+}
+
+impl Layer<NumberEntry, NumberEntry> for StretchLayer {
+    fn forward(
+        &mut self,
+        input: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
+        let mut output = vec![0.0; self.output_size];
+        for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
+            let start = i * dense_layer.input_size();
+            let end = start + dense_layer.input_size();
+            let input_slice = &input[start..end];
+            let dense_output = dense_layer.forward(input_slice, utils.clone());
+            for (j, &value) in dense_output.iter().enumerate() {
+                let output_index = i * dense_layer.output_size() + j;
+                if output_index < self.output_size {
+                    output[output_index] = value;
+                }
+            }
+        }
+        output
+    }
+
+    fn forward_batch(
+        &mut self,
+        _input: &[f64],
+    ) -> Vec<f64> {
+        unimplemented!()
+    }
+
+    fn input_size(&self) -> usize {
+        self.input_size
+    }
+
+    fn output_size(&self) -> usize {
+        self.output_size
+    }
+
+    fn save(
+        &self,
+        _path: String,
+    ) -> Result<(), Box<dyn Error>> {
+        for (i, dense_layer) in self.dense_layers.iter().enumerate() {
+            dense_layer.save(format!("dense_layer_{i}"))?;
+        }
+        Ok(())
+    }
+
+    fn read(
+        &mut self,
+        _path: String,
+    ) -> Result<(), Box<dyn Error>> {
+        for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
+            dense_layer.read(format!("dense_layer_{i}"))?;
+        }
+        Ok(())
+    }
+
+    fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
+        let internal_mat_directory = self.layer_path.expand("temp_weights").to_internal();
+        let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
+            self.matrix_params.slice_cols,
+            self.matrix_params.slice_rows,
+            self.output_size,
+            self.input_size,
+            &internal_mat_directory,
+            self.alloc_manager.clone(),
+        ));
+        for (i, dense_layer) in self.dense_layers.iter().enumerate() {
+            let dense_weights = dense_layer.get_weights();
+            weights.set_submatrix(
+                i * dense_layer.output_size(),
+                i * dense_layer.input_size(),
+                &dense_weights,
+            );
+        }
+
+        weights
+    }
+
+    fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
+        let internal_mat_directory = self.layer_path.expand("temp_biases").to_internal();
+        let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
+            self.matrix_params.slice_cols,
+            self.matrix_params.slice_rows,
+            self.output_size,
+            1,
+            &internal_mat_directory,
+            self.alloc_manager.clone(),
+        ));
+        for (i, dense_layer) in self.dense_layers.iter().enumerate() {
+            let dense_biases = dense_layer.get_biases();
+            biases.set_submatrix(i * dense_layer.output_size(), 0, &dense_biases);
+        }
+
+        biases
+    }
+
+    fn cleanup(&self) {
+        // Remove the internal model directory from disk
+        for dense_layer in &self.dense_layers {
+            dense_layer.cleanup();
+        }
+    }
+
+    fn assign_weights(
+        &mut self,
+        other: WrappedLayer<NumberEntry, NumberEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0));
+            }
+        }
+    }
+
+    fn assign_trainable_weights(
+        &mut self,
+        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+    ) {
+        let weights = other.get_weights();
+        let biases = other.get_biases();
+        for i in 0..self.weights.rows() {
+            for j in 0..self.weights.cols() {
+                if i < weights.rows() && j < weights.cols() {
+                    let v = weights.get_unchecked(i, j);
+                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0.value));
+                }
+            }
+            if i < biases.rows() {
+                let b = biases.get_unchecked(i, 0);
+                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0.value));
+            }
+        }
     }
 }
