@@ -193,4 +193,26 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         let cm = safe_lock(&self.cm);
         cm.get_alloc_manager()
     }
+
+    /// Set a submatrix within the composite matrix
+    /// # Panics
+    /// Panics if the submatrix dimensions exceed the bounds of the composite matrix
+    pub fn set_submatrix(
+        &self,
+        start_x: usize,
+        start_y: usize,
+        submatrix: &Self,
+    ) {
+        // check that dimensions are not exceeded
+        assert!(
+            !(start_x + submatrix.rows() > self.rows() || start_y + submatrix.cols() > self.cols()),
+            "Submatrix dimensions exceed bounds of composite matrix"
+        );
+        for x in 0..submatrix.rows() {
+            for y in 0..submatrix.cols() {
+                let value = submatrix.get_unchecked(x, y);
+                self.set_mut_unchecked(start_x + x, start_y + y, value);
+            }
+        }
+    }
 }

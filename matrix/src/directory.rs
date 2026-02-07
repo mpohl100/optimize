@@ -68,4 +68,18 @@ impl Directory {
             },
         }
     }
+
+    #[must_use]
+    pub fn to_user(&self) -> Self {
+        match self {
+            Self::User(path) | Self::Internal(path) => Self::User(path.clone()),
+        }
+    }
+
+    #[must_use]
+    pub fn to_internal(&self) -> Self {
+        match self {
+            Self::Internal(path) | Self::User(path) => Self::Internal(path.clone()),
+        }
+    }
 }
