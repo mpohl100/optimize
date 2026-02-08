@@ -176,7 +176,7 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
         }
     }
 
-    fn assign_weights(
+    fn assign_layer(
         &mut self,
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
@@ -194,11 +194,11 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
                 dense_layer.output_size(),
                 1,
             );
-            dense_layer.assign_weights(dense_weights, dense_biases);
+            dense_layer.assign_layer(dense_weights, dense_biases);
         }
     }
 
-    fn assign_trainable_weights(
+    fn assign_trainable_layer(
         &mut self,
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
@@ -216,7 +216,7 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
                 dense_layer.output_size(),
                 1,
             );
-            dense_layer.assign_trainable_weights(dense_trainable_weights, dense_trainable_biases);
+            dense_layer.assign_trainable_layer(dense_trainable_weights, dense_trainable_biases);
         }
     }
 }
