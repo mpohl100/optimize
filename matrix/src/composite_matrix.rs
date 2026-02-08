@@ -40,7 +40,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
                 let persistable_cols = if j == mat_cols - 1 { cols % slice_y } else { slice_y };
                 let persistable_matrix = WrappedPersistableMatrix::new(PersistableMatrix::new(
                     directory.clone(),
-                    &format!("composite_{}_{}_{}", i, j, std::any::type_name::<T>()),
+                    &format!("composite_{i}_{j}"),
                     persistable_rows,
                     persistable_cols,
                 ));
