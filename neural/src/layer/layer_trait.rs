@@ -81,14 +81,14 @@ pub trait Layer<
     fn cleanup(&self);
 
     /// Assigns the weight of the input other layer
-    fn assign_weights(
+    fn assign_layer(
         &mut self,
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
     );
 
     /// Assigns the weight of the input other layer
-    fn assign_trainable_weights(
+    fn assign_trainable_layer(
         &mut self,
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
@@ -181,7 +181,7 @@ impl<
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        safe_lock(&self.layer).assign_weights(weights, biases);
+        safe_lock(&self.layer).assign_layer(weights, biases);
     }
 
     pub fn assign_trainable_weights(
@@ -189,7 +189,7 @@ impl<
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        safe_lock(&self.layer).assign_trainable_weights(weights, biases);
+        safe_lock(&self.layer).assign_trainable_layer(weights, biases);
     }
 }
 pub trait TrainableLayer<
@@ -395,7 +395,7 @@ impl<
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        safe_lock(&self.layer).assign_weights(weights, biases);
+        safe_lock(&self.layer).assign_layer(weights, biases);
     }
 
     pub fn assign_trainable_weights(
@@ -403,6 +403,6 @@ impl<
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        safe_lock(&self.layer).assign_trainable_weights(weights, biases);
+        safe_lock(&self.layer).assign_trainable_layer(weights, biases);
     }
 }

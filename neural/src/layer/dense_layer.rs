@@ -141,7 +141,7 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
         }
     }
 
-    fn assign_weights(
+    fn assign_layer(
         &mut self,
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
@@ -160,7 +160,7 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
         }
     }
 
-    fn assign_trainable_weights(
+    fn assign_trainable_layer(
         &mut self,
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
@@ -303,7 +303,7 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         }
     }
 
-    fn assign_weights(
+    fn assign_layer(
         &mut self,
         weights: WrappedCompositeMatrix<NumberEntry>,
         biases: WrappedCompositeMatrix<NumberEntry>,
@@ -324,7 +324,7 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         }
     }
 
-    fn assign_trainable_weights(
+    fn assign_trainable_layer(
         &mut self,
         weights: WrappedCompositeMatrix<WeightEntry>,
         biases: WrappedCompositeMatrix<BiasEntry>,
