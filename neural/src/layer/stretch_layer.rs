@@ -181,17 +181,20 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
     ) {
         let weights = other.get_weights();
         let biases = other.get_biases();
-        for i in 0..self.weights.rows() {
-            for j in 0..self.weights.cols() {
-                if i < weights.rows() && j < weights.cols() {
-                    let v = weights.get_unchecked(i, j);
-                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0));
-                }
-            }
-            if i < biases.rows() {
-                let b = biases.get_unchecked(i, 0);
-                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0));
-            }
+        for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
+            let dense_weights = weights.get_submatrix(
+                i * dense_layer.output_size(),
+                i * dense_layer.input_size(),
+                dense_layer.output_size(),
+                dense_layer.input_size(),
+            );
+            let dense_biases = biases.get_submatrix(
+                i * dense_layer.output_size(),
+                0,
+                dense_layer.output_size(),
+                1,
+            );
+            dense_layer.assign_weights(dense_weights, dense_biases);
         }
     }
 
