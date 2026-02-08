@@ -261,6 +261,7 @@ pub type PercentageTree<Decision> = PercentageNode<Decision>;
 mod tests {
     use super::*;
     use crate::provider::{Provider, ProviderType};
+    use approx::assert_relative_eq;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -461,7 +462,7 @@ mod tests {
         // Test basic properties
         assert_eq!(node.get_parent_decisions().len(), 1);
         assert_eq!(node.get_parent_decisions()[0].get_decision_data().value, 42);
-        assert_eq!(node.get_parent_decisions()[0].get_decision_data().probability, 0.75);
+        assert_relative_eq!(node.get_parent_decisions()[0].get_decision_data().probability, 0.75);
         assert!(node.is_terminal());
         assert_eq!(node.get_children().len(), 0);
     }
