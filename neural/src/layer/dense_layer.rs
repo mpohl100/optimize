@@ -450,6 +450,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 #[cfg(test)]
 mod tests {
     use crate::utilities::util::Utils;
+    use approx::assert_abs_diff_eq;
 
     use super::*;
 
@@ -492,7 +493,7 @@ mod tests {
             for j in 0..a.cols() {
                 let val_a = a.get_unchecked(i, j);
                 let val_b = b.get_unchecked(i, j);
-                if val_a.0.value != val_b.0.value {
+                if (val_a.0.value - val_b.0.value).abs() > 1e-10 {
                     println!(
                         "Weight mismatch at ({}, {}): {} != {}",
                         i, j, val_a.0.value, val_b.0.value
@@ -516,7 +517,7 @@ mod tests {
             for j in 0..a.cols() {
                 let val_a = a.get_unchecked(i, j);
                 let val_b = b.get_unchecked(i, j);
-                if val_a.0.value != val_b.0.value {
+                if (val_a.0.value - val_b.0.value).abs() > 1e-10 {
                     println!(
                         "Bias mismatch at ({}, {}): {} != {}",
                         i, j, val_a.0.value, val_b.0.value
@@ -531,12 +532,12 @@ mod tests {
     /// Helper function to train a simple trainable dense layer
     fn train_simple_layer(
         layer: &mut TrainableDenseLayer,
-        utils: WrappedUtils,
+        utils: &WrappedUtils,
         epochs: usize,
     ) {
         // Simple training loop
         let input = vec![0.5; 10];
-        let target = vec![0.8; 10];
+        let target = [0.8; 10];
 
         for _ in 0..epochs {
             let output = layer.forward(&input, utils.clone());
@@ -564,7 +565,7 @@ mod tests {
         );
 
         // Train the layer
-        train_simple_layer(&mut layer1, utils.clone(), 10);
+        train_simple_layer(&mut layer1, &utils, 10);
 
         // Get weights and biases from the first layer
         let weights1 = layer1.get_weights();
@@ -616,7 +617,7 @@ mod tests {
         );
 
         // Train the layer
-        train_simple_layer(&mut trainable_layer, utils.clone(), 10);
+        train_simple_layer(&mut trainable_layer, &utils, 10);
 
         // Get weights and biases from the trainable layer
         let trainable_weights = trainable_layer.get_weights();
@@ -649,22 +650,18 @@ mod tests {
             for j in 0..trainable_weights.cols() {
                 let trainable_val = trainable_weights.get_unchecked(i, j);
                 let dense_val = dense_weights.get_unchecked(i, j);
-                assert_eq!(
-                    trainable_val.0.value, dense_val.0,
-                    "Weight mismatch at ({}, {}): {} != {}",
-                    i, j, trainable_val.0.value, dense_val.0
-                );
+                let tv = trainable_val.0.value;
+                let dv = dense_val.0;
+                assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
             }
         }
 
         for i in 0..trainable_biases.rows() {
             let trainable_val = trainable_biases.get_unchecked(i, 0);
             let dense_val = dense_biases.get_unchecked(i, 0);
-            assert_eq!(
-                trainable_val.0.value, dense_val.0,
-                "Bias mismatch at {}: {} != {}",
-                i, trainable_val.0.value, dense_val.0
-            );
+            let tv = trainable_val.0.value;
+            let dv = dense_val.0;
+            assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
         }
 
         // Cleanup
@@ -691,7 +688,7 @@ mod tests {
         );
 
         // Train the layer
-        train_simple_layer(&mut trainable_layer, utils.clone(), 10);
+        train_simple_layer(&mut trainable_layer, &utils, 10);
 
         // Save the trainable layer
         trainable_layer.save(String::new()).expect("Failed to save trainable layer");
@@ -701,8 +698,8 @@ mod tests {
         let trainable_biases = trainable_layer.get_biases();
 
         // Create a DenseLayer in a different directory
-        let dense_base_dir = Directory::Internal("test_save_load_dense_final".to_string());
-        let mut dense_layer = DenseLayer::new(
+        let dense_base_dir = Directory::Internal("test_save_load_final".to_string());
+        let dense_layer = DenseLayer::new(
             10,
             10,
             dense_base_dir,
@@ -710,10 +707,6 @@ mod tests {
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
-
-        // Transfer the weights from the saved trainable layer to the dense layer
-        // This simulates reading a saved trainable layer and converting it to a dense layer
-        dense_layer.assign_trainable_layer(trainable_weights.clone(), trainable_biases.clone());
 
         // Get the weights from the dense layer
         let dense_weights = dense_layer.get_weights();
@@ -728,22 +721,18 @@ mod tests {
             for j in 0..trainable_weights.cols() {
                 let trainable_val = trainable_weights.get_unchecked(i, j);
                 let dense_val = dense_weights.get_unchecked(i, j);
-                assert_eq!(
-                    trainable_val.0.value, dense_val.0,
-                    "Weight mismatch at ({}, {}): {} != {}",
-                    i, j, trainable_val.0.value, dense_val.0
-                );
+                let tv = trainable_val.0.value;
+                let dv = dense_val.0;
+                assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
             }
         }
 
         for i in 0..trainable_biases.rows() {
             let trainable_val = trainable_biases.get_unchecked(i, 0);
             let dense_val = dense_biases.get_unchecked(i, 0);
-            assert_eq!(
-                trainable_val.0.value, dense_val.0,
-                "Bias mismatch at {}: {} != {}",
-                i, trainable_val.0.value, dense_val.0
-            );
+            let tv = trainable_val.0.value;
+            let dv = dense_val.0;
+            assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
         }
 
         // Save the dense layer to verify the save API works

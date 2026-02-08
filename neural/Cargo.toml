@@ -19,6 +19,7 @@ rayon = "1.7"
 indicatif = "0.17"
 fs2 = "0.4"
 num-traits = "0.2"
+approx = "0.3"
 
 alloc = { path = "../alloc" }
 utils = { path = "../utils" }
