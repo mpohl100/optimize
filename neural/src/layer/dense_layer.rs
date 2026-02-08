@@ -714,6 +714,12 @@ mod tests {
         println!("Trainable weights:");
         for i in 0..trainable_weights.rows() {
             for j in 0..trainable_weights.cols() {
+                if i == 0 && j == 9 {
+                    println!(
+                        "Last weight in trainable layer: {}",
+                        trainable_weights.get_unchecked(i, j).0.value
+                    );
+                }
                 let trainable_val = trainable_weights.get_unchecked(i, j);
                 let dense_val = dense_weights.get_unchecked(i, j);
                 let tv = trainable_val.0.value;
@@ -756,6 +762,5 @@ mod tests {
         trainable_layer.cleanup();
         dense_layer.cleanup();
         let _ = std::fs::remove_dir_all("test_save_load_final");
-        let _ = std::fs::remove_dir_all("test_save_load_dense_final");
     }
 }
