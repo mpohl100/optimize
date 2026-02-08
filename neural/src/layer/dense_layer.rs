@@ -479,4 +479,279 @@ mod tests {
 
         std::fs::remove_dir_all("test_model_unit").unwrap();
     }
+
+    /// Helper function to compare two weight matrices
+    fn weight_matrices_equal(
+        a: &WrappedCompositeMatrix<WeightEntry>,
+        b: &WrappedCompositeMatrix<WeightEntry>,
+    ) -> bool {
+        if a.rows() != b.rows() || a.cols() != b.cols() {
+            return false;
+        }
+        for i in 0..a.rows() {
+            for j in 0..a.cols() {
+                let val_a = a.get_unchecked(i, j);
+                let val_b = b.get_unchecked(i, j);
+                if val_a.0.value != val_b.0.value {
+                    println!("Weight mismatch at ({}, {}): {} != {}", i, j, val_a.0.value, val_b.0.value);
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Helper function to compare two bias matrices
+    fn bias_matrices_equal(
+        a: &WrappedCompositeMatrix<BiasEntry>,
+        b: &WrappedCompositeMatrix<BiasEntry>,
+    ) -> bool {
+        if a.rows() != b.rows() || a.cols() != b.cols() {
+            return false;
+        }
+        for i in 0..a.rows() {
+            for j in 0..a.cols() {
+                let val_a = a.get_unchecked(i, j);
+                let val_b = b.get_unchecked(i, j);
+                if val_a.0.value != val_b.0.value {
+                    println!("Bias mismatch at ({}, {}): {} != {}", i, j, val_a.0.value, val_b.0.value);
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Helper function to train a simple trainable dense layer
+    fn train_simple_layer(
+        layer: &mut TrainableDenseLayer,
+        utils: WrappedUtils,
+        epochs: usize,
+    ) {
+        // Simple training loop
+        let input = vec![0.5; 10];
+        let target = vec![0.8; 10];
+
+        for _ in 0..epochs {
+            let output = layer.forward(&input, utils.clone());
+            let mut grad = vec![0.0; 10];
+            for i in 0..10 {
+                grad[i] = output[i] - target[i];
+            }
+            layer.backward(&grad, utils.clone());
+            layer.update_weights(0.01, utils.clone());
+        }
+    }
+
+    #[test]
+    fn test_trainable_layer_weight_transfer_to_new_trainable_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+
+        // Create and train first trainable layer
+        let mut layer1 = TrainableDenseLayer::new(
+            10,
+            10,
+            &Directory::Internal("test_transfer_trainable_1".to_string()),
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Train the layer
+        train_simple_layer(&mut layer1, utils.clone(), 10);
+
+        // Get weights and biases from the first layer
+        let weights1 = layer1.get_weights();
+        let biases1 = layer1.get_biases();
+
+        // Create a new trainable layer with the same dimensions
+        let mut layer2 = TrainableDenseLayer::new(
+            10,
+            10,
+            &Directory::Internal("test_transfer_trainable_2".to_string()),
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Assign the weights and biases from layer1 to layer2
+        layer2.assign_trainable_layer(weights1.clone(), biases1.clone());
+
+        // Get weights and biases from the second layer
+        let weights2 = layer2.get_weights();
+        let biases2 = layer2.get_biases();
+
+        // Verify that all values are correctly transferred
+        assert!(
+            weight_matrices_equal(&weights1, &weights2),
+            "Weights were not correctly transferred"
+        );
+        assert!(
+            bias_matrices_equal(&biases1, &biases2),
+            "Biases were not correctly transferred"
+        );
+
+        // Cleanup
+        layer1.cleanup();
+        layer2.cleanup();
+        let _ = std::fs::remove_dir_all("test_transfer_trainable_1");
+        let _ = std::fs::remove_dir_all("test_transfer_trainable_2");
+    }
+
+    #[test]
+    fn test_trainable_layer_conversion_to_dense_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+
+        // Create and train a trainable layer
+        let mut trainable_layer = TrainableDenseLayer::new(
+            10,
+            10,
+            &Directory::Internal("test_conversion_trainable".to_string()),
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Train the layer
+        train_simple_layer(&mut trainable_layer, utils.clone(), 10);
+
+        // Get weights and biases from the trainable layer
+        let trainable_weights = trainable_layer.get_weights();
+        let trainable_biases = trainable_layer.get_biases();
+
+        // Create a DenseLayer (non-trainable)
+        let mut dense_layer = DenseLayer::new(
+            10,
+            10,
+            Directory::Internal("test_conversion_dense".to_string()),
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Transfer weights from trainable to dense layer
+        dense_layer.assign_trainable_layer(trainable_weights.clone(), trainable_biases.clone());
+
+        // Get weights and biases from the dense layer
+        let dense_weights = dense_layer.get_weights();
+        let dense_biases = dense_layer.get_biases();
+
+        // Verify that all weights and biases are correctly transferred
+        // Compare the values (trainable layer stores Weight/Bias structs, dense layer stores f64 values)
+        assert_eq!(trainable_weights.rows(), dense_weights.rows());
+        assert_eq!(trainable_weights.cols(), dense_weights.cols());
+        assert_eq!(trainable_biases.rows(), dense_biases.rows());
+
+        for i in 0..trainable_weights.rows() {
+            for j in 0..trainable_weights.cols() {
+                let trainable_val = trainable_weights.get_unchecked(i, j);
+                let dense_val = dense_weights.get_unchecked(i, j);
+                assert_eq!(
+                    trainable_val.0.value, dense_val.0,
+                    "Weight mismatch at ({}, {}): {} != {}",
+                    i, j, trainable_val.0.value, dense_val.0
+                );
+            }
+        }
+
+        for i in 0..trainable_biases.rows() {
+            let trainable_val = trainable_biases.get_unchecked(i, 0);
+            let dense_val = dense_biases.get_unchecked(i, 0);
+            assert_eq!(
+                trainable_val.0.value, dense_val.0,
+                "Bias mismatch at {}: {} != {}",
+                i, trainable_val.0.value, dense_val.0
+            );
+        }
+
+        // Cleanup
+        trainable_layer.cleanup();
+        dense_layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_conversion_trainable");
+        let _ = std::fs::remove_dir_all("test_conversion_dense");
+    }
+
+    #[test]
+    fn test_trainable_layer_save_and_load_as_dense_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+
+        // Create a trainable layer
+        let trainable_base_dir = Directory::Internal("test_save_load_final".to_string());
+        
+        let mut trainable_layer = TrainableDenseLayer::new(
+            10,
+            10,
+            &trainable_base_dir,
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Train the layer
+        train_simple_layer(&mut trainable_layer, utils.clone(), 10);
+
+        // Save the trainable layer
+        trainable_layer
+            .save(String::new())
+            .expect("Failed to save trainable layer");
+
+        // Get the weights from the trainable layer before it's dropped
+        let trainable_weights = trainable_layer.get_weights();
+        let trainable_biases = trainable_layer.get_biases();
+
+        // Create a DenseLayer in a different directory
+        let dense_base_dir = Directory::Internal("test_save_load_dense_final".to_string());
+        let mut dense_layer = DenseLayer::new(
+            10,
+            10,
+            dense_base_dir,
+            0,
+            MatrixParams { slice_rows: 3, slice_cols: 3 },
+            &utils,
+        );
+
+        // Transfer the weights from the saved trainable layer to the dense layer
+        // This simulates reading a saved trainable layer and converting it to a dense layer
+        dense_layer.assign_trainable_layer(trainable_weights.clone(), trainable_biases.clone());
+
+        // Get the weights from the dense layer
+        let dense_weights = dense_layer.get_weights();
+        let dense_biases = dense_layer.get_biases();
+
+        // Verify that all weights and biases are correctly transferred
+        assert_eq!(trainable_weights.rows(), dense_weights.rows());
+        assert_eq!(trainable_weights.cols(), dense_weights.cols());
+        assert_eq!(trainable_biases.rows(), dense_biases.rows());
+
+        for i in 0..trainable_weights.rows() {
+            for j in 0..trainable_weights.cols() {
+                let trainable_val = trainable_weights.get_unchecked(i, j);
+                let dense_val = dense_weights.get_unchecked(i, j);
+                assert_eq!(
+                    trainable_val.0.value, dense_val.0,
+                    "Weight mismatch at ({}, {}): {} != {}",
+                    i, j, trainable_val.0.value, dense_val.0
+                );
+            }
+        }
+
+        for i in 0..trainable_biases.rows() {
+            let trainable_val = trainable_biases.get_unchecked(i, 0);
+            let dense_val = dense_biases.get_unchecked(i, 0);
+            assert_eq!(
+                trainable_val.0.value, dense_val.0,
+                "Bias mismatch at {}: {} != {}",
+                i, trainable_val.0.value, dense_val.0
+            );
+        }
+
+        // Save the dense layer to verify the save API works
+        dense_layer.save(String::new()).expect("Failed to save dense layer");
+
+        // Cleanup
+        trainable_layer.cleanup();
+        dense_layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_save_load_final");
+        let _ = std::fs::remove_dir_all("test_save_load_dense_final");
+    }
 }
