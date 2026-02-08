@@ -281,7 +281,8 @@ impl NeuralNetwork for ClassicNeuralNetwork {
                 self.shape.layers[i].matrix_params(),
                 &self.utils,
             )));
-            new_layer.assign_weights(&layer.clone());
+            new_layer
+                .assign_weights(new_layer.clone().get_weights(), new_layer.clone().get_biases());
             new_layers.push(new_layer);
             layer.cleanup();
         }
@@ -934,7 +935,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                 self.shape.layers[i].matrix_params(),
                 &self.utils,
             )));
-            new_layer.assign_trainable_weights(layer);
+            new_layer.assign_trainable_weights(new_layer.get_weights(), new_layer.get_biases());
             new_layers.push(new_layer);
             layer.cleanup();
         }
