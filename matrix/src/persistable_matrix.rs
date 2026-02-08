@@ -114,13 +114,6 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         }
         Ok(())
     }
-
-    pub fn initialize_for_ai(&mut self) {
-        self.allocate();
-        if let Some(mat) = &mut self.mat {
-            mat.initialize_for_ai();
-        }
-    }
 }
 
 impl<T: PersistableValue + From<f64>> Drop for PersistableMatrix<T> {
@@ -160,7 +153,7 @@ impl<T: PersistableValue + From<f64>> Allocatable for PersistableMatrix<T> {
             }
         } else {
             self.mat = Some(WrappedMatrix::new(self.rows, self.cols));
-            self.initialize_for_ai();
+            self.mat.as_mut().unwrap().initialize_for_ai();
             save(self.matrix_file_path.path(), self.mat.as_ref().unwrap())
                 .expect("Failed to save layer weights");
         }
