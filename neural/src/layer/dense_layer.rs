@@ -493,7 +493,10 @@ mod tests {
                 let val_a = a.get_unchecked(i, j);
                 let val_b = b.get_unchecked(i, j);
                 if val_a.0.value != val_b.0.value {
-                    println!("Weight mismatch at ({}, {}): {} != {}", i, j, val_a.0.value, val_b.0.value);
+                    println!(
+                        "Weight mismatch at ({}, {}): {} != {}",
+                        i, j, val_a.0.value, val_b.0.value
+                    );
                     return false;
                 }
             }
@@ -514,7 +517,10 @@ mod tests {
                 let val_a = a.get_unchecked(i, j);
                 let val_b = b.get_unchecked(i, j);
                 if val_a.0.value != val_b.0.value {
-                    println!("Bias mismatch at ({}, {}): {} != {}", i, j, val_a.0.value, val_b.0.value);
+                    println!(
+                        "Bias mismatch at ({}, {}): {} != {}",
+                        i, j, val_a.0.value, val_b.0.value
+                    );
                     return false;
                 }
             }
@@ -586,10 +592,7 @@ mod tests {
             weight_matrices_equal(&weights1, &weights2),
             "Weights were not correctly transferred"
         );
-        assert!(
-            bias_matrices_equal(&biases1, &biases2),
-            "Biases were not correctly transferred"
-        );
+        assert!(bias_matrices_equal(&biases1, &biases2), "Biases were not correctly transferred");
 
         // Cleanup
         layer1.cleanup();
@@ -677,7 +680,7 @@ mod tests {
 
         // Create a trainable layer
         let trainable_base_dir = Directory::Internal("test_save_load_final".to_string());
-        
+
         let mut trainable_layer = TrainableDenseLayer::new(
             10,
             10,
@@ -691,9 +694,7 @@ mod tests {
         train_simple_layer(&mut trainable_layer, utils.clone(), 10);
 
         // Save the trainable layer
-        trainable_layer
-            .save(String::new())
-            .expect("Failed to save trainable layer");
+        trainable_layer.save(String::new()).expect("Failed to save trainable layer");
 
         // Get the weights from the trainable layer before it's dropped
         let trainable_weights = trainable_layer.get_weights();
