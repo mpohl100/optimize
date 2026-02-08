@@ -1,9 +1,10 @@
 use crate::layer::dense_layer::DenseLayer;
 use crate::layer::dense_layer::MatrixParams;
 use crate::layer::layer_trait::Layer;
-use crate::layer::layer_trait::WrappedLayer;
 use crate::utilities::util::WrappedUtils;
 
+use crate::layer::matrix_extensions::BiasEntry;
+use crate::layer::matrix_extensions::WeightEntry;
 use alloc::alloc_manager::WrappedAllocManager;
 use matrix::ai_types::NumberEntry;
 use matrix::composite_matrix::CompositeMatrix;
@@ -66,7 +67,7 @@ impl StretchLayer {
             dense_layers,
             layer_path: model_directory,
             matrix_params,
-            alloc_manager: utils.get_matrix_alloc_manager().clone(),
+            alloc_manager: utils.get_matrix_alloc_manager(),
         }
     }
 }
@@ -177,10 +178,9 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
 
     fn assign_weights(
         &mut self,
-        other: WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
         for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
             let dense_weights = weights.get_submatrix(
                 i * dense_layer.output_size(),
@@ -200,21 +200,23 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
 
     fn assign_trainable_weights(
         &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
-        for i in 0..self.weights.rows() {
-            for j in 0..self.weights.cols() {
-                if i < weights.rows() && j < weights.cols() {
-                    let v = weights.get_unchecked(i, j);
-                    self.weights.set_mut_unchecked(i, j, NumberEntry(v.0.value));
-                }
-            }
-            if i < biases.rows() {
-                let b = biases.get_unchecked(i, 0);
-                self.biases.set_mut_unchecked(i, 0, NumberEntry(b.0.value));
-            }
+        for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
+            let dense_trainable_weights = weights.get_submatrix(
+                i * dense_layer.output_size(),
+                i * dense_layer.input_size(),
+                dense_layer.output_size(),
+                dense_layer.input_size(),
+            );
+            let dense_trainable_biases = biases.get_submatrix(
+                i * dense_layer.output_size(),
+                0,
+                dense_layer.output_size(),
+                1,
+            );
+            dense_layer.assign_trainable_weights(dense_trainable_weights, dense_trainable_biases);
         }
     }
 }

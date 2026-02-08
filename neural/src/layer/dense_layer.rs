@@ -1,7 +1,5 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
-use super::layer_trait::WrappedTrainableLayer;
-use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
 use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
 use crate::utilities::util::WrappedUtils;
@@ -145,10 +143,9 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
 
     fn assign_weights(
         &mut self,
-        other: WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
@@ -165,10 +162,9 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
 
     fn assign_trainable_weights(
         &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
@@ -309,10 +305,9 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn assign_weights(
         &mut self,
-        other: WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {
@@ -331,10 +326,9 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn assign_trainable_weights(
         &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        let weights = other.get_weights();
-        let biases = other.get_biases();
         for i in 0..self.weights.rows() {
             for j in 0..self.weights.cols() {
                 if i < weights.rows() && j < weights.cols() {

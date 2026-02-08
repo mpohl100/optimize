@@ -83,13 +83,15 @@ pub trait Layer<
     /// Assigns the weight of the input other layer
     fn assign_weights(
         &mut self,
-        other: WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     );
 
     /// Assigns the weight of the input other layer
     fn assign_trainable_weights(
         &mut self,
-        other: WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     );
 }
 
@@ -176,16 +178,18 @@ impl<
 
     pub fn assign_weights(
         &mut self,
-        other: &WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        safe_lock(&self.layer).assign_weights(other.clone());
+        safe_lock(&self.layer).assign_weights(weights, biases);
     }
 
     pub fn assign_trainable_weights(
         &mut self,
-        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        safe_lock(&self.layer).assign_trainable_weights(other.clone());
+        safe_lock(&self.layer).assign_trainable_weights(weights, biases);
     }
 }
 pub trait TrainableLayer<
@@ -388,15 +392,17 @@ impl<
 
     pub fn assign_weights(
         &mut self,
-        other: &WrappedLayer<NumberEntry, NumberEntry>,
+        weights: WrappedCompositeMatrix<NumberEntry>,
+        biases: WrappedCompositeMatrix<NumberEntry>,
     ) {
-        safe_lock(&self.layer).assign_weights(other.clone());
+        safe_lock(&self.layer).assign_weights(weights, biases);
     }
 
     pub fn assign_trainable_weights(
         &mut self,
-        other: &WrappedTrainableLayer<WeightEntry, BiasEntry>,
+        weights: WrappedCompositeMatrix<WeightEntry>,
+        biases: WrappedCompositeMatrix<BiasEntry>,
     ) {
-        safe_lock(&self.layer).assign_trainable_weights(other.clone());
+        safe_lock(&self.layer).assign_trainable_weights(weights, biases);
     }
 }
