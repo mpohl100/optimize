@@ -2,6 +2,7 @@ use crate::layer::dense_layer::DenseLayer;
 use crate::layer::dense_layer::MatrixParams;
 use crate::layer::dense_layer::TrainableDenseLayer;
 use crate::layer::layer_trait::Layer;
+use crate::layer::layer_trait::TrainableLayer;
 use crate::utilities::util::WrappedUtils;
 
 use crate::layer::matrix_extensions::BiasEntry;
@@ -427,5 +428,108 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
             );
             dense_layer.assign_trainable_layer(dense_trainable_weights, dense_trainable_biases);
         }
+    }
+}
+
+impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
+    /// Backward pass for the dense layer
+    ///
+    /// - `d_out`: Gradient of the loss with respect to the output of this layer
+    /// - Returns: Gradient of the loss with respect to the input of this layer
+    fn backward(
+        &mut self,
+        d_out: &[f64],
+        utils: WrappedUtils,
+    ) -> Vec<f64> {
+        /*
+        let weights = self.weights.clone();
+        let input_cache = self.input_cache.as_ref().unwrap().clone();
+        let d_out_vec = d_out.to_vec();
+        // Calculate weight gradients
+        let _ = utils.execute(move || {
+            weights.backward_calculate_gradients(&d_out_vec, &input_cache);
+            0
+        });
+
+        let weights_sec = self.weights.clone();
+        let input_cache_sec = self.input_cache.as_ref().unwrap().clone();
+        let d_out_vec_sec = d_out.to_vec();
+        // Calculate input gradients
+        utils.execute(move || {
+            (0..input_cache_sec.len())
+                .into_par_iter()
+                .map(|j| weights_sec.backward_calculate_weights_sec(j, &d_out_vec_sec))
+                .collect::<Vec<f64>>()
+        })
+        */
+        let mut ret = vec![0.0; self.input_size];
+        for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
+            let start = i * dense_layer.input_size();
+            let end = start + dense_layer.input_size();
+            let d_vec_slice = &d_out[start..end];
+            let dense_output = dense_layer.backward(d_vec_slice, utils.clone());
+            for (j, &value) in dense_output.iter().enumerate() {
+                let ret_index = i * dense_layer.input_size() + j;
+                if ret_index < self.input_size {
+                    ret[ret_index] += value;
+                }
+            }
+        }
+        ret
+    }
+
+    /// Update weights and biases using their respective gradients
+    ///
+    /// - `learning_rate`: The step size for gradient descent
+    fn update_weights(
+        &mut self,
+        learning_rate: f64,
+        utils: WrappedUtils,
+    ) {
+        for dense_layer in &mut self.trainable_dense_layers {
+            dense_layer.update_weights(learning_rate, utils.clone());
+        }
+    }
+
+    #[allow(clippy::needless_range_loop)]
+    fn backward_batch(
+        &mut self,
+        _grad_output: &[f64],
+    ) -> Vec<f64> {
+        unimplemented!()
+    }
+
+    fn adjust_adam(
+        &mut self,
+        t: usize,
+        learning_rate: f64,
+        beta1: f64,
+        beta2: f64,
+        epsilon: f64,
+        utils: WrappedUtils,
+    ) {
+        for dense_layer in &mut self.trainable_dense_layers {
+            dense_layer.adjust_adam(t, learning_rate, beta1, beta2, epsilon, utils.clone());
+        }
+    }
+
+    fn save_weight(
+        &self,
+        _path: String,
+    ) -> Result<(), Box<dyn Error>> {
+        for dense_layer in &self.trainable_dense_layers {
+            dense_layer.save_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
+        }
+        Ok(())
+    }
+
+    fn read_weight(
+        &mut self,
+        _path: String,
+    ) -> Result<(), Box<dyn Error>> {
+        for dense_layer in &mut self.trainable_dense_layers {
+            dense_layer.read_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
+        }
+        Ok(())
     }
 }
