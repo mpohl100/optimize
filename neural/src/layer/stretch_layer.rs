@@ -56,7 +56,7 @@ impl StretchLayer {
             let dense_layer = DenseLayer::new(
                 dense_input_size,
                 dense_output_size,
-                dense_layer_path,
+                &dense_layer_path,
                 position_in_nn,
                 matrix_params,
                 utils,

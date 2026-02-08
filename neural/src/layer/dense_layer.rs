@@ -41,20 +41,13 @@ impl DenseLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: Directory,
+        model_directory: &Directory,
         position_in_nn: usize,
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
-        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = match model_directory {
-            Directory::User(path) => {
-                Directory::User(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-            Directory::Internal(path) => {
-                Directory::Internal(format!("{path}/layers/layer_{position_in_nn}.txt"))
-            },
-        };
+        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}
+        let layer_path = model_directory.expand(&format!("layers/layer_{position_in_nn}"));
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
@@ -203,8 +196,8 @@ impl TrainableDenseLayer {
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
-        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}.txt
-        let layer_path = model_directory.expand(&format!("layer_{position_in_nn}"));
+        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}
+        let layer_path = model_directory.expand(&format!("layers/layer_{position_in_nn}"));
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
@@ -627,7 +620,7 @@ mod tests {
         let mut dense_layer = DenseLayer::new(
             10,
             10,
-            Directory::Internal("test_conversion_dense".to_string()),
+            &Directory::Internal("test_conversion_dense".to_string()),
             0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
@@ -702,7 +695,7 @@ mod tests {
         let dense_layer = DenseLayer::new(
             10,
             10,
-            dense_base_dir,
+            &dense_base_dir,
             0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
@@ -716,6 +709,27 @@ mod tests {
         assert_eq!(trainable_weights.rows(), dense_weights.rows());
         assert_eq!(trainable_weights.cols(), dense_weights.cols());
         assert_eq!(trainable_biases.rows(), dense_biases.rows());
+
+        // print the trainable weights and dense weights for debugging
+        println!("Trainable weights:");
+        for i in 0..trainable_weights.rows() {
+            for j in 0..trainable_weights.cols() {
+                let trainable_val = trainable_weights.get_unchecked(i, j);
+                let dense_val = dense_weights.get_unchecked(i, j);
+                let tv = trainable_val.0.value;
+                let dv = dense_val.0;
+                println!("({i}, {j}): Trainable: {tv}, Dense: {dv}");
+            }
+        }
+
+        println!("Trainable biases:");
+        for i in 0..trainable_biases.rows() {
+            let trainable_val = trainable_biases.get_unchecked(i, 0);
+            let dense_val = dense_biases.get_unchecked(i, 0);
+            let tv = trainable_val.0.value;
+            let dv = dense_val.0;
+            println!("({i}): Trainable: {tv}, Dense: {dv}");
+        }
 
         for i in 0..trainable_weights.rows() {
             for j in 0..trainable_weights.cols() {

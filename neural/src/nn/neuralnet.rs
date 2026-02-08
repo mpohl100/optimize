@@ -64,7 +64,7 @@ impl ClassicNeuralNetwork {
             let dense_layer = DenseLayer::new(
                 layer_shape.input_size(),
                 layer_shape.output_size(),
-                network.model_directory.clone(),
+                &network.model_directory,
                 i,
                 layer_shape.matrix_params(),
                 &network.utils,
@@ -117,7 +117,7 @@ impl ClassicNeuralNetwork {
                     let layer = DenseLayer::new(
                         *input_size,
                         *output_size,
-                        network.model_directory.clone(),
+                        &network.model_directory,
                         i,
                         *matrix_params,
                         &network.utils,
@@ -190,7 +190,7 @@ impl ClassicNeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(format!("{model_directory}/layers/layer_{i}.txt"))?;
+            layer.save(format!("{model_directory}/layers/layer_{i}"))?;
         }
         Ok(())
     }
@@ -276,7 +276,7 @@ impl NeuralNetwork for ClassicNeuralNetwork {
             let mut new_layer = WrappedLayer::new(Box::new(DenseLayer::new(
                 layer.input_size(),
                 layer.output_size(),
-                Directory::Internal(model_directory.clone()),
+                &Directory::Internal(model_directory.clone()),
                 i,
                 self.shape.layers[i].matrix_params(),
                 &self.utils,
