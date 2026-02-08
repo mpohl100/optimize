@@ -15,6 +15,7 @@ pub struct CompositeMatrix<T: PersistableValue + From<f64> + 'static> {
     cols: usize,
     matrices: WrappedMatrix<WrappedPersistableMatrix<T>>,
     wrapped_alloc_manager: WrappedAllocManager<WrappedPersistableMatrix<T>>,
+    directory: Directory,
 }
 
 impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
@@ -53,6 +54,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
             cols,
             matrices,
             wrapped_alloc_manager,
+            directory: directory.clone(),
         }
     }
 
@@ -114,6 +116,11 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     #[must_use]
     pub fn get_alloc_manager(&self) -> WrappedAllocManager<WrappedPersistableMatrix<T>> {
         self.wrapped_alloc_manager.clone()
+    }
+
+    #[must_use]
+    pub fn get_directory(&self) -> Directory {
+        self.directory.clone()
     }
 }
 
@@ -214,5 +221,47 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
                 self.set_mut_unchecked(start_x + x, start_y + y, value);
             }
         }
+    }
+
+    /// Get a submatrix from the composite matrix
+    /// # Panics
+    /// Panics if the submatrix dimensions exceed the bounds of the composite matrix
+    #[must_use]
+    pub fn get_submatrix(
+        &self,
+        start_x: usize,
+        start_y: usize,
+        rows: usize,
+        cols: usize,
+    ) -> Self {
+        // check that dimensions are not exceeded
+        assert!(
+            !(start_x + rows > self.rows() || start_y + cols > self.cols()),
+            "Submatrix dimensions exceed bounds of composite matrix"
+        );
+        let internal_directory =
+            self.get_directory().expand(&format!("submatrix_{start_x}_{start_y}")).to_internal();
+        let submatrix = CompositeMatrix::new(
+            self.cm.lock().unwrap().get_slice_num_cols(),
+            self.cm.lock().unwrap().get_slice_num_rows(),
+            rows,
+            cols,
+            &internal_directory,
+            self.get_alloc_manager(),
+        );
+        let wrapped_submatrix = Self::new(submatrix);
+        for x in 0..rows {
+            for y in 0..cols {
+                let value = self.get_unchecked(start_x + x, start_y + y);
+                wrapped_submatrix.set_mut_unchecked(x, y, value);
+            }
+        }
+        wrapped_submatrix
+    }
+
+    #[must_use]
+    pub fn get_directory(&self) -> Directory {
+        let cm = safe_lock(&self.cm);
+        cm.get_directory()
     }
 }
