@@ -170,10 +170,10 @@ pub fn fetch_random_layer_type(
 }
 
 /// Extracts matrix params from a layer type.
-pub fn extract_matrix_params(layer_type: &LayerType) -> MatrixParams {
+#[must_use]
+pub const fn extract_matrix_params(layer_type: &LayerType) -> MatrixParams {
     match layer_type {
-        LayerType::Dense { matrix_params, .. } => *matrix_params,
-        LayerType::Stretch { matrix_params, .. } => *matrix_params,
+        LayerType::Dense { matrix_params, .. } | LayerType::Stretch { matrix_params, .. } => *matrix_params,
     }
 }
 
