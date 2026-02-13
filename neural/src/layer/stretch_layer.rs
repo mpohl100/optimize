@@ -780,6 +780,22 @@ mod tests {
         // Verify that all weights are correctly transferred
         assert_eq!(weights1.rows(), weights2.rows());
         assert_eq!(weights1.cols(), weights2.cols());
+        println!("Checking weights: rows={}, cols={}", weights1.rows(), weights1.cols());
+        let mut weight_mismatches = Vec::new();
+        for i in 0..weights1.rows() {
+            for j in 0..weights1.cols() {
+                let val1 = weights1.get_unchecked(i, j);
+                let val2 = weights2.get_unchecked(i, j);
+                let diff = (val1.0.value - val2.0.value).abs();
+                if diff > 1e-10 {
+                    weight_mismatches.push((i, j, val1.0.value, val2.0.value, diff));
+                    println!("Weight mismatch at [{}, {}]: val1={}, val2={}, diff={}", i, j, val1.0.value, val2.0.value, diff);
+                }
+            }
+        }
+        if !weight_mismatches.is_empty() {
+            println!("Total weight mismatches: {}", weight_mismatches.len());
+        }
         for i in 0..weights1.rows() {
             for j in 0..weights1.cols() {
                 let val1 = weights1.get_unchecked(i, j);
@@ -790,6 +806,20 @@ mod tests {
 
         // Verify that all biases are correctly transferred
         assert_eq!(biases1.rows(), biases2.rows());
+        println!("Checking biases: rows={}", biases1.rows());
+        let mut bias_mismatches = Vec::new();
+        for i in 0..biases1.rows() {
+            let val1 = biases1.get_unchecked(i, 0);
+            let val2 = biases2.get_unchecked(i, 0);
+            let diff = (val1.0.value - val2.0.value).abs();
+            if diff > 1e-10 {
+                bias_mismatches.push((i, val1.0.value, val2.0.value, diff));
+                println!("Bias mismatch at [{}]: val1={}, val2={}, diff={}", i, val1.0.value, val2.0.value, diff);
+            }
+        }
+        if !bias_mismatches.is_empty() {
+            println!("Total bias mismatches: {}", bias_mismatches.len());
+        }
         for i in 0..biases1.rows() {
             let val1 = biases1.get_unchecked(i, 0);
             let val2 = biases2.get_unchecked(i, 0);
@@ -854,6 +884,24 @@ mod tests {
         // Verify that all weights and biases are correctly transferred
         assert_eq!(trainable_weights.rows(), stretch_weights.rows());
         assert_eq!(trainable_weights.cols(), stretch_weights.cols());
+        println!("Checking weights: rows={}, cols={}", trainable_weights.rows(), trainable_weights.cols());
+        let mut weight_mismatches = Vec::new();
+        for i in 0..trainable_weights.rows() {
+            for j in 0..trainable_weights.cols() {
+                let trainable_val = trainable_weights.get_unchecked(i, j);
+                let stretch_val = stretch_weights.get_unchecked(i, j);
+                let tv = trainable_val.0.value;
+                let dv = stretch_val.0;
+                let diff = (tv - dv).abs();
+                if diff > 1e-10 {
+                    weight_mismatches.push((i, j, tv, dv, diff));
+                    println!("Weight mismatch at [{}, {}]: trainable={}, stretch={}, diff={}", i, j, tv, dv, diff);
+                }
+            }
+        }
+        if !weight_mismatches.is_empty() {
+            println!("Total weight mismatches: {}", weight_mismatches.len());
+        }
         for i in 0..trainable_weights.rows() {
             for j in 0..trainable_weights.cols() {
                 let trainable_val = trainable_weights.get_unchecked(i, j);
@@ -866,6 +914,22 @@ mod tests {
 
         // Verify that all biases are correctly transferred
         assert_eq!(trainable_biases.rows(), stretch_biases.rows());
+        println!("Checking biases: rows={}", trainable_biases.rows());
+        let mut bias_mismatches = Vec::new();
+        for i in 0..trainable_biases.rows() {
+            let trainable_val = trainable_biases.get_unchecked(i, 0);
+            let stretch_val = stretch_biases.get_unchecked(i, 0);
+            let tv = trainable_val.0.value;
+            let dv = stretch_val.0;
+            let diff = (tv - dv).abs();
+            if diff > 1e-10 {
+                bias_mismatches.push((i, tv, dv, diff));
+                println!("Bias mismatch at [{}]: trainable={}, stretch={}, diff={}", i, tv, dv, diff);
+            }
+        }
+        if !bias_mismatches.is_empty() {
+            println!("Total bias mismatches: {}", bias_mismatches.len());
+        }
         for i in 0..trainable_biases.rows() {
             let trainable_val = trainable_biases.get_unchecked(i, 0);
             let stretch_val = stretch_biases.get_unchecked(i, 0);
