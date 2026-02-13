@@ -106,7 +106,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         for i in 0..(self.rows / self.slice_num_cols) {
             for j in 0..(self.cols / self.slice_num_rows) {
-                let persistable_matrix = self.matrices.get_unchecked(i, j);
+                let mut persistable_matrix = self.matrices.get_unchecked(i, j);
                 persistable_matrix.save()?;
             }
         }
