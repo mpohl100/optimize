@@ -961,7 +961,7 @@ mod tests {
     use super::*;
     use crate::layer::dense_layer::MatrixParams;
     use crate::{
-        nn::shape::{ActivationData, ActivationType, LayerShape},
+        nn::shape::{ActivationData, ActivationType, LayerShape, LayerType},
         utilities::util::Utils,
     };
 
