@@ -736,9 +736,10 @@ mod tests {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
         // Create and train first trainable stretch layer
+        // Use 10x20 to have a proper multi-layer structure
         let mut layer1 = TrainableStretchLayer::new(
             10,
-            10,
+            20,
             Directory::Internal("test_transfer_stretch_trainable_1".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
@@ -750,45 +751,50 @@ mod tests {
         for i in 0..10 {
             input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
-        let mut target = vec![0.0; 10];
-        for i in 0..10 {
+        let mut target = vec![0.0; 20];
+        for i in 0..20 {
             target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         train_stretch_layer(&mut layer1, &input, &target, &utils);
 
-        // Get output from the trained layer
-        let output1 = layer1.forward(&input, utils.clone());
+        // Get weights and biases from the first layer
+        let weights1 = layer1.get_weights();
+        let biases1 = layer1.get_biases();
 
         // Create a new trainable stretch layer with the same dimensions
         let mut layer2 = TrainableStretchLayer::new(
             10,
-            10,
+            20,
             Directory::Internal("test_transfer_stretch_trainable_2".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
 
-        // Transfer weights by copying each internal dense layer's weights
-        for (i, (src_layer, dst_layer)) in layer1
-            .trainable_dense_layers
-            .iter()
-            .zip(layer2.trainable_dense_layers.iter_mut())
-            .enumerate()
-        {
-            let weights = src_layer.get_weights();
-            let biases = src_layer.get_biases();
-            dst_layer.assign_trainable_layer(weights, biases);
-            println!("Transferred weights for dense layer {}", i);
+        // Assign the weights and biases from layer1 to layer2
+        layer2.assign_trainable_layer(weights1.clone(), biases1.clone());
+
+        // Get weights and biases from the second layer
+        let weights2 = layer2.get_weights();
+        let biases2 = layer2.get_biases();
+
+        // Verify that all weights are correctly transferred
+        assert_eq!(weights1.rows(), weights2.rows());
+        assert_eq!(weights1.cols(), weights2.cols());
+        for i in 0..weights1.rows() {
+            for j in 0..weights1.cols() {
+                let val1 = weights1.get_unchecked(i, j);
+                let val2 = weights2.get_unchecked(i, j);
+                assert_abs_diff_eq!(val1.0.value, val2.0.value, epsilon = 1e-10);
+            }
         }
 
-        // Get output from the second layer (should match layer1)
-        let output2 = layer2.forward(&input, utils.clone());
-
-        // Verify that outputs match (weights were successfully transferred)
-        assert_eq!(output1.len(), output2.len());
-        for i in 0..output1.len() {
-            assert_abs_diff_eq!(output1[i], output2[i], epsilon = 1e-10);
+        // Verify that all biases are correctly transferred
+        assert_eq!(biases1.rows(), biases2.rows());
+        for i in 0..biases1.rows() {
+            let val1 = biases1.get_unchecked(i, 0);
+            let val2 = biases2.get_unchecked(i, 0);
+            assert_abs_diff_eq!(val1.0.value, val2.0.value, epsilon = 1e-10);
         }
 
         // Cleanup
@@ -803,9 +809,10 @@ mod tests {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
         // Create and train a trainable stretch layer
+        // Use 10x20 to have a proper multi-layer structure
         let mut trainable_layer = TrainableStretchLayer::new(
             10,
-            10,
+            20,
             Directory::Internal("test_conversion_stretch_trainable".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
@@ -817,45 +824,54 @@ mod tests {
         for i in 0..10 {
             input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
-        let mut target = vec![0.0; 10];
-        for i in 0..10 {
+        let mut target = vec![0.0; 20];
+        for i in 0..20 {
             target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         train_stretch_layer(&mut trainable_layer, &input, &target, &utils);
 
-        // Get output from the trained layer
-        let output_trainable = trainable_layer.forward(&input, utils.clone());
+        // Get weights and biases from the trainable stretch layer
+        let trainable_weights = trainable_layer.get_weights();
+        let trainable_biases = trainable_layer.get_biases();
 
         // Create a StretchLayer (non-trainable)
         let mut stretch_layer = StretchLayer::new(
             10,
-            10,
+            20,
             Directory::Internal("test_conversion_stretch_dense".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
 
-        // Transfer weights by copying each internal dense layer's weights
-        for (i, (src_layer, dst_layer)) in trainable_layer
-            .trainable_dense_layers
-            .iter()
-            .zip(stretch_layer.dense_layers.iter_mut())
-            .enumerate()
-        {
-            let weights = src_layer.get_weights();
-            let biases = src_layer.get_biases();
-            dst_layer.assign_trainable_layer(weights, biases);
-            println!("Transferred weights for dense layer {}", i);
+        // Transfer weights from trainable to stretch layer
+        stretch_layer.assign_trainable_layer(trainable_weights.clone(), trainable_biases.clone());
+
+        // Get weights and biases from the stretch layer
+        let stretch_weights = stretch_layer.get_weights();
+        let stretch_biases = stretch_layer.get_biases();
+
+        // Verify that all weights and biases are correctly transferred
+        assert_eq!(trainable_weights.rows(), stretch_weights.rows());
+        assert_eq!(trainable_weights.cols(), stretch_weights.cols());
+        for i in 0..trainable_weights.rows() {
+            for j in 0..trainable_weights.cols() {
+                let trainable_val = trainable_weights.get_unchecked(i, j);
+                let stretch_val = stretch_weights.get_unchecked(i, j);
+                let tv = trainable_val.0.value;
+                let dv = stretch_val.0;
+                assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
+            }
         }
 
-        // Get output from the stretch layer (should match trainable layer)
-        let output_stretch = stretch_layer.forward(&input, utils.clone());
-
-        // Verify that outputs match (weights were successfully transferred)
-        assert_eq!(output_trainable.len(), output_stretch.len());
-        for i in 0..output_trainable.len() {
-            assert_abs_diff_eq!(output_trainable[i], output_stretch[i], epsilon = 1e-10);
+        // Verify that all biases are correctly transferred
+        assert_eq!(trainable_biases.rows(), stretch_biases.rows());
+        for i in 0..trainable_biases.rows() {
+            let trainable_val = trainable_biases.get_unchecked(i, 0);
+            let stretch_val = stretch_biases.get_unchecked(i, 0);
+            let tv = trainable_val.0.value;
+            let dv = stretch_val.0;
+            assert_abs_diff_eq!(tv, dv, epsilon = 1e-10);
         }
 
         // Cleanup
