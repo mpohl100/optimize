@@ -58,6 +58,21 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         }
     }
 
+    /// Get the value at (x, y) without bounds checking.
+    #[must_use]
+    pub fn get_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        let matrix_x = x / self.slice_num_cols;
+        let matrix_y = y / self.slice_num_rows;
+        let within_x = x % self.slice_num_cols;
+        let within_y = y % self.slice_num_rows;
+        let persistable_matrix = self.matrices.get_unchecked(matrix_x, matrix_y);
+        persistable_matrix.get_unchecked(within_x, within_y)
+    }
+
     /// Set the value at (x, y) without bounds checking.
     /// # Panics
     /// Panics if ``set_mut_unchecked`` fails
@@ -71,7 +86,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         let matrix_y = y / self.slice_num_rows;
         let within_x = x % self.slice_num_cols;
         let within_y = y % self.slice_num_rows;
-        let persistable_matrix = self.matrices.get_mut_unchecked(matrix_x, matrix_y);
+        let persistable_matrix = self.matrices.get_unchecked(matrix_x, matrix_y);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 
@@ -104,8 +119,8 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     /// # Errors
     /// Returns an error if saving fails
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        for i in 0..(self.rows / self.slice_num_cols) {
-            for j in 0..(self.cols / self.slice_num_rows) {
+        for i in 0..self.matrices.rows() {
+            for j in 0..self.matrices.cols() {
                 let mut persistable_matrix = self.matrices.get_unchecked(i, j);
                 persistable_matrix.save()?;
             }
@@ -212,12 +227,27 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         let cm = safe_lock(&self.cm);
         let matrix_x = x / cm.get_slice_num_cols();
         let matrix_y = y / cm.get_slice_num_rows();
-        let within_x = x % cm.get_slice_num_cols();
-        let within_y = y % cm.get_slice_num_rows();
         let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
         drop(cm);
         self.get_alloc_manager().allocate(&persistable_matrix);
-        persistable_matrix.get_unchecked(within_x, within_y)
+        let cm = safe_lock(&self.cm);
+        cm.get_mut_unchecked(x, y)
+    }
+
+    #[must_use]
+    pub fn get_mut_unchecked(
+        &self,
+        x: usize,
+        y: usize,
+    ) -> T {
+        let cm = safe_lock(&self.cm);
+        let matrix_x = x / cm.get_slice_num_cols();
+        let matrix_y = y / cm.get_slice_num_rows();
+        let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
+        drop(cm);
+        self.get_alloc_manager().allocate(&persistable_matrix);
+        let cm = safe_lock(&self.cm);
+        cm.get_mut_unchecked(x, y)
     }
 
     pub fn set_mut_unchecked(
@@ -229,12 +259,11 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         let cm = safe_lock(&self.cm);
         let matrix_x = x / cm.get_slice_num_cols();
         let matrix_y = y / cm.get_slice_num_rows();
-        let within_x = x % cm.get_slice_num_cols();
-        let within_y = y % cm.get_slice_num_rows();
         let persistable_matrix = cm.matrices().get_unchecked(matrix_x, matrix_y);
         drop(cm);
         self.get_alloc_manager().allocate(&persistable_matrix);
-        persistable_matrix.set_mut_unchecked(within_x, within_y, value);
+        let cm = safe_lock(&self.cm);
+        cm.set_mut_unchecked(x, y, value);
     }
 
     /// Save the composite matrix to disk

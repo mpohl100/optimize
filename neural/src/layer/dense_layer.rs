@@ -665,7 +665,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_trainable_layer_save_and_load_as_dense_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
