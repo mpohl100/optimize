@@ -89,7 +89,9 @@ impl LayerShape {
     #[must_use]
     pub const fn input_size(&self) -> usize {
         match self.layer_type {
-            LayerType::Dense { input_size, .. } | LayerType::Stretch { input_size, .. } => input_size,
+            LayerType::Dense { input_size, .. } | LayerType::Stretch { input_size, .. } => {
+                input_size
+            },
         }
     }
 
@@ -97,7 +99,9 @@ impl LayerShape {
     #[must_use]
     pub const fn output_size(&self) -> usize {
         match self.layer_type {
-            LayerType::Dense { output_size, .. } | LayerType::Stretch { output_size, .. } => output_size,
+            LayerType::Dense { output_size, .. } | LayerType::Stretch { output_size, .. } => {
+                output_size
+            },
         }
     }
 
@@ -110,7 +114,9 @@ impl LayerShape {
     #[must_use]
     pub const fn matrix_params(&self) -> MatrixParams {
         match self.layer_type {
-            LayerType::Dense { matrix_params, .. } | LayerType::Stretch { matrix_params, .. } => matrix_params,
+            LayerType::Dense { matrix_params, .. } | LayerType::Stretch { matrix_params, .. } => {
+                matrix_params
+            },
         }
     }
 
