@@ -28,16 +28,14 @@ pub fn new_layer(
     utils: &WrappedUtils,
 ) -> Box<dyn crate::layer::layer_trait::Layer<NumberEntry, NumberEntry> + Send> {
     match layer_type {
-        LayerType::Dense { input_size, output_size, matrix_params } => {
-            Box::new(DenseLayer::new(
-                *input_size,
-                *output_size,
-                model_directory,
-                position_in_nn,
-                *matrix_params,
-                utils,
-            ))
-        },
+        LayerType::Dense { input_size, output_size, matrix_params } => Box::new(DenseLayer::new(
+            *input_size,
+            *output_size,
+            model_directory,
+            position_in_nn,
+            *matrix_params,
+            utils,
+        )),
         LayerType::Stretch { input_size, output_size, matrix_params } => {
             Box::new(StretchLayer::new(
                 *input_size,
