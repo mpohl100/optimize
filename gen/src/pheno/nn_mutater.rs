@@ -1,3 +1,4 @@
+use neural::layer::dense_layer::MatrixParams;
 use neural::nn::shape::ActivationData;
 use neural::nn::shape::ActivationType;
 use neural::nn::shape::AnnotatedNeuralNetworkShape;
@@ -72,14 +73,14 @@ impl<'a> NeuralNetworkMutater<'a> {
                     let input_size = shape.get_layer(0).input_size();
                     mutated_shape.remove_layer(0);
                     let layer = mutated_shape.get_layer(0);
+                    let matrix_params = extract_matrix_params(&layer.layer_type);
                     let new_layer = LayerShape {
-                        layer_type: LayerType::Dense {
+                        layer_type: fetch_random_layer_type(
+                            self.rng,
                             input_size,
-                            output_size: layer.output_size(),
-                            matrix_params: match &layer.layer_type {
-                                LayerType::Dense { matrix_params, .. } => *matrix_params,
-                            },
-                        },
+                            layer.output_size(),
+                            matrix_params,
+                        ),
                         activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(0, new_layer);
@@ -87,28 +88,28 @@ impl<'a> NeuralNetworkMutater<'a> {
                     let output_size = shape.get_layer(position).output_size();
                     mutated_shape.remove_layer(position);
                     let layer = mutated_shape.get_layer(position - 1);
+                    let matrix_params = extract_matrix_params(&layer.layer_type);
                     let new_layer = LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: layer.input_size(),
+                        layer_type: fetch_random_layer_type(
+                            self.rng,
+                            layer.input_size(),
                             output_size,
-                            matrix_params: match &layer.layer_type {
-                                LayerType::Dense { matrix_params, .. } => *matrix_params,
-                            },
-                        },
+                            matrix_params,
+                        ),
                         activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(position - 1, new_layer);
                 } else {
                     mutated_shape.remove_layer(position);
                     let layer = mutated_shape.get_layer(position);
+                    let matrix_params = extract_matrix_params(&layer.layer_type);
                     let new_layer = LayerShape {
-                        layer_type: LayerType::Dense {
-                            input_size: mutated_shape.get_layer(position - 1).output_size(),
-                            output_size: layer.output_size(),
-                            matrix_params: match &layer.layer_type {
-                                LayerType::Dense { matrix_params, .. } => *matrix_params,
-                            },
-                        },
+                        layer_type: fetch_random_layer_type(
+                            self.rng,
+                            mutated_shape.get_layer(position - 1).output_size(),
+                            layer.output_size(),
+                            matrix_params,
+                        ),
                         activation: layer.activation.clone(),
                     };
                     mutated_shape.change_layer(position, new_layer);
@@ -146,6 +147,36 @@ pub fn fetch_activation_data(rng: &mut dyn RngWrapper) -> ActivationData {
     }
 }
 
+/// Fetches a random layer type using the provided RNG.
+///
+/// # Panics
+/// This function will panic if the random number generator does not provide enough values,
+/// or if an invalid random number is generated.
+pub fn fetch_random_layer_type(
+    rng: &mut dyn RngWrapper,
+    input_size: usize,
+    output_size: usize,
+    matrix_params: MatrixParams,
+) -> LayerType {
+    let random_f64: f64 = NumCast::from(rng.fetch_uniform(0.0, 2.0, 1).pop_front().unwrap())
+        .expect("Failed to convert random number to f64");
+    let random_number: i32 =
+        NumCast::from(random_f64).expect("Failed to convert random_f64 to i32");
+    match random_number {
+        0 => LayerType::Dense { input_size, output_size, matrix_params },
+        1 => LayerType::Stretch { input_size, output_size, matrix_params },
+        _ => panic!("Invalid random number generated for layer type"),
+    }
+}
+
+/// Extracts matrix params from a layer type.
+pub fn extract_matrix_params(layer_type: &LayerType) -> MatrixParams {
+    match layer_type {
+        LayerType::Dense { matrix_params, .. } => *matrix_params,
+        LayerType::Stretch { matrix_params, .. } => *matrix_params,
+    }
+}
+
 #[allow(clippy::needless_late_init)]
 fn fetch_added_layers(
     rng: &mut dyn RngWrapper,
@@ -180,25 +211,15 @@ fn fetch_added_layers(
         inner_size = 1024;
     }
 
+    let matrix_params = extract_matrix_params(&layer.layer_type);
+
     let first_layer = LayerShape {
-        layer_type: LayerType::Dense {
-            input_size: begin_size,
-            output_size: inner_size,
-            matrix_params: match &layer.layer_type {
-                LayerType::Dense { matrix_params, .. } => *matrix_params,
-            },
-        },
+        layer_type: fetch_random_layer_type(rng, begin_size, inner_size, matrix_params),
         activation: activation.clone(),
     };
 
     let second_layer = LayerShape {
-        layer_type: LayerType::Dense {
-            input_size: inner_size,
-            output_size: end_size,
-            matrix_params: match &layer.layer_type {
-                LayerType::Dense { matrix_params, .. } => *matrix_params,
-            },
-        },
+        layer_type: fetch_random_layer_type(rng, inner_size, end_size, matrix_params),
         activation,
     };
     vec![first_layer, second_layer]

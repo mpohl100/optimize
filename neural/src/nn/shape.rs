@@ -10,6 +10,8 @@ use crate::layer::dense_layer::MatrixParams;
 pub enum LayerType {
     /// A fully connected (dense) layer with specified input and output sizes.
     Dense { input_size: usize, output_size: usize, matrix_params: MatrixParams },
+    /// A stretch layer with specified input and output sizes.
+    Stretch { input_size: usize, output_size: usize, matrix_params: MatrixParams },
 }
 
 /// Enum representing the type of activation function used in a layer.
@@ -88,6 +90,7 @@ impl LayerShape {
     pub const fn input_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { input_size, .. } => input_size,
+            LayerType::Stretch { input_size, .. } => input_size,
         }
     }
 
@@ -96,6 +99,7 @@ impl LayerShape {
     pub const fn output_size(&self) -> usize {
         match self.layer_type {
             LayerType::Dense { output_size, .. } => output_size,
+            LayerType::Stretch { output_size, .. } => output_size,
         }
     }
 
@@ -109,6 +113,7 @@ impl LayerShape {
     pub const fn matrix_params(&self) -> MatrixParams {
         match self.layer_type {
             LayerType::Dense { matrix_params, .. } => matrix_params,
+            LayerType::Stretch { matrix_params, .. } => matrix_params,
         }
     }
 

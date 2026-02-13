@@ -1,12 +1,11 @@
 use crate::activation::{
     activate::ActivationTrait, relu::ReLU, sigmoid::Sigmoid, softmax::Softmax, tanh::Tanh,
 };
-use crate::layer::dense_layer::DenseLayer;
-use crate::layer::dense_layer::TrainableDenseLayer;
+use crate::layer::layer_factory::{new_layer, new_trainable_layer};
 use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
-use crate::nn::shape::{ActivationType, LayerType, NeuralNetworkShape};
+use crate::nn::shape::{ActivationType, NeuralNetworkShape};
 use crate::utilities::util::WrappedUtils;
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
@@ -61,15 +60,13 @@ impl ClassicNeuralNetwork {
         // Initialize layers and activations based on the provided shape.
         for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let dense_layer = DenseLayer::new(
-                layer_shape.input_size(),
-                layer_shape.output_size(),
+            let layer_box = new_layer(
+                &layer_shape.layer_type(),
                 &network.model_directory,
                 i,
-                layer_shape.matrix_params(),
                 &network.utils,
             );
-            let layer = WrappedLayer::new(Box::new(dense_layer));
+            let layer = WrappedLayer::new(layer_box);
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
@@ -112,19 +109,13 @@ impl ClassicNeuralNetwork {
         };
 
         for i in 0..sh.layers.len() {
-            let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size, matrix_params } => {
-                    let layer = DenseLayer::new(
-                        *input_size,
-                        *output_size,
-                        &network.model_directory,
-                        i,
-                        *matrix_params,
-                        &network.utils,
-                    );
-                    WrappedLayer::new(Box::new(layer))
-                },
-            };
+            let layer_box = new_layer(
+                &sh.layers[i].layer_type(),
+                &network.model_directory,
+                i,
+                &network.utils,
+            );
+            let layer = WrappedLayer::new(layer_box);
             let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
@@ -273,14 +264,13 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            let mut new_layer = WrappedLayer::new(Box::new(DenseLayer::new(
-                layer.input_size(),
-                layer.output_size(),
+            let layer_box = new_layer(
+                &self.shape.layers[i].layer_type(),
                 &Directory::Internal(model_directory.clone()),
                 i,
-                self.shape.layers[i].matrix_params(),
                 &self.utils,
-            )));
+            );
+            let mut new_layer = WrappedLayer::new(layer_box);
             new_layer
                 .assign_weights(new_layer.clone().get_weights(), new_layer.clone().get_biases());
             new_layers.push(new_layer);
@@ -361,14 +351,13 @@ impl TrainableClassicNeuralNetwork {
         // Initialize layers and activations based on the provided shape.
         for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
             // Here you would instantiate the appropriate Layer and Activation objects.
-            let layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
-                layer_shape.input_size(),
-                layer_shape.output_size(),
+            let layer_box = new_trainable_layer(
+                &layer_shape.layer_type(),
                 &network.model_directory,
                 i,
-                layer_shape.matrix_params(),
                 &network.utils,
-            )));
+            );
+            let layer = WrappedTrainableLayer::new(layer_box);
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
@@ -562,19 +551,13 @@ impl TrainableClassicNeuralNetwork {
         };
 
         for i in 0..sh.layers.len() {
-            let layer = match &sh.layers[i].layer_type() {
-                LayerType::Dense { input_size, output_size, matrix_params } => {
-                    let layer = TrainableDenseLayer::new(
-                        *input_size,
-                        *output_size,
-                        &network.model_directory,
-                        i,
-                        *matrix_params,
-                        &network.utils,
-                    );
-                    WrappedTrainableLayer::new(Box::new(layer))
-                },
-            };
+            let layer_box = new_trainable_layer(
+                &sh.layers[i].layer_type(),
+                &network.model_directory,
+                i,
+                &network.utils,
+            );
+            let layer = WrappedTrainableLayer::new(layer_box);
             let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
@@ -927,14 +910,13 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
-            let mut new_layer = WrappedTrainableLayer::new(Box::new(TrainableDenseLayer::new(
-                layer.input_size(),
-                layer.output_size(),
+            let layer_box = new_trainable_layer(
+                &self.shape.layers[i].layer_type(),
                 &Directory::Internal(model_directory.clone()),
                 i,
-                self.shape.layers[i].matrix_params(),
                 &self.utils,
-            )));
+            );
+            let mut new_layer = WrappedTrainableLayer::new(layer_box);
             new_layer.assign_trainable_weights(new_layer.get_weights(), new_layer.get_biases());
             new_layers.push(new_layer);
             layer.cleanup();
