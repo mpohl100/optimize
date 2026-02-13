@@ -122,6 +122,74 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     pub fn get_directory(&self) -> Directory {
         self.directory.clone()
     }
+
+    /// Set a submatrix within the composite matrix
+    /// # Panics
+    /// Panics if the submatrix dimensions exceed the bounds of the composite matrix
+    pub fn set_submatrix(
+        &self,
+        start_x: usize,
+        start_y: usize,
+        submatrix: &Self,
+    ) {
+        // check that dimensions are not exceeded
+        assert!(
+            !(start_x + submatrix.rows > self.rows || start_y + submatrix.cols > self.cols),
+            "Submatrix dimensions exceed bounds of composite matrix"
+        );
+        for x in 0..submatrix.rows {
+            for y in 0..submatrix.cols {
+                let matrix_x = x / submatrix.slice_num_cols;
+                let matrix_y = y / submatrix.slice_num_rows;
+                let within_x = x % submatrix.slice_num_cols;
+                let within_y = y % submatrix.slice_num_rows;
+                let persistable_matrix = submatrix.matrices.get_unchecked(matrix_x, matrix_y);
+                let value = persistable_matrix.get_unchecked(within_x, within_y);
+                self.set_mut_unchecked(start_x + x, start_y + y, value);
+            }
+        }
+    }
+
+    /// Get a submatrix from the composite matrix
+    /// # Panics
+    /// Panics if the submatrix dimensions exceed the bounds of the composite matrix
+    #[must_use]
+    pub fn get_submatrix(
+        &self,
+        start_x: usize,
+        start_y: usize,
+        rows: usize,
+        cols: usize,
+        wrapped_alloc_manager: WrappedAllocManager<WrappedPersistableMatrix<T>>,
+    ) -> Self {
+        // check that dimensions are not exceeded
+        assert!(
+            !(start_x + rows > self.rows || start_y + cols > self.cols),
+            "Submatrix dimensions exceed bounds of composite matrix"
+        );
+        let internal_directory =
+            self.directory.expand(&format!("submatrix_{start_x}_{start_y}")).to_internal();
+        let submatrix = Self::new(
+            self.slice_num_cols,
+            self.slice_num_rows,
+            rows,
+            cols,
+            &internal_directory,
+            wrapped_alloc_manager,
+        );
+        for x in 0..rows {
+            for y in 0..cols {
+                let matrix_x = (start_x + x) / self.slice_num_cols;
+                let matrix_y = (start_y + y) / self.slice_num_rows;
+                let within_x = (start_x + x) % self.slice_num_cols;
+                let within_y = (start_y + y) % self.slice_num_rows;
+                let persistable_matrix = self.matrices.get_unchecked(matrix_x, matrix_y);
+                let value = persistable_matrix.get_unchecked(within_x, within_y);
+                submatrix.set_mut_unchecked(x, y, value);
+            }
+        }
+        submatrix
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -210,17 +278,11 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         start_y: usize,
         submatrix: &Self,
     ) {
-        // check that dimensions are not exceeded
-        assert!(
-            !(start_x + submatrix.rows() > self.rows() || start_y + submatrix.cols() > self.cols()),
-            "Submatrix dimensions exceed bounds of composite matrix"
-        );
-        for x in 0..submatrix.rows() {
-            for y in 0..submatrix.cols() {
-                let value = submatrix.get_unchecked(x, y);
-                self.set_mut_unchecked(start_x + x, start_y + y, value);
-            }
-        }
+        let cm = safe_lock(&self.cm);
+        let sub_cm = safe_lock(&submatrix.cm);
+        cm.set_submatrix(start_x, start_y, &sub_cm);
+        drop(cm);
+        drop(sub_cm);
     }
 
     /// Get a submatrix from the composite matrix
@@ -234,34 +296,205 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedCompositeMatrix<T> {
         rows: usize,
         cols: usize,
     ) -> Self {
-        // check that dimensions are not exceeded
-        assert!(
-            !(start_x + rows > self.rows() || start_y + cols > self.cols()),
-            "Submatrix dimensions exceed bounds of composite matrix"
-        );
-        let internal_directory =
-            self.get_directory().expand(&format!("submatrix_{start_x}_{start_y}")).to_internal();
-        let submatrix = CompositeMatrix::new(
-            self.cm.lock().unwrap().get_slice_num_cols(),
-            self.cm.lock().unwrap().get_slice_num_rows(),
-            rows,
-            cols,
-            &internal_directory,
-            self.get_alloc_manager(),
-        );
-        let wrapped_submatrix = Self::new(submatrix);
-        for x in 0..rows {
-            for y in 0..cols {
-                let value = self.get_unchecked(start_x + x, start_y + y);
-                wrapped_submatrix.set_mut_unchecked(x, y, value);
-            }
-        }
-        wrapped_submatrix
+        let cm = safe_lock(&self.cm);
+        let alloc_manager = cm.get_alloc_manager();
+        let submatrix = cm.get_submatrix(start_x, start_y, rows, cols, alloc_manager);
+        drop(cm);
+        Self::new(submatrix)
     }
 
     #[must_use]
     pub fn get_directory(&self) -> Directory {
         let cm = safe_lock(&self.cm);
-        cm.get_directory()
+        let dir = cm.get_directory();
+        drop(cm);
+        dir
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ai_types::NumberEntry;
+    use crate::directory::Directory;
+    use alloc::alloc_manager::AllocManager;
+    use alloc::memory_counter::{MemoryCounter, WrappedMemoryCounter};
+
+    #[test]
+    fn test_set_get_submatrix_basic() {
+        // Create a 10x10 composite matrix
+        let alloc_manager = WrappedAllocManager::new(AllocManager::new(WrappedMemoryCounter::new(
+            MemoryCounter::new(10_000_000),
+        )));
+        let dir = Directory::Internal("test_composite_basic".to_string());
+        let matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager.clone());
+        let wrapped = WrappedCompositeMatrix::new(matrix);
+
+        // Fill with test values
+        for i in 0..10 {
+            for j in 0..10 {
+                wrapped.set_mut_unchecked(i, j, NumberEntry((i * 10 + j) as f64));
+            }
+        }
+
+        // Get a 3x3 submatrix starting at (2, 3)
+        let submatrix = wrapped.get_submatrix(2, 3, 3, 3);
+
+        // Verify values
+        for i in 0..3 {
+            for j in 0..3 {
+                let expected = NumberEntry(((i + 2) * 10 + (j + 3)) as f64);
+                let actual = submatrix.get_unchecked(i, j);
+                assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i, j);
+            }
+        }
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all("test_composite_basic");
+    }
+
+    #[test]
+    fn test_set_submatrix() {
+        // Create a 10x10 composite matrix
+        let alloc_manager = WrappedAllocManager::new(AllocManager::new(WrappedMemoryCounter::new(
+            MemoryCounter::new(10_000_000),
+        )));
+        let dir = Directory::Internal("test_composite_set".to_string());
+        let matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager.clone());
+        let wrapped = WrappedCompositeMatrix::new(matrix);
+
+        // Initialize with zeros
+        for i in 0..10 {
+            for j in 0..10 {
+                wrapped.set_mut_unchecked(i, j, NumberEntry(0.0));
+            }
+        }
+
+        // Create a 3x3 submatrix with specific values
+        let sub_dir = Directory::Internal("test_composite_sub".to_string());
+        let sub_matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(3, 3, 3, 3, &sub_dir, alloc_manager.clone());
+        let sub_wrapped = WrappedCompositeMatrix::new(sub_matrix);
+
+        for i in 0..3 {
+            for j in 0..3 {
+                sub_wrapped.set_mut_unchecked(i, j, NumberEntry(100.0 + (i * 3 + j) as f64));
+            }
+        }
+
+        // Set the submatrix at position (2, 3)
+        wrapped.set_submatrix(2, 3, &sub_wrapped);
+
+        // Verify that the submatrix was set correctly
+        for i in 0..3 {
+            for j in 0..3 {
+                let expected = NumberEntry(100.0 + (i * 3 + j) as f64);
+                let actual = wrapped.get_unchecked(i + 2, j + 3);
+                assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i + 2, j + 3);
+            }
+        }
+
+        // Verify that other positions are still zero
+        assert_eq!(wrapped.get_unchecked(0, 0).0, 0.0);
+        assert_eq!(wrapped.get_unchecked(9, 9).0, 0.0);
+        assert_eq!(wrapped.get_unchecked(1, 1).0, 0.0);
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all("test_composite_set");
+        let _ = std::fs::remove_dir_all("test_composite_sub");
+    }
+
+    #[test]
+    fn test_set_get_submatrix_roundtrip() {
+        // Create a 20x20 composite matrix
+        let alloc_manager = WrappedAllocManager::new(AllocManager::new(WrappedMemoryCounter::new(
+            MemoryCounter::new(10_000_000),
+        )));
+        let dir = Directory::Internal("test_composite_roundtrip".to_string());
+        let matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 20, 20, &dir, alloc_manager.clone());
+        let wrapped = WrappedCompositeMatrix::new(matrix);
+
+        // Fill with test values
+        for i in 0..20 {
+            for j in 0..20 {
+                wrapped.set_mut_unchecked(i, j, NumberEntry((i * 100 + j) as f64));
+            }
+        }
+
+        // Extract a submatrix
+        let submatrix = wrapped.get_submatrix(5, 7, 6, 8);
+
+        // Create a new matrix and set the submatrix
+        let dir2 = Directory::Internal("test_composite_roundtrip2".to_string());
+        let matrix2: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 20, 20, &dir2, alloc_manager.clone());
+        let wrapped2 = WrappedCompositeMatrix::new(matrix2);
+
+        // Initialize with zeros
+        for i in 0..20 {
+            for j in 0..20 {
+                wrapped2.set_mut_unchecked(i, j, NumberEntry(0.0));
+            }
+        }
+
+        // Set the submatrix at the same position
+        wrapped2.set_submatrix(5, 7, &submatrix);
+
+        // Verify that the submatrix region matches
+        for i in 5..11 {
+            for j in 7..15 {
+                let expected = wrapped.get_unchecked(i, j);
+                let actual = wrapped2.get_unchecked(i, j);
+                assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i, j);
+            }
+        }
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all("test_composite_roundtrip");
+        let _ = std::fs::remove_dir_all("test_composite_roundtrip2");
+    }
+
+    #[test]
+    #[should_panic(expected = "Submatrix dimensions exceed bounds of composite matrix")]
+    fn test_get_submatrix_out_of_bounds() {
+        let alloc_manager = WrappedAllocManager::new(AllocManager::new(WrappedMemoryCounter::new(
+            MemoryCounter::new(10_000_000),
+        )));
+        let dir = Directory::Internal("test_composite_bounds".to_string());
+        let matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager);
+        let wrapped = WrappedCompositeMatrix::new(matrix);
+
+        // This should panic - trying to get an 8x8 submatrix starting at (5, 5)
+        let _ = wrapped.get_submatrix(5, 5, 8, 8);
+
+        let _ = std::fs::remove_dir_all("test_composite_bounds");
+    }
+
+    #[test]
+    #[should_panic(expected = "Submatrix dimensions exceed bounds of composite matrix")]
+    fn test_set_submatrix_out_of_bounds() {
+        let alloc_manager = WrappedAllocManager::new(AllocManager::new(WrappedMemoryCounter::new(
+            MemoryCounter::new(10_000_000),
+        )));
+        let dir = Directory::Internal("test_composite_set_bounds".to_string());
+        let matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager.clone());
+        let wrapped = WrappedCompositeMatrix::new(matrix);
+
+        // Create a 6x6 submatrix
+        let sub_dir = Directory::Internal("test_composite_set_bounds_sub".to_string());
+        let sub_matrix: CompositeMatrix<NumberEntry> =
+            CompositeMatrix::new(3, 3, 6, 6, &sub_dir, alloc_manager);
+        let sub_wrapped = WrappedCompositeMatrix::new(sub_matrix);
+
+        // This should panic - trying to set a 6x6 submatrix at position (7, 7)
+        wrapped.set_submatrix(7, 7, &sub_wrapped);
+
+        let _ = std::fs::remove_dir_all("test_composite_set_bounds");
+        let _ = std::fs::remove_dir_all("test_composite_set_bounds_sub");
     }
 }
