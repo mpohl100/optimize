@@ -141,6 +141,12 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
             &internal_mat_directory,
             self.alloc_manager.clone(),
         ));
+        // Initialize all values to zero
+        for i in 0..self.output_size {
+            for j in 0..self.input_size {
+                weights.set_mut_unchecked(i, j, NumberEntry::from(0.0));
+            }
+        }
         for (i, dense_layer) in self.dense_layers.iter().enumerate() {
             let dense_weights = dense_layer.get_weights();
             weights.set_submatrix(
@@ -163,6 +169,10 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
             &internal_mat_directory,
             self.alloc_manager.clone(),
         ));
+        // Initialize all values to zero
+        for i in 0..self.output_size {
+            biases.set_mut_unchecked(i, 0, NumberEntry::from(0.0));
+        }
         for (i, dense_layer) in self.dense_layers.iter().enumerate() {
             let dense_biases = dense_layer.get_biases();
             biases.set_submatrix(i * dense_layer.output_size(), 0, &dense_biases);
@@ -349,6 +359,12 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
             &internal_mat_directory,
             self.weight_alloc_manager.clone(),
         ));
+        // Initialize all values to zero
+        for i in 0..self.output_size {
+            for j in 0..self.input_size {
+                weights.set_mut_unchecked(i, j, WeightEntry::from(0.0));
+            }
+        }
         for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
             let dense_weights = dense_layer.get_weights();
             let top_left_row = i * dense_layer.output_size();
@@ -369,6 +385,10 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
             &internal_mat_directory,
             self.bias_alloc_manager.clone(),
         ));
+        // Initialize all values to zero
+        for i in 0..self.output_size {
+            biases.set_mut_unchecked(i, 0, BiasEntry::from(0.0));
+        }
         for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
             let dense_biases = dense_layer.get_biases();
             biases.set_submatrix(i * dense_layer.output_size(), 0, &dense_biases);
@@ -730,7 +750,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_trainable_stretch_layer_weight_transfer_to_new_trainable_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
@@ -834,7 +853,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_trainable_stretch_layer_conversion_to_stretch_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
