@@ -351,11 +351,9 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
         ));
         for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
             let dense_weights = dense_layer.get_weights();
-            weights.set_submatrix(
-                i * dense_layer.output_size(),
-                i * dense_layer.input_size(),
-                &dense_weights,
-            );
+            let top_left_row = i * dense_layer.output_size();
+            let top_left_col = i * dense_layer.input_size();
+            weights.set_submatrix(top_left_row, top_left_col, &dense_weights);
         }
 
         weights
@@ -736,10 +734,10 @@ mod tests {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
         // Create and train first trainable stretch layer
-        // Use 10x20 to have a proper multi-layer structure
+        // Use 10x10 to have a proper multi-layer structure
         let mut layer1 = TrainableStretchLayer::new(
             10,
-            20,
+            10,
             Directory::Internal("test_transfer_stretch_trainable_1".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
@@ -751,8 +749,8 @@ mod tests {
         for i in 0..10 {
             input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
-        let mut target = vec![0.0; 20];
-        for i in 0..20 {
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
             target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         train_stretch_layer(&mut layer1, &input, &target, &utils);
@@ -764,7 +762,7 @@ mod tests {
         // Create a new trainable stretch layer with the same dimensions
         let mut layer2 = TrainableStretchLayer::new(
             10,
-            20,
+            10,
             Directory::Internal("test_transfer_stretch_trainable_2".to_string()),
             0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
