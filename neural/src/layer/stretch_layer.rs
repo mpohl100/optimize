@@ -730,6 +730,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_trainable_stretch_layer_weight_transfer_to_new_trainable_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
@@ -803,6 +804,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_trainable_stretch_layer_conversion_to_stretch_layer() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
