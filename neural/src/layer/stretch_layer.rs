@@ -134,8 +134,8 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
     fn get_weights(&self) -> WrappedCompositeMatrix<NumberEntry> {
         let internal_mat_directory = self.layer_path.expand("temp_weights").to_internal();
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_cols,
             self.matrix_params.slice_rows,
+            self.matrix_params.slice_cols,
             self.output_size,
             self.input_size,
             &internal_mat_directory,
@@ -156,8 +156,8 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
     fn get_biases(&self) -> WrappedCompositeMatrix<NumberEntry> {
         let internal_mat_directory = self.layer_path.expand("temp_biases").to_internal();
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_cols,
             self.matrix_params.slice_rows,
+            self.matrix_params.slice_cols,
             self.output_size,
             1,
             &internal_mat_directory,
@@ -342,8 +342,8 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
     fn get_weights(&self) -> WrappedCompositeMatrix<WeightEntry> {
         let internal_mat_directory = self.layer_path.expand("temp_weights").to_internal();
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_cols,
             self.matrix_params.slice_rows,
+            self.matrix_params.slice_cols,
             self.output_size,
             self.input_size,
             &internal_mat_directory,
@@ -364,8 +364,8 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
     fn get_biases(&self) -> WrappedCompositeMatrix<BiasEntry> {
         let internal_mat_directory = self.layer_path.expand("temp_biases").to_internal();
         let biases = WrappedCompositeMatrix::new(CompositeMatrix::new(
-            self.matrix_params.slice_cols,
             self.matrix_params.slice_rows,
+            self.matrix_params.slice_cols,
             self.output_size,
             1,
             &internal_mat_directory,
@@ -540,6 +540,7 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
 mod tests {
     use super::*;
     use crate::utilities::util::Utils;
+    use approx::assert_abs_diff_eq;
 
     /// Helper function to train a stretch layer with given input and target for 5 epochs
     fn train_stretch_layer(
@@ -728,5 +729,139 @@ mod tests {
 
         layer.cleanup();
         let _ = std::fs::remove_dir_all("test_stretch_10_50");
+    }
+
+    #[test]
+    fn test_trainable_stretch_layer_weight_transfer_to_new_trainable_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+
+        // Create and train first trainable stretch layer
+        let mut layer1 = TrainableStretchLayer::new(
+            10,
+            10,
+            Directory::Internal("test_transfer_stretch_trainable_1".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Train the layer
+        let mut input = vec![0.0; 10];
+        for i in 0..10 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+        train_stretch_layer(&mut layer1, &input, &target, &utils);
+
+        // Get output from the trained layer
+        let output1 = layer1.forward(&input, utils.clone());
+
+        // Create a new trainable stretch layer with the same dimensions
+        let mut layer2 = TrainableStretchLayer::new(
+            10,
+            10,
+            Directory::Internal("test_transfer_stretch_trainable_2".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Transfer weights by copying each internal dense layer's weights
+        for (i, (src_layer, dst_layer)) in layer1
+            .trainable_dense_layers
+            .iter()
+            .zip(layer2.trainable_dense_layers.iter_mut())
+            .enumerate()
+        {
+            let weights = src_layer.get_weights();
+            let biases = src_layer.get_biases();
+            dst_layer.assign_trainable_layer(weights, biases);
+            println!("Transferred weights for dense layer {}", i);
+        }
+
+        // Get output from the second layer (should match layer1)
+        let output2 = layer2.forward(&input, utils.clone());
+
+        // Verify that outputs match (weights were successfully transferred)
+        assert_eq!(output1.len(), output2.len());
+        for i in 0..output1.len() {
+            assert_abs_diff_eq!(output1[i], output2[i], epsilon = 1e-10);
+        }
+
+        // Cleanup
+        layer1.cleanup();
+        layer2.cleanup();
+        let _ = std::fs::remove_dir_all("test_transfer_stretch_trainable_1");
+        let _ = std::fs::remove_dir_all("test_transfer_stretch_trainable_2");
+    }
+
+    #[test]
+    fn test_trainable_stretch_layer_conversion_to_stretch_layer() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+
+        // Create and train a trainable stretch layer
+        let mut trainable_layer = TrainableStretchLayer::new(
+            10,
+            10,
+            Directory::Internal("test_conversion_stretch_trainable".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Train the layer
+        let mut input = vec![0.0; 10];
+        for i in 0..10 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+        train_stretch_layer(&mut trainable_layer, &input, &target, &utils);
+
+        // Get output from the trained layer
+        let output_trainable = trainable_layer.forward(&input, utils.clone());
+
+        // Create a StretchLayer (non-trainable)
+        let mut stretch_layer = StretchLayer::new(
+            10,
+            10,
+            Directory::Internal("test_conversion_stretch_dense".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Transfer weights by copying each internal dense layer's weights
+        for (i, (src_layer, dst_layer)) in trainable_layer
+            .trainable_dense_layers
+            .iter()
+            .zip(stretch_layer.dense_layers.iter_mut())
+            .enumerate()
+        {
+            let weights = src_layer.get_weights();
+            let biases = src_layer.get_biases();
+            dst_layer.assign_trainable_layer(weights, biases);
+            println!("Transferred weights for dense layer {}", i);
+        }
+
+        // Get output from the stretch layer (should match trainable layer)
+        let output_stretch = stretch_layer.forward(&input, utils.clone());
+
+        // Verify that outputs match (weights were successfully transferred)
+        assert_eq!(output_trainable.len(), output_stretch.len());
+        for i in 0..output_trainable.len() {
+            assert_abs_diff_eq!(output_trainable[i], output_stretch[i], epsilon = 1e-10);
+        }
+
+        // Cleanup
+        trainable_layer.cleanup();
+        stretch_layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_conversion_stretch_trainable");
+        let _ = std::fs::remove_dir_all("test_conversion_stretch_dense");
     }
 }
