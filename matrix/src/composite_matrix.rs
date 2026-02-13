@@ -118,6 +118,14 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
     /// Save the composite matrix to disk
     /// # Errors
     /// Returns an error if saving fails
+    ///
+    /// # Implementation Note
+    /// This method iterates over all sub-matrices (including edge matrices with remainder dimensions).
+    /// Previously, this used `self.rows / self.slice_num_cols` which only iterated over complete slices,
+    /// missing the remainder matrices at the edges. For example, with a 10x10 matrix divided into 3x3 slices:
+    /// - Old loop: 0..(10/3) = 0..3, missing the 4th row/column of matrices
+    /// - New loop: 0..self.matrices.rows() = 0..4, correctly saving all 16 sub-matrices
+    /// This bug caused edge weights to appear different because they were never saved/loaded from disk.
     pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         for i in 0..self.matrices.rows() {
             for j in 0..self.matrices.cols() {
