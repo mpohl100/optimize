@@ -70,6 +70,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         let within_x = x % self.slice_num_cols;
         let within_y = y % self.slice_num_rows;
         let persistable_matrix = self.matrices.get_unchecked(matrix_x, matrix_y);
+        self.get_alloc_manager().allocate(&persistable_matrix);
         persistable_matrix.get_unchecked(within_x, within_y)
     }
 
@@ -87,6 +88,7 @@ impl<T: PersistableValue + From<f64> + 'static> CompositeMatrix<T> {
         let within_x = x % self.slice_num_cols;
         let within_y = y % self.slice_num_rows;
         let persistable_matrix = self.matrices.get_unchecked(matrix_x, matrix_y);
+        self.get_alloc_manager().allocate(&persistable_matrix);
         persistable_matrix.set_mut_unchecked(within_x, within_y, value);
     }
 
