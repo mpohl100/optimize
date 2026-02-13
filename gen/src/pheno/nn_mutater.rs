@@ -242,7 +242,8 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 0.0]);
+        // The fifth and sixth random numbers pick the layer types (Dense or Stretch)
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -278,7 +279,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 0.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -314,7 +315,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 0.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -353,7 +354,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 1.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -389,7 +390,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 1.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 1.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -425,7 +426,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 1.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 1.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -464,7 +465,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 2.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 0.0, 2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -500,7 +501,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 2.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 1.0, 2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -536,7 +537,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 2.0]);
+        let mut rng = FakeRng::new(vec![0.0, 0.0, 2.0, 2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -575,7 +576,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 0.0]);
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 0.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -628,7 +629,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 1.0]);
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 1.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -681,7 +682,7 @@ mod tests {
         // The second random number should pick the position of the change
         // The third random number should pick the activation type of the new layer
         // The fourth random number should pick the size of the new layer
-        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 2.0]);
+        let mut rng = FakeRng::new(vec![0.0, 1.0, 0.0, 2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -736,7 +737,7 @@ mod tests {
     fn test_one_layer_network_does_not_remove() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 0.0]);
+        let mut rng = FakeRng::new(vec![2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![LayerShape {
                 layer_type: LayerType::Dense {
@@ -767,7 +768,8 @@ mod tests {
     fn test_two_layer_network_remove_first_leaves_correct_dimensions() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 0.0]);
+        // The third random number should pick the layer type for the merged layer
+        let mut rng = FakeRng::new(vec![2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -804,7 +806,8 @@ mod tests {
     fn test_two_layer_network_remove_second_leaves_correct_dimensions() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 1.0]);
+        // The third random number should pick the layer type for the merged layer
+        let mut rng = FakeRng::new(vec![2.0, 1.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -845,7 +848,8 @@ mod tests {
     fn test_three_layer_network_remove_first_layer_leaves_correct_dimensions() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 0.0]);
+        // The third random number should pick the layer type for the merged layer
+        let mut rng = FakeRng::new(vec![2.0, 0.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -898,7 +902,8 @@ mod tests {
     fn test_three_layer_network_remove_middle_layer_leaves_correct_dimensions() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 1.0]);
+        // The third random number should pick the layer type for the merged layer
+        let mut rng = FakeRng::new(vec![2.0, 1.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
@@ -951,7 +956,8 @@ mod tests {
     fn test_three_layer_network_remove_last_layer_leaves_correct_dimensions() {
         // The first random number should pick the type of change to be applied
         // The second random number should pick the position of the change
-        let mut rng = FakeRng::new(vec![2.0, 2.0]);
+        // The third random number should pick the layer type for the merged layer
+        let mut rng = FakeRng::new(vec![2.0, 2.0, 0.0]);
         let shape = NeuralNetworkShape {
             layers: vec![
                 LayerShape {
