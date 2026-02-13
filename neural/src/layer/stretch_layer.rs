@@ -464,10 +464,12 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
         */
         let mut ret = vec![0.0; self.input_size];
         for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
-            let start = i * dense_layer.input_size();
-            let end = start + dense_layer.input_size();
+            // Slice d_out based on output dimensions
+            let start = i * dense_layer.output_size();
+            let end = start + dense_layer.output_size();
             let d_vec_slice = &d_out[start..end];
             let dense_output = dense_layer.backward(d_vec_slice, utils.clone());
+            // Accumulate gradients based on input dimensions
             for (j, &value) in dense_output.iter().enumerate() {
                 let ret_index = i * dense_layer.input_size() + j;
                 if ret_index < self.input_size {
@@ -531,5 +533,200 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
             dense_layer.read_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utilities::util::Utils;
+
+    /// Helper function to train a stretch layer with given input and target for 5 epochs
+    fn train_stretch_layer(
+        layer: &mut TrainableStretchLayer,
+        input: &[f64],
+        target: &[f64],
+        utils: &WrappedUtils,
+    ) {
+        let epochs = 5;
+        for _ in 0..epochs {
+            let output = layer.forward(input, utils.clone());
+            let mut grad = vec![0.0; output.len()];
+            for i in 0..grad.len() {
+                grad[i] = output[i] - target[i];
+            }
+            layer.backward(&grad, utils.clone());
+            layer.update_weights(0.01, utils.clone());
+        }
+    }
+
+    #[test]
+    fn test_stretch_layer_50x1_to_10x1() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableStretchLayer::new(
+            50,
+            10,
+            Directory::Internal("test_stretch_50_10".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Create input with alternating 1s and 0s
+        let mut input = vec![0.0; 50];
+        for i in 0..50 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        // Target with alternating pattern
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        train_stretch_layer(&mut layer, &input, &target, &utils);
+
+        // Verify the output dimensions are correct
+        let output = layer.forward(&input, utils.clone());
+        assert_eq!(output.len(), 10);
+
+        layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_stretch_50_10");
+    }
+
+    #[test]
+    fn test_stretch_layer_25x1_to_10x1() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableStretchLayer::new(
+            25,
+            10,
+            Directory::Internal("test_stretch_25_10".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Create input with alternating 1s and 0s
+        let mut input = vec![0.0; 25];
+        for i in 0..25 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        // Target with alternating pattern
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        train_stretch_layer(&mut layer, &input, &target, &utils);
+
+        // Verify the output dimensions are correct
+        let output = layer.forward(&input, utils.clone());
+        assert_eq!(output.len(), 10);
+
+        layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_stretch_25_10");
+    }
+
+    #[test]
+    fn test_stretch_layer_10x1_to_10x1() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableStretchLayer::new(
+            10,
+            10,
+            Directory::Internal("test_stretch_10_10".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Create input with alternating 1s and 0s
+        let mut input = vec![0.0; 10];
+        for i in 0..10 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        // Target should be the same as input (no transformation needed)
+        let mut target = vec![0.0; 10];
+        for i in 0..10 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        train_stretch_layer(&mut layer, &input, &target, &utils);
+
+        // Verify the output dimensions are correct
+        let output = layer.forward(&input, utils.clone());
+        assert_eq!(output.len(), 10);
+
+        layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_stretch_10_10");
+    }
+
+    #[test]
+    fn test_stretch_layer_10x1_to_25x1() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableStretchLayer::new(
+            10,
+            25,
+            Directory::Internal("test_stretch_10_25".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Create input with alternating 1s and 0s
+        let mut input = vec![0.0; 10];
+        for i in 0..10 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        // Target with alternating pattern
+        let mut target = vec![0.0; 25];
+        for i in 0..25 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        train_stretch_layer(&mut layer, &input, &target, &utils);
+
+        // Verify the output dimensions are correct
+        let output = layer.forward(&input, utils.clone());
+        assert_eq!(output.len(), 25);
+
+        layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_stretch_10_25");
+    }
+
+    #[test]
+    fn test_stretch_layer_10x1_to_50x1() {
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
+        let mut layer = TrainableStretchLayer::new(
+            10,
+            50,
+            Directory::Internal("test_stretch_10_50".to_string()),
+            0,
+            MatrixParams { slice_rows: 10, slice_cols: 10 },
+            &utils,
+        );
+
+        // Create input with alternating 1s and 0s
+        let mut input = vec![0.0; 10];
+        for i in 0..10 {
+            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        // Target with alternating pattern
+        let mut target = vec![0.0; 50];
+        for i in 0..50 {
+            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        }
+
+        train_stretch_layer(&mut layer, &input, &target, &utils);
+
+        // Verify the output dimensions are correct
+        let output = layer.forward(&input, utils.clone());
+        assert_eq!(output.len(), 50);
+
+        layer.cleanup();
+        let _ = std::fs::remove_dir_all("test_stretch_10_50");
     }
 }
