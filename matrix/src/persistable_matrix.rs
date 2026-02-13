@@ -108,7 +108,13 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
     /// Save the matrix to disk
     /// # Errors
     /// Returns an error if saving fails
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // set the matrix file path to user so that the data remains on disk
+        self.matrix_file_path = self.matrix_file_path.to_user();
+        self.save_internal()
+    }
+
+    fn save_internal(&self) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(mat) = &self.mat {
             save(self.matrix_file_path.path(), mat)?;
         }
@@ -317,8 +323,8 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
     /// Save the matrix to disk
     /// # Errors
     /// Returns an error if saving fails
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let pm = safe_lock(&self.pm);
+    pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let mut pm = safe_lock(&self.pm);
         pm.save()
     }
 }
