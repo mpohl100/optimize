@@ -73,6 +73,8 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         )
     }
 
+    /// # Panics
+    /// Panics if the matrix is not allocated.
     pub fn set_mut_unchecked(
         &mut self,
         x: usize,
@@ -82,11 +84,7 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         if let Some(mat) = &mut self.mat {
             mat.set_mut_unchecked(x, y, value);
         } else {
-            // allocate the matrix first
-            self.allocate();
-            if let Some(mat) = &mut self.mat {
-                mat.set_mut_unchecked(x, y, value);
-            }
+            panic!("Matrix is not allocated");
         }
     }
 
