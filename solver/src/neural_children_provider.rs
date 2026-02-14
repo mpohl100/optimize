@@ -2,18 +2,43 @@
 //!
 //! This module provides a children provider for neural network-based regret minimization.
 
+use neural::nn::shape::NeuralNetworkShape;
 use regret::provider::ChildrenProvider;
 use regret::regret_node::WrappedRegret;
-use regret::user_data::WrappedDecision;
+use regret::user_data::{DecisionTrait, WrappedDecision};
 
-/// Decision data for neural network solver.
-#[derive(Debug, Default, Clone)]
-pub struct NeuralDecision {
+use crate::neural_state::{NeuralState, StateTrait};
+
+/// User data for neural network solver.
+#[derive(Debug, Clone)]
+pub struct NeuralUserData {
+    /// The neural state.
+    state: NeuralState,
     /// Probability of this decision.
-    pub probability: f64,
+    probability: f64,
 }
 
-impl regret::user_data::DecisionTrait for NeuralDecision {
+impl Default for NeuralUserData {
+    fn default() -> Self {
+        Self { state: NeuralState::default(), probability: 0.0 }
+    }
+}
+
+impl NeuralUserData {
+    /// Creates a new neural user data with the given state.
+    #[must_use]
+    pub const fn new(state: NeuralState) -> Self {
+        Self { state, probability: 0.0 }
+    }
+
+    /// Returns the neural state.
+    #[must_use]
+    pub fn get_state(&self) -> NeuralState {
+        self.state.clone()
+    }
+}
+
+impl DecisionTrait for NeuralUserData {
     /// Returns the probability of this decision.
     fn get_probability(&self) -> f64 {
         self.probability
@@ -29,7 +54,7 @@ impl regret::user_data::DecisionTrait for NeuralDecision {
 
     /// Returns a string representation of the decision.
     fn get_data_as_string(&self) -> String {
-        format!("Neural Decision with probability: {}", self.probability)
+        format!("State: {}, Probability: {}", self.state.get_data_as_string(), self.probability)
     }
 }
 
@@ -37,23 +62,24 @@ impl regret::user_data::DecisionTrait for NeuralDecision {
 #[derive(Debug, Clone)]
 pub struct NeuralChildrenProvider {
     /// Neural network shape to use for decisions.
-    _shape: neural::nn::shape::NeuralNetworkShape,
+    #[allow(dead_code)]
+    shape: NeuralNetworkShape,
 }
 
 impl NeuralChildrenProvider {
     /// Creates a new neural children provider with the given neural network shape.
     #[must_use]
-    pub const fn new(shape: neural::nn::shape::NeuralNetworkShape) -> Self {
-        Self { _shape: shape }
+    pub const fn new(shape: NeuralNetworkShape) -> Self {
+        Self { shape }
     }
 }
 
-impl ChildrenProvider<NeuralDecision> for NeuralChildrenProvider {
+impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
     /// Returns the children nodes for the given parent data.
     fn get_children(
         &self,
-        _parents_data: Vec<WrappedDecision<NeuralDecision>>,
-    ) -> Vec<WrappedRegret<NeuralDecision>> {
+        _parents_data: Vec<WrappedDecision<NeuralUserData>>,
+    ) -> Vec<WrappedRegret<NeuralUserData>> {
         // TODO: implement
         Vec::new()
     }

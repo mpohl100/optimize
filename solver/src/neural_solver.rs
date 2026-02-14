@@ -7,10 +7,9 @@ use regret::provider::{Provider, ProviderType, WrappedChildrenProvider, WrappedP
 use regret::regret_node::RegretNode;
 
 use crate::neural_children_provider::NeuralChildrenProvider;
-use crate::neural_expected_value_provider::NeuralExpectedValueProvider;
 
 /// A solver that uses neural networks and regret minimization.
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct NeuralSolver {
     /// The neural network shape to use for solving.
     shape: NeuralNetworkShape,
@@ -30,25 +29,23 @@ impl NeuralSolver {
     /// * `num_iterations` - The number of iterations to run the regret minimization algorithm.
     /// * `do_randomize_children` - Whether to randomize children during solving.
     pub fn solve(
-        &self,
+        &mut self,
         num_iterations: usize,
         do_randomize_children: bool,
     ) {
-        // Create the children provider and expected value provider
+        // Create the children provider with the neural network shape
         let children_provider = NeuralChildrenProvider::new(self.shape.clone());
-        let _expected_value_provider = NeuralExpectedValueProvider::new(self.shape.clone());
 
-        // Create the provider type with children provider
-        let provider_type =
-            ProviderType::Children(WrappedChildrenProvider::new(Box::new(children_provider)));
+        // Create the wrapped provider with the children provider
+        let provider = WrappedProvider::new(Provider::new(
+            ProviderType::Children(WrappedChildrenProvider::new(Box::new(children_provider))),
+            None,
+        ));
 
-        // Create the wrapped provider
-        let provider = WrappedProvider::new(Provider::new(provider_type, None));
+        // Create the regret node with fixed probability
+        let mut node = RegretNode::new(1.0, 0.01, vec![], provider, Some(1.0));
 
-        // Create the regret node
-        let mut regret_node = RegretNode::new(1.0, 0.01, Vec::new(), provider, None);
-
-        // Call the solve method of the regret node
-        regret_node.solve(num_iterations, do_randomize_children);
+        // Solve using the regret minimization algorithm
+        node.solve(num_iterations, do_randomize_children);
     }
 }
