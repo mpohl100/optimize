@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["alloc", "app", "evol", "gen", "regret", "neural", "matrix", "markov", "utils"]
+members = ["alloc", "app", "evol", "gen", "regret", "neural", "matrix", "markov", "utils", "solver"]
 
 [workspace.dependencies]
 # Error handling
