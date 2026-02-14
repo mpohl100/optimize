@@ -1,7 +1,9 @@
 //! Integration tests for the solver crate.
 
 use neural::layer::dense_layer::MatrixParams;
-use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType, NeuralNetworkShape};
+use neural::nn::shape::{
+    ActivationData, ActivationType, LayerShape, LayerType, NeuralNetworkShape,
+};
 use solver::neural_solver::NeuralSolver;
 
 #[test]
@@ -28,7 +30,7 @@ fn test_neural_solver_creation() {
     let shape = NeuralNetworkShape::new(layers);
 
     // Create a neural solver with the shape
-    let solver = NeuralSolver::new(shape);
+    let mut solver = NeuralSolver::new(shape);
 
     // Call the solve method (with minimal iterations for testing)
     solver.solve(1, false);
