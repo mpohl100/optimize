@@ -696,10 +696,8 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 500];
 
-        let training_data = crate::training::training_data::TrainingData::new(&inputs, &targets);
-        let training_settings = crate::training::training_settings::TrainingSettings::new(
-            0.01, 5, 0.1, true, 0.7, 1.0, 32,
-        );
+        let training_data = TrainingData::new(&inputs, &targets);
+        let training_settings = TrainingSettings::new(0.01, 5, 0.1, true, 0.7, 1.0, 32);
         nn.train(&training_data, &training_settings);
 
         let prediction = nn.predict(inputs[0].clone());
