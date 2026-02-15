@@ -401,7 +401,11 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
 }
 
 impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
-    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+    fn train(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) -> f64 {
         let inputs = data.inputs();
         let targets = data.targets();
         let tolerance = settings.tolerance();
@@ -487,7 +491,11 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
         primary_accuracy + backup_accuracy
     }
 
-    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+    fn train_batch(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) {
         self.primary_nn.train_batch(data, settings);
     }
 

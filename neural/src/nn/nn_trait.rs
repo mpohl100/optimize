@@ -78,10 +78,18 @@ impl WrappedNeuralNetwork {
 pub trait TrainableNeuralNetwork: NeuralNetwork {
     /// Trains the neural network using the given training data and settings.
     /// Includes validation using a split of the data.
-    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64;
+    fn train(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) -> f64;
 
     /// Trains the neural network doing batch back propagation.
-    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings);
+    fn train_batch(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    );
 
     /// Returns the input size of the first layer in the network.
     fn input_size(&self) -> usize;
@@ -126,11 +134,19 @@ impl WrappedTrainableNeuralNetwork {
         safe_lock(&self.nn).save(user_model_directory)
     }
 
-    pub fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+    pub fn train(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) -> f64 {
         safe_lock(&self.nn).train(data, settings)
     }
 
-    pub fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+    pub fn train_batch(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) {
         safe_lock(&self.nn).train_batch(data, settings);
     }
 

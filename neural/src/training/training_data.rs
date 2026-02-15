@@ -12,12 +12,11 @@ impl<'a> TrainingData<'a> {
     ///
     /// Panics if inputs and targets have different lengths
     #[must_use]
-    pub fn new(inputs: &'a [Vec<f64>], targets: &'a [Vec<f64>]) -> Self {
-        assert_eq!(
-            inputs.len(),
-            targets.len(),
-            "Inputs and targets must have the same length"
-        );
+    pub fn new(
+        inputs: &'a [Vec<f64>],
+        targets: &'a [Vec<f64>],
+    ) -> Self {
+        assert_eq!(inputs.len(), targets.len(), "Inputs and targets must have the same length");
         Self { inputs, targets }
     }
 

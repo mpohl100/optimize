@@ -112,7 +112,7 @@ impl TrainingSession {
         }
 
         println!("Training neural network with shape: {:?}", nn.shape());
-        
+
         // Create TrainingData and TrainingSettings
         let training_data = TrainingData::new(&inputs, &targets);
         let training_settings = TrainingSettings::new(
