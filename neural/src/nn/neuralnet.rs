@@ -688,7 +688,11 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     /// Trains the neural network using the given training data and settings.
     /// Includes validation using a split of the data.
     #[allow(clippy::too_many_lines)]
-    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+    fn train(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) -> f64 {
         let inputs = data.inputs();
         let targets = data.targets();
         let learning_rate = settings.learning_rate();
@@ -829,7 +833,11 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     }
 
     /// Trains the neural network doing batch back propagation.
-    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+    fn train_batch(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) {
         let inputs = data.inputs();
         let targets = data.targets();
         let learning_rate = settings.learning_rate();

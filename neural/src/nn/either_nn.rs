@@ -528,7 +528,11 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
 }
 
 impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
-    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+    fn train(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) -> f64 {
         let inputs = data.inputs();
         let targets = data.targets();
         let tolerance = settings.tolerance();
@@ -590,7 +594,11 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
         left_accuracy + right_accuracy
     }
 
-    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+    fn train_batch(
+        &mut self,
+        data: &TrainingData,
+        settings: &TrainingSettings,
+    ) {
         self.pre_nn.train_batch(data, settings);
     }
 
