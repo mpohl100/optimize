@@ -17,6 +17,8 @@ use crate::nn::nn_trait::TrainableNeuralNetwork;
 use crate::nn::shape::AnnotatedNeuralNetworkShape;
 use crate::nn::shape::LayerShape;
 use crate::nn::shape::LayerType;
+use crate::training::training_data::TrainingData;
+use crate::training::training_settings::TrainingSettings;
 use crate::utilities::util::WrappedUtils;
 use matrix::directory::Directory;
 
@@ -399,17 +401,12 @@ impl NeuralNetwork for TrainableRetryNeuralNetwork {
 }
 
 impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
-    fn train(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        use_adam: bool,
-        validation_split: f64,
-        sample_match_percentage: f64,
-    ) -> f64 {
+    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+        let inputs = data.inputs();
+        let targets = data.targets();
+        let tolerance = settings.tolerance();
+        let sample_match_percentage = settings.sample_match_percentage();
+
         // in case one does not have enough samples, don't train and return zero accuracy
         if inputs.len() < 100 {
             return 0.0;
@@ -419,16 +416,7 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             &Directory::Internal(append_dir(self.model_directory.path(), "temp_primary")),
             self.utils.clone(),
         );
-        let _ = temp_neural_network.train(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let _ = temp_neural_network.train(data, settings);
 
         let (primary_inputs, primary_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = inputs
             .iter()
@@ -461,16 +449,8 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             .unzip();
 
         // train the primary neural network with the modified outputs
-        let primary_accuracy = self.primary_nn.train(
-            &primary_inputs,
-            &primary_targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let primary_data = TrainingData::new(&primary_inputs, &primary_targets);
+        let primary_accuracy = self.primary_nn.train(&primary_data, settings);
 
         let (backup_inputs, backup_targets): (Vec<Vec<f64>>, Vec<Vec<f64>>) = primary_inputs
             .iter()
@@ -501,30 +481,14 @@ impl TrainableNeuralNetwork for TrainableRetryNeuralNetwork {
             })
             .unzip();
 
-        let backup_accuracy = self.backup_nn.train(
-            &backup_inputs,
-            &backup_targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let backup_data = TrainingData::new(&backup_inputs, &backup_targets);
+        let backup_accuracy = self.backup_nn.train(&backup_data, settings);
 
         primary_accuracy + backup_accuracy
     }
 
-    fn train_batch(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        batch_size: usize,
-    ) {
-        self.primary_nn.train_batch(inputs, targets, learning_rate, epochs, tolerance, batch_size);
+    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+        self.primary_nn.train_batch(data, settings);
     }
 
     fn input_size(&self) -> usize {
@@ -619,7 +583,11 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 500];
 
-        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7, 1.0);
+        let training_data = crate::training::training_data::TrainingData::new(&inputs, &targets);
+        let training_settings = crate::training::training_settings::TrainingSettings::new(
+            0.01, 5, 0.1, true, 0.7, 1.0, 32,
+        );
+        nn.train(&training_data, &training_settings);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]

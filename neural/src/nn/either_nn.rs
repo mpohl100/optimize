@@ -14,6 +14,8 @@ use crate::nn::neuralnet::TrainableClassicNeuralNetwork;
 use crate::nn::nn_factory::get_first_free_model_directory;
 use crate::nn::nn_trait::NeuralNetwork;
 use crate::nn::nn_trait::TrainableNeuralNetwork;
+use crate::training::training_data::TrainingData;
+use crate::training::training_settings::TrainingSettings;
 use crate::utilities::util::WrappedUtils;
 use matrix::directory::Directory;
 use num_traits::cast::NumCast;
@@ -327,17 +329,10 @@ impl TrainableEitherNeuralNetwork {
         inputs.len() < 100
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn train_temp_network(
         &self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        use_adam: bool,
-        validation_split: f64,
-        sample_match_percentage: f64,
+        data: &TrainingData,
+        settings: &TrainingSettings,
     ) -> (WrappedTrainableNeuralNetwork, f64) {
         let mut temp_nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
             self.shape.clone(),
@@ -347,16 +342,7 @@ impl TrainableEitherNeuralNetwork {
             self.utils.clone(),
         ));
 
-        let acc = temp_nn.train(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let acc = temp_nn.train(data, settings);
 
         (temp_nn, acc)
     }
@@ -455,19 +441,13 @@ impl TrainableEitherNeuralNetwork {
         (pre_inputs, pre_targets)
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn train_and_save_network(
         &self,
         shape: NeuralNetworkShape,
         inputs: &[Vec<f64>],
         targets: &[Vec<f64>],
         dir_name: &str,
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        use_adam: bool,
-        validation_split: f64,
-        sample_match_percentage: f64,
+        settings: &TrainingSettings,
     ) -> (WrappedTrainableNeuralNetwork, f64) {
         let model_dir = append_dir(self.model_directory.path(), dir_name);
         let mut nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
@@ -478,16 +458,8 @@ impl TrainableEitherNeuralNetwork {
             self.utils.clone(),
         ));
 
-        let acc = nn.train(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let data = TrainingData::new(inputs, targets);
+        let acc = nn.train(&data, settings);
 
         let error_message = format!("Failed to save {dir_name} neural network");
         nn.save(model_dir).expect(&error_message);
@@ -556,31 +528,17 @@ impl NeuralNetwork for TrainableEitherNeuralNetwork {
 }
 
 impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
-    fn train(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        use_adam: bool,
-        validation_split: f64,
-        sample_match_percentage: f64,
-    ) -> f64 {
+    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+        let inputs = data.inputs();
+        let targets = data.targets();
+        let tolerance = settings.tolerance();
+        let sample_match_percentage = settings.sample_match_percentage();
+
         if Self::not_enough_samples(inputs) {
             return 0.0;
         }
 
-        let (mut temp_nn, temp_accuracy) = self.train_temp_network(
-            inputs,
-            targets,
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
-        );
+        let (mut temp_nn, temp_accuracy) = self.train_temp_network(data, settings);
 
         if self.no_more_levels() {
             self.save_pre_network(&temp_nn, "pre");
@@ -609,12 +567,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             &pre_inputs,
             &pre_targets,
             "pre",
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
+            settings,
         );
         self.pre_nn = pre_nn;
 
@@ -623,12 +576,7 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             &left_inputs,
             &left_targets,
             "left",
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
+            settings,
         );
 
         let (_, right_accuracy) = self.train_and_save_network(
@@ -636,27 +584,14 @@ impl TrainableNeuralNetwork for TrainableEitherNeuralNetwork {
             &right_inputs,
             &right_targets,
             "right",
-            learning_rate,
-            epochs,
-            tolerance,
-            use_adam,
-            validation_split,
-            sample_match_percentage,
+            settings,
         );
 
         left_accuracy + right_accuracy
     }
 
-    fn train_batch(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        batch_size: usize,
-    ) {
-        self.pre_nn.train_batch(inputs, targets, learning_rate, epochs, tolerance, batch_size);
+    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+        self.pre_nn.train_batch(data, settings);
     }
 
     fn input_size(&self) -> usize {
@@ -761,7 +696,11 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 500];
 
-        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7, 1.0);
+        let training_data = crate::training::training_data::TrainingData::new(&inputs, &targets);
+        let training_settings = crate::training::training_settings::TrainingSettings::new(
+            0.01, 5, 0.1, true, 0.7, 1.0, 32,
+        );
+        nn.train(&training_data, &training_settings);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]

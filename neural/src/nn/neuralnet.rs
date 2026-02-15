@@ -6,6 +6,8 @@ use crate::layer::layer_trait::WrappedLayer;
 use crate::layer::layer_trait::WrappedTrainableLayer;
 use crate::nn::nn_trait::{NeuralNetwork, TrainableNeuralNetwork};
 use crate::nn::shape::{ActivationType, NeuralNetworkShape};
+use crate::training::training_data::TrainingData;
+use crate::training::training_settings::TrainingSettings;
 use crate::utilities::util::WrappedUtils;
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
@@ -683,21 +685,19 @@ impl NeuralNetwork for TrainableClassicNeuralNetwork {
 }
 
 impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
-    /// Trains the neural network using the given inputs, targets, learning rate, and number of epochs.
+    /// Trains the neural network using the given training data and settings.
     /// Includes validation using a split of the data.
-    #[allow(clippy::too_many_arguments)]
     #[allow(clippy::too_many_lines)]
-    fn train(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        use_adam: bool,
-        validation_split: f64,
-        sample_match_percentage: f64,
-    ) -> f64 {
+    fn train(&mut self, data: &TrainingData, settings: &TrainingSettings) -> f64 {
+        let inputs = data.inputs();
+        let targets = data.targets();
+        let learning_rate = settings.learning_rate();
+        let epochs = settings.epochs();
+        let tolerance = settings.tolerance();
+        let use_adam = settings.use_adam();
+        let validation_split = settings.validation_split();
+        let sample_match_percentage = settings.sample_match_percentage();
+
         // in case one does not have enough samples, don't train and return zero accuracy
         let (transformed_inputs, transformed_targets) = Self::transform(inputs, targets);
         assert!(
@@ -829,15 +829,14 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
     }
 
     /// Trains the neural network doing batch back propagation.
-    fn train_batch(
-        &mut self,
-        inputs: &[Vec<f64>],
-        targets: &[Vec<f64>],
-        learning_rate: f64,
-        epochs: usize,
-        tolerance: f64,
-        batch_size: usize,
-    ) {
+    fn train_batch(&mut self, data: &TrainingData, settings: &TrainingSettings) {
+        let inputs = data.inputs();
+        let targets = data.targets();
+        let learning_rate = settings.learning_rate();
+        let epochs = settings.epochs();
+        let tolerance = settings.tolerance();
+        let batch_size = settings.batch_size();
+
         for i in 0..epochs {
             println!("Epoch: {i}\r");
             let mut loss = 0.0;
@@ -1001,7 +1000,11 @@ mod tests {
         let target = vec![0.0, 0.0, 0.0];
         let targets = vec![target; 200];
 
-        nn.train(&inputs, &targets, 0.01, 5, 0.1, true, 0.7, 1.0);
+        let training_data = crate::training::training_data::TrainingData::new(&inputs, &targets);
+        let training_settings = crate::training::training_settings::TrainingSettings::new(
+            0.01, 5, 0.1, true, 0.7, 1.0, 32,
+        );
+        nn.train(&training_data, &training_settings);
 
         let prediction = nn.predict(inputs[0].clone());
         // print targets[0]

@@ -1,5 +1,7 @@
 use super::data_importer::DataImporter;
+use super::training_data::TrainingData;
 use super::training_params::TrainingParams;
+use super::training_settings::TrainingSettings;
 use crate::nn::nn_factory::new_trainable_neural_network;
 use crate::nn::nn_factory::trainable_neural_network_from_disk;
 use crate::nn::nn_factory::NeuralNetworkCreationArguments;
@@ -110,17 +112,21 @@ impl TrainingSession {
         }
 
         println!("Training neural network with shape: {:?}", nn.shape());
-        // Train the neural network
-        nn.train(
-            &inputs,
-            &targets,
+        
+        // Create TrainingData and TrainingSettings
+        let training_data = TrainingData::new(&inputs, &targets);
+        let training_settings = TrainingSettings::new(
             self.params.learning_rate(),
             self.params.epochs(),
             self.params.tolerance(),
             self.params.use_adam(),
             self.params.validation_split(),
             self.params.sample_match_percentage(),
+            self.params.batch_size(),
         );
+
+        // Train the neural network
+        nn.train(&training_data, &training_settings);
 
         // Validation phase
         let mut success_count = 0.0;
