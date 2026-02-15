@@ -16,6 +16,7 @@ Cargo.lock
 # Test artifacts
 **/tests/test_*/
 **/test_model_*/
+**/breeding_test_model/
 **/*.lock
 
 # RustRover
