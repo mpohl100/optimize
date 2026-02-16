@@ -12,3 +12,4 @@ readme = "../README.md"
 [dependencies]
 neural = { path = "../neural" }
 regret = { path = "../regret" }
+utils = { path = "../utils" }

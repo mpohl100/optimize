@@ -64,6 +64,20 @@ impl TrainingSession {
         Ok(Self { params: changed_params, neural_network: nn, data_importer })
     }
 
+    /// Creates a new `TrainingSession` from an existing neural network, training parameters, and data importer.
+    /// Alias for `from_network`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provided training parameters are invalid.
+    pub fn new_from_nn(
+        nn: WrappedTrainableNeuralNetwork,
+        params: TrainingParams,
+        data_importer: Box<dyn DataImporter>,
+    ) -> Result<Self, Box<dyn Error>> {
+        Self::from_network(nn, params, data_importer)
+    }
+
     /// Loads a model from disk and creates a training session.
     ///
     /// # Errors
