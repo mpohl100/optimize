@@ -1,6 +1,6 @@
 use crate::nn::shape::NeuralNetworkShape;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TrainingParams {
     shape: NeuralNetworkShape,
     levels: Option<i32>,
@@ -98,5 +98,13 @@ impl TrainingParams {
         shape: NeuralNetworkShape,
     ) {
         self.shape = shape;
+    }
+
+    /// Sets the validation split ratio.
+    pub fn set_validation_split(
+        &mut self,
+        validation_split: f64,
+    ) {
+        self.validation_split = validation_split;
     }
 }
