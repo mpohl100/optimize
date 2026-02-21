@@ -104,6 +104,7 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
         parents_data: Vec<WrappedDecision<NeuralUserData>>,
     ) -> Vec<WrappedRegret<NeuralUserData>> {
         let children_shapes = deduce_children_shapes(&self.shape);
+        let num_children = children_shapes.len();
         children_shapes
             .into_iter()
             .map(|shape| {
@@ -115,7 +116,7 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
                     self.all_inputs.clone(),
                     self.all_targets.clone(),
                 );
-                let probability = 1.0 / (children_shapes.len() as f64);
+                let probability = 1.0 / (num_children as f64);
                 let min_probability = 0.01;
                 let wrapped_expected_value_provider =
                     WrappedExpectedValueProvider::new(Box::new(expected_value_provider));
