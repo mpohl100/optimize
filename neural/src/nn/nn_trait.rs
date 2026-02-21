@@ -178,4 +178,10 @@ impl WrappedTrainableNeuralNetwork {
     pub fn get_utils(&self) -> WrappedUtils {
         safe_lock(&self.nn).get_utils()
     }
+
+    /// Converts this trainable neural network into a `WrappedNeuralNetwork`.
+    #[must_use]
+    pub fn to_neural_network(&self) -> WrappedNeuralNetwork {
+        safe_lock(&self.nn).duplicate()
+    }
 }

@@ -2,8 +2,13 @@
 //!
 //! This module provides a solver that combines neural networks with regret minimization.
 
+use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
+use neural::nn::nn_trait::WrappedNeuralNetwork;
 use neural::nn::shape::NeuralNetworkShape;
+use neural::training::data_importer::{DataImporter, SessionData};
 use neural::training::training_params::TrainingParams;
+use neural::training::training_session::TrainingSession;
+use neural::utilities::util::WrappedUtils;
 use regret::provider::{Provider, ProviderType, WrappedChildrenProvider, WrappedProvider};
 use regret::regret_node::RegretNode;
 
@@ -17,6 +22,20 @@ pub struct NeuralSolver {
     training_params: TrainingParams,
     all_inputs: Vec<Vec<f64>>,
     all_targets: Vec<Vec<f64>>,
+    utils: WrappedUtils,
+}
+
+/// Data importer that provides the full dataset.
+#[derive(Clone)]
+struct AllDataImporter {
+    data: Vec<Vec<f64>>,
+    labels: Vec<Vec<f64>>,
+}
+
+impl DataImporter for AllDataImporter {
+    fn get_data(&self) -> SessionData {
+        SessionData { data: self.data.clone(), labels: self.labels.clone() }
+    }
 }
 
 impl NeuralSolver {
@@ -27,11 +46,15 @@ impl NeuralSolver {
         training_params: TrainingParams,
         all_inputs: Vec<Vec<f64>>,
         all_targets: Vec<Vec<f64>>,
+        utils: WrappedUtils,
     ) -> Self {
-        Self { shape, training_params, all_inputs, all_targets }
+        Self { shape, training_params, all_inputs, all_targets, utils }
     }
 
     /// Solves the problem using regret minimization with the neural network.
+    ///
+    /// Returns the `WrappedNeuralNetwork` from the child state that achieved the
+    /// highest average expected value (percentage) during regret minimization.
     ///
     /// # Arguments
     ///
@@ -41,7 +64,7 @@ impl NeuralSolver {
         &mut self,
         num_iterations: usize,
         do_randomize_children: bool,
-    ) {
+    ) -> Option<WrappedNeuralNetwork> {
         // Create the children provider with the neural network shape
         let children_provider = NeuralChildrenProvider::new(
             self.shape.clone(),
@@ -49,6 +72,7 @@ impl NeuralSolver {
             self.training_params.clone(),
             self.all_inputs.clone(),
             self.all_targets.clone(),
+            self.utils.clone(),
         );
 
         // Create the wrapped provider with the children provider
@@ -62,5 +86,49 @@ impl NeuralSolver {
 
         // Solve using the regret minimization algorithm
         node.solve(num_iterations, do_randomize_children);
+
+        // Find the child with the highest average expected value
+        let children = node.get_children();
+        let best_child = children
+            .iter()
+            .max_by(|a, b| {
+                a.get_average_expected_value()
+                    .partial_cmp(&b.get_average_expected_value())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })?;
+
+        // Get the best shape from the child's NeuralState
+        let best_shape = best_child
+            .get_user_data()?
+            .get_decision_data()
+            .get_state()
+            .get_shape()
+            .clone();
+
+        // Create a final training session using the best shape on the full dataset
+        let mut final_params = self.training_params.clone();
+        final_params.set_shape(best_shape);
+
+        let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            final_params.shape().clone(),
+            final_params.levels(),
+            final_params.pre_shape(),
+            "neural_solver_final".to_string(),
+            self.utils.clone(),
+        ));
+
+        let data_importer: Box<dyn DataImporter> = Box::new(AllDataImporter {
+            data: self.all_inputs.clone(),
+            labels: self.all_targets.clone(),
+        });
+
+        let Ok(mut training_session) =
+            TrainingSession::new_from_nn(nn, final_params, data_importer)
+        else {
+            return None;
+        };
+
+        training_session.train().ok()?;
+        Some(training_session.get_nn().to_neural_network())
     }
 }
