@@ -22,6 +22,8 @@ use regret::user_data::{DecisionTrait, WrappedDecision};
 use crate::neural_expected_value_provider::NeuralExpectedValueProvider;
 use crate::neural_state::{NeuralState, StateTrait};
 
+use num_traits::NumCast;
+
 /// User data for neural network solver.
 #[derive(Debug, Clone)]
 pub struct NeuralUserData {
@@ -116,7 +118,8 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
                     self.all_inputs.clone(),
                     self.all_targets.clone(),
                 );
-                let probability = 1.0 / (num_children as f64);
+                let num_children_f64 = NumCast::from(num_children).unwrap_or(1.0);
+                let probability = 1.0 / num_children_f64;
                 let min_probability = 0.01;
                 let wrapped_expected_value_provider =
                     WrappedExpectedValueProvider::new(Box::new(expected_value_provider));
@@ -173,8 +176,8 @@ fn generate_layer_shapes(
         ActivationData::new_softmax(2.0),
     ];
     let matrix_params = MatrixParams { slice_rows: 1000, slice_cols: 1000 };
-    for dimension in dimensions.iter() {
-        for activation in activations.iter() {
+    for dimension in &dimensions {
+        for activation in &activations {
             let layer1 = LayerShape {
                 layer_type: LayerType::Dense {
                     input_size: dimension[0].0,

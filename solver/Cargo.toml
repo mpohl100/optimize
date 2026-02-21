@@ -9,7 +9,11 @@ keywords = ["machine-learning", "rust", "neural-networks"]
 categories = ["science", "machine-learning"]
 readme = "../README.md"
 
+
+
 [dependencies]
+num-traits = "0.2"
+
 neural = { path = "../neural" }
 regret = { path = "../regret" }
 utils = { path = "../utils" }
