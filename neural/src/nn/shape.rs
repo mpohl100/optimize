@@ -323,6 +323,7 @@ pub enum LayerChangeType {
     None,
 }
 
+#[derive(Clone, Debug)]
 pub struct AnnotatedLayerShape {
     pub layer: LayerShape,
     pub change_type: LayerChangeType,
@@ -338,6 +339,7 @@ impl AnnotatedLayerShape {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct AnnotatedNeuralNetworkShape {
     pub layers: Vec<AnnotatedLayerShape>,
 }
