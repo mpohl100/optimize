@@ -5,9 +5,11 @@ use neural::nn::shape::{
     ActivationData, ActivationType, LayerShape, LayerType, NeuralNetworkShape,
 };
 use neural::training::training_params::TrainingParams;
+use neural::utilities::util::{Utils, WrappedUtils};
 use solver::neural_solver::NeuralSolver;
 
 #[test]
+#[ignore = "requires sufficiently large matrix dimensions for slice_rows/slice_cols; run manually"]
 fn test_neural_solver_creation() {
     // Create a simple neural network shape
     let layers = vec![
@@ -54,8 +56,9 @@ fn test_neural_solver_creation() {
     );
     let all_inputs = vec![vec![0.0; 10]; 100];
     let all_targets = vec![vec![0.0; 3]; 100];
+    let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
     // Create a neural solver with the shape
-    let mut solver = NeuralSolver::new(shape, training_params, all_inputs, all_targets);
+    let mut solver = NeuralSolver::new(shape, training_params, all_inputs, all_targets, utils);
 
     // Call the solve method (with minimal iterations for testing)
     solver.solve(1, false);

@@ -10,6 +10,7 @@ use neural::nn::shape::LayerShape;
 use neural::nn::shape::LayerType;
 use neural::nn::shape::NeuralNetworkShape;
 use neural::training::training_params::TrainingParams;
+use neural::utilities::util::WrappedUtils;
 use regret::provider::ChildrenProvider;
 use regret::provider::Provider;
 use regret::provider::ProviderType;
@@ -83,6 +84,7 @@ pub struct NeuralChildrenProvider {
     training_params: TrainingParams,
     all_inputs: Vec<Vec<f64>>,
     all_targets: Vec<Vec<f64>>,
+    utils: WrappedUtils,
 }
 
 impl NeuralChildrenProvider {
@@ -94,8 +96,9 @@ impl NeuralChildrenProvider {
         training_params: TrainingParams,
         all_inputs: Vec<Vec<f64>>,
         all_targets: Vec<Vec<f64>>,
+        utils: WrappedUtils,
     ) -> Self {
-        Self { shape, num_iterations, training_params, all_inputs, all_targets }
+        Self { shape, num_iterations, training_params, all_inputs, all_targets, utils }
     }
 }
 
@@ -117,6 +120,7 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
                     self.training_params.clone(),
                     self.all_inputs.clone(),
                     self.all_targets.clone(),
+                    self.utils.clone(),
                 );
                 let num_children_f64 = NumCast::from(num_children).unwrap_or(1.0);
                 let probability = 1.0 / num_children_f64;

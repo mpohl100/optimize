@@ -17,6 +17,7 @@ evol = { path = "../evol" }
 neural = { path = "../neural" }
 gen = { path = "../gen" }
 matrix = { path = "../matrix" }
+solver = { path = "../solver" }
 
 [[bin]]
 name = "train"
@@ -33,3 +34,7 @@ path = "src/evaluate.rs"
 [[bin]]
 name = "predict"
 path = "src/predict.rs"
+
+[[bin]]
+name = "nn_solver"
+path = "src/nn_solver.rs"
