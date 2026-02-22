@@ -61,5 +61,5 @@ fn test_neural_solver_creation() {
     let mut solver = NeuralSolver::new(shape, training_params, all_inputs, all_targets, utils);
 
     // Call the solve method (with minimal iterations for testing)
-    solver.solve(1, false);
+    solver.solve(1, false, 0.9);
 }

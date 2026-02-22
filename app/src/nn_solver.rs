@@ -52,6 +52,8 @@ struct Args {
     num_iterations: usize,
     #[clap(long, default_value = "false")]
     do_randomize_children: bool,
+    #[clap(long, default_value = "0.9")]
+    min_accuracy: f64,
 }
 
 impl Args {
@@ -167,7 +169,7 @@ fn main() {
 
     let mut solver = NeuralSolver::new(shape, training_params, all_inputs, all_targets, utils);
 
-    let result = solver.solve(args.num_iterations, args.do_randomize_children);
+    let result = solver.solve(args.num_iterations, args.do_randomize_children, args.min_accuracy);
 
     match result {
         Some(mut nn) => {
