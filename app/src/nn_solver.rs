@@ -165,8 +165,7 @@ fn main() {
 
     let shape = training_params.shape().clone();
 
-    let mut solver =
-        NeuralSolver::new(shape, training_params, all_inputs, all_targets, utils);
+    let mut solver = NeuralSolver::new(shape, training_params, all_inputs, all_targets, utils);
 
     let result = solver.solve(args.num_iterations, args.do_randomize_children);
 

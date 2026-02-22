@@ -89,21 +89,15 @@ impl NeuralSolver {
 
         // Find the child with the highest average expected value
         let children = node.get_children();
-        let best_child = children
-            .iter()
-            .max_by(|a, b| {
-                a.get_average_expected_value()
-                    .partial_cmp(&b.get_average_expected_value())
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })?;
+        let best_child = children.iter().max_by(|a, b| {
+            a.get_average_expected_value()
+                .partial_cmp(&b.get_average_expected_value())
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })?;
 
         // Get the best shape from the child's NeuralState
-        let best_shape = best_child
-            .get_user_data()?
-            .get_decision_data()
-            .get_state()
-            .get_shape()
-            .clone();
+        let best_shape =
+            best_child.get_user_data()?.get_decision_data().get_state().get_shape().clone();
 
         // Create a final training session using the best shape on the full dataset
         let mut final_params = self.training_params.clone();
