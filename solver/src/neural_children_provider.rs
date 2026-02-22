@@ -108,7 +108,17 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
         &self,
         parents_data: Vec<WrappedDecision<NeuralUserData>>,
     ) -> Vec<WrappedRegret<NeuralUserData>> {
-        let children_shapes = deduce_children_shapes(&self.shape);
+        let (input_size, output_size) = if self.shape.layers.is_empty() {
+            let inputs = self.wrapped_training_data.inputs();
+            let targets = self.wrapped_training_data.targets();
+            let input_size = inputs.first().map_or(0, Vec::len);
+            let output_size = targets.first().map_or(0, Vec::len);
+            (input_size, output_size)
+        } else {
+            let last_layer = self.shape.layers.last().expect("shape has layers");
+            (last_layer.input_size(), last_layer.output_size())
+        };
+        let children_shapes = deduce_children_shapes(&self.shape, input_size, output_size);
         let num_children = children_shapes.len();
         let random_training_data_view =
             RandomTrainingDataView::new(self.wrapped_training_data.clone());
@@ -155,8 +165,18 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
     }
 }
 
-fn deduce_children_shapes(shape: &NeuralNetworkShape) -> Vec<NeuralNetworkShape> {
-    let last_layer = shape.layers.last().unwrap();
+fn deduce_children_shapes(
+    shape: &NeuralNetworkShape,
+    input_size: usize,
+    output_size: usize,
+) -> Vec<NeuralNetworkShape> {
+    if shape.layers.is_empty() {
+        return generate_layer_shapes(input_size, output_size)
+            .into_iter()
+            .map(NeuralNetworkShape::new)
+            .collect();
+    }
+    let last_layer = shape.layers.last().expect("shape has layers");
     let input_size = last_layer.input_size();
     let output_size = last_layer.output_size();
     let annotated_shape = AnnotatedNeuralNetworkShape::new(shape);
@@ -213,4 +233,68 @@ fn generate_layer_shapes(
         }
     }
     results
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deduce_children_shapes_empty_uses_training_data_sizes() {
+        let empty_shape = NeuralNetworkShape::new(vec![]);
+        let input_size = 10;
+        let output_size = 3;
+        let shapes = deduce_children_shapes(&empty_shape, input_size, output_size);
+        assert!(!shapes.is_empty(), "should produce children shapes from training data sizes");
+        for shape in &shapes {
+            assert_eq!(shape.layers.len(), 2, "each generated shape should have 2 layers");
+            let first = &shape.layers[0];
+            let last = &shape.layers[shape.layers.len() - 1];
+            assert_eq!(
+                first.input_size(),
+                input_size,
+                "first layer input size should match sample row length"
+            );
+            assert_eq!(
+                last.output_size(),
+                output_size,
+                "last layer output size should match target row length"
+            );
+        }
+    }
+
+    #[test]
+    fn test_deduce_children_shapes_nonempty_uses_last_layer() {
+        use neural::layer::dense_layer::MatrixParams;
+        use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
+        let layers = vec![LayerShape {
+            layer_type: LayerType::Dense {
+                input_size: 8,
+                output_size: 4,
+                matrix_params: MatrixParams { slice_rows: 1000, slice_cols: 1000 },
+            },
+            activation: ActivationData::new(ActivationType::ReLU),
+        }];
+        let shape = NeuralNetworkShape::new(layers);
+        let shapes = deduce_children_shapes(&shape, 0, 0);
+        assert!(!shapes.is_empty(), "should produce children shapes from last layer");
+        for child_shape in &shapes {
+            assert!(
+                child_shape.layers.len() >= 2,
+                "each child shape should have at least 2 layers"
+            );
+            let second_to_last = &child_shape.layers[child_shape.layers.len() - 2];
+            assert_eq!(
+                second_to_last.input_size(),
+                8,
+                "child shapes should use input_size from last layer"
+            );
+            let last = child_shape.layers.last().expect("child shape has layers");
+            assert_eq!(
+                last.output_size(),
+                4,
+                "child shapes should use output_size from last layer"
+            );
+        }
+    }
 }
