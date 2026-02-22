@@ -6,6 +6,7 @@ use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreation
 use neural::nn::nn_trait::WrappedNeuralNetwork;
 use neural::nn::shape::NeuralNetworkShape;
 use neural::training::data_importer::{DataImporter, SessionData};
+use neural::training::training_data::WrappedTrainingData;
 use neural::training::training_params::TrainingParams;
 use neural::training::training_session::TrainingSession;
 use neural::utilities::util::WrappedUtils;
@@ -66,12 +67,13 @@ impl NeuralSolver {
         do_randomize_children: bool,
     ) -> Option<WrappedNeuralNetwork> {
         // Create the children provider with the neural network shape
+        let wrapped_training_data =
+            WrappedTrainingData::new(self.all_inputs.clone(), self.all_targets.clone());
         let children_provider = NeuralChildrenProvider::new(
             self.shape.clone(),
             num_iterations,
             self.training_params.clone(),
-            self.all_inputs.clone(),
-            self.all_targets.clone(),
+            wrapped_training_data,
             self.utils.clone(),
         );
 

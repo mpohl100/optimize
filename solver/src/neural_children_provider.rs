@@ -10,6 +10,7 @@ use neural::nn::shape::AnnotatedNeuralNetworkShape;
 use neural::nn::shape::LayerShape;
 use neural::nn::shape::LayerType;
 use neural::nn::shape::NeuralNetworkShape;
+use neural::training::training_data::{RandomTrainingDataView, WrappedTrainingData};
 use neural::training::training_params::TrainingParams;
 use neural::utilities::util::WrappedUtils;
 use regret::provider::ChildrenProvider;
@@ -83,8 +84,7 @@ pub struct NeuralChildrenProvider {
     /// params for expected value provider
     num_iterations: usize,
     training_params: TrainingParams,
-    all_inputs: Vec<Vec<f64>>,
-    all_targets: Vec<Vec<f64>>,
+    wrapped_training_data: WrappedTrainingData,
     utils: WrappedUtils,
 }
 
@@ -95,11 +95,10 @@ impl NeuralChildrenProvider {
         shape: NeuralNetworkShape,
         num_iterations: usize,
         training_params: TrainingParams,
-        all_inputs: Vec<Vec<f64>>,
-        all_targets: Vec<Vec<f64>>,
+        wrapped_training_data: WrappedTrainingData,
         utils: WrappedUtils,
     ) -> Self {
-        Self { shape, num_iterations, training_params, all_inputs, all_targets, utils }
+        Self { shape, num_iterations, training_params, wrapped_training_data, utils }
     }
 }
 
@@ -111,6 +110,8 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
     ) -> Vec<WrappedRegret<NeuralUserData>> {
         let children_shapes = deduce_children_shapes(&self.shape);
         let num_children = children_shapes.len();
+        let random_training_data_view =
+            RandomTrainingDataView::new(self.wrapped_training_data.clone());
         children_shapes
             .into_iter()
             .enumerate()
@@ -130,8 +131,7 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
                 let expected_value_provider = NeuralExpectedValueProvider::new(
                     self.num_iterations,
                     self.training_params.clone(),
-                    self.all_inputs.clone(),
-                    self.all_targets.clone(),
+                    random_training_data_view.clone(),
                 );
                 let num_children_f64 = NumCast::from(num_children).unwrap_or(1.0);
                 let probability = 1.0 / num_children_f64;
