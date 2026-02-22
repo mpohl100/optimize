@@ -3,8 +3,10 @@
 //! This module provides an expected value provider for neural network-based regret minimization.
 
 use neural::training::data_importer::{DataImporter, SessionData};
+use neural::training::training_data::RandomTrainingDataView;
 use neural::training::training_params::TrainingParams;
 use neural::training::training_session::TrainingSession;
+use num_traits::NumCast;
 use regret::provider::ExpectedValueProvider;
 use regret::user_data::WrappedDecision;
 use std::sync::{Arc, Mutex};
@@ -21,10 +23,8 @@ pub struct NeuralExpectedValueProvider {
     num_iterations: usize,
     /// Training parameters.
     training_params: TrainingParams,
-    /// All training data inputs.
-    all_inputs: Arc<Vec<Vec<f64>>>,
-    /// All training data targets.
-    all_targets: Arc<Vec<Vec<f64>>>,
+    /// Randomly shuffled view of the training data.
+    random_training_data_view: RandomTrainingDataView,
 }
 
 /// Data importer for a subset of training data.
@@ -46,15 +46,13 @@ impl NeuralExpectedValueProvider {
     pub fn new(
         num_iterations: usize,
         training_params: TrainingParams,
-        all_inputs: Vec<Vec<f64>>,
-        all_targets: Vec<Vec<f64>>,
+        random_training_data_view: RandomTrainingDataView,
     ) -> Self {
         Self {
             counter: Arc::new(Mutex::new(0)),
             num_iterations,
             training_params,
-            all_inputs: Arc::new(all_inputs),
-            all_targets: Arc::new(all_targets),
+            random_training_data_view,
         }
     }
 }
@@ -88,26 +86,21 @@ impl ExpectedValueProvider<NeuralUserData> for NeuralExpectedValueProvider {
             return 0.0;
         };
 
-        // Calculate N: total samples divided by num_iterations
-        let total_samples = self.all_inputs.len();
-        let n = if self.num_iterations > 0 {
-            total_samples / self.num_iterations
-        } else {
-            total_samples
-        };
+        // Derive `from` and `to` fractions from the counter and num_iterations
+        let num_iterations_float: f64 = NumCast::from(self.num_iterations).unwrap_or(1.0);
+        let current_float: f64 = NumCast::from(current_counter).unwrap_or(0.0);
+        let from = current_float / num_iterations_float;
+        let to = ((current_float + 1.0) / num_iterations_float).min(1.0);
 
-        // Calculate sample range: from counter*N to (counter+1)*N
-        let start_idx = current_counter * n;
-        let end_idx = ((current_counter + 1) * n).min(total_samples);
-
-        // If we're beyond the available data, return 0.0
-        if start_idx >= total_samples {
+        // If we're beyond the available data range, return 0.0
+        if from >= 1.0 {
             return 0.0;
         }
 
-        // Extract the samples for this iteration
-        let inputs: Vec<Vec<f64>> = self.all_inputs[start_idx..end_idx].to_vec();
-        let targets: Vec<Vec<f64>> = self.all_targets[start_idx..end_idx].to_vec();
+        // Retrieve the random subset for this iteration
+        let subset = self.random_training_data_view.get_samples_and_labels(from, to);
+        let inputs = subset.inputs();
+        let targets = subset.targets();
 
         // Create a simple data importer for this subset
         let data_importer = Box::new(SubsetDataImporter { data: inputs, labels: targets });
