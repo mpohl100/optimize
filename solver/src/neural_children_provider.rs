@@ -3,6 +3,7 @@
 //! This module provides a children provider for neural network-based regret minimization.
 
 use neural::layer::dense_layer::MatrixParams;
+use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
 use neural::nn::shape::ActivationData;
 use neural::nn::shape::ActivationType;
 use neural::nn::shape::AnnotatedNeuralNetworkShape;
@@ -112,15 +113,25 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
         let num_children = children_shapes.len();
         children_shapes
             .into_iter()
-            .map(|shape| {
-                let child_state = NeuralState::new(shape);
+            .enumerate()
+            .map(|(idx, shape)| {
+                // Build a trainable neural network for this child shape up front
+                let mut params = self.training_params.clone();
+                params.set_shape(shape.clone());
+                let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+                    shape.clone(),
+                    params.levels(),
+                    params.pre_shape(),
+                    format!("solver_child_{idx}"),
+                    self.utils.clone(),
+                ));
+                let child_state = NeuralState::new_with_nn(shape, nn);
                 let child_data = WrappedDecision::new(NeuralUserData::new(child_state));
                 let expected_value_provider = NeuralExpectedValueProvider::new(
                     self.num_iterations,
                     self.training_params.clone(),
                     self.all_inputs.clone(),
                     self.all_targets.clone(),
-                    self.utils.clone(),
                 );
                 let num_children_f64 = NumCast::from(num_children).unwrap_or(1.0);
                 let probability = 1.0 / num_children_f64;
