@@ -41,24 +41,25 @@ impl StretchLayer {
 
         let input_size_f64: f64 = NumCast::from(input_size).unwrap_or(0.0);
         let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
-        let num;
-        let (dense_input_size, dense_output_size) = if input_size >= output_size {
-            let ratio = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
-            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
-            num = NumCast::from((input_size_f64 / ratio_f64).ceil()).unwrap_or(0);
-            (ratio, 1)
+        let (bigger_size, smaller_size) = if input_size >= output_size {
+            (input_size_f64, output_size_f64)
         } else {
-            let ratio = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
-            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
-            num = NumCast::from((output_size_f64 / ratio_f64).ceil()).unwrap_or(0);
-            (1, ratio)
+            (output_size_f64, input_size_f64)
         };
+        let ratio = NumCast::from((bigger_size / smaller_size).ceil()).unwrap_or(0);
+        let ratio_f64 = NumCast::from(ratio).unwrap_or(0.0);
+        let num = NumCast::from(bigger_size / ratio_f64).unwrap_or(0);
+        let (dense_input_size, dense_output_size) =
+            if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
 
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
-            let output_size =
-                if i == num - 1 { input_size % dense_output_size } else { dense_output_size };
+            let output_size = if i == num - 1 {
+                NumCast::from(bigger_size).unwrap_or(0) % dense_output_size
+            } else {
+                dense_output_size
+            };
             let dense_layer = DenseLayer::new(
                 dense_input_size,
                 output_size,
@@ -264,24 +265,25 @@ impl TrainableStretchLayer {
 
         let input_size_f64: f64 = NumCast::from(input_size).unwrap_or(0.0);
         let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
-        let num;
-        let (dense_input_size, dense_output_size) = if input_size >= output_size {
-            let ratio = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
-            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
-            num = NumCast::from((input_size_f64 / ratio_f64).ceil()).unwrap_or(0);
-            (ratio, 1)
+        let (bigger_size, smaller_size) = if input_size >= output_size {
+            (input_size_f64, output_size_f64)
         } else {
-            let ratio = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
-            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
-            num = NumCast::from((output_size_f64 / ratio_f64).ceil()).unwrap_or(0);
-            (1, ratio)
+            (output_size_f64, input_size_f64)
         };
+        let ratio = NumCast::from((bigger_size / smaller_size).ceil()).unwrap_or(0);
+        let ratio_f64 = NumCast::from(ratio).unwrap_or(0.0);
+        let num = NumCast::from(bigger_size / ratio_f64).unwrap_or(0);
+        let (dense_input_size, dense_output_size) =
+            if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
 
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
-            let output_size =
-                if i == num - 1 { input_size % dense_output_size } else { dense_output_size };
+            let output_size = if i == num - 1 {
+                NumCast::from(bigger_size).unwrap_or(0) % dense_output_size
+            } else {
+                dense_output_size
+            };
             let dense_layer = TrainableDenseLayer::new(
                 dense_input_size,
                 output_size,
