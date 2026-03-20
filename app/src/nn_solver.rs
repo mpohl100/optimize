@@ -31,7 +31,7 @@ struct Args {
     #[clap(long, default_value = "0.01")]
     learning_rate: f64,
     #[clap(long, default_value = "100")]
-    epochs: usize,
+    epochs_per_sample: usize,
     #[clap(long, default_value = "0.1")]
     tolerance: f64,
     #[clap(long, default_value = "32")]
@@ -84,7 +84,7 @@ impl Args {
                 pre_shape,
                 self.validation_split,
                 self.learning_rate,
-                self.epochs,
+                self.epochs_per_sample,
                 self.tolerance,
                 self.batch_size,
                 self.use_adam,
@@ -102,7 +102,7 @@ impl Args {
             pre_shape,
             self.validation_split,
             self.learning_rate,
-            self.epochs,
+            self.epochs_per_sample,
             self.tolerance,
             self.batch_size,
             self.use_adam,
@@ -180,5 +180,49 @@ fn main() {
             eprintln!("Solver did not produce a result.");
             std::process::exit(1);
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Args;
+    use clap::Parser;
+
+    #[test]
+    fn parses_epochs_per_sample_argument() {
+        let args = Args::parse_from([
+            "nn_solver",
+            "--model-directory",
+            "model",
+            "--input-file",
+            "inputs.csv",
+            "--target-file",
+            "targets.csv",
+            "--epochs-per-sample",
+            "42",
+        ]);
+        assert_eq!(args.epochs_per_sample, 42);
+    }
+
+    #[test]
+    fn rejects_old_epochs_argument_name() {
+        let result = Args::try_parse_from([
+            "nn_solver",
+            "--model-directory",
+            "model",
+            "--input-file",
+            "inputs.csv",
+            "--target-file",
+            "targets.csv",
+            "--epochs",
+            "42",
+        ]);
+        assert!(
+            matches!(
+                result,
+                Err(error) if error.kind() == clap::error::ErrorKind::UnknownArgument
+            ),
+            "old --epochs flag should fail with UnknownArgument"
+        );
     }
 }

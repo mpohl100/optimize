@@ -36,7 +36,7 @@ fn test_neural_solver_creation() {
     let pre_shape = None;
     let validation_split = 1.0;
     let learning_rate = 0.01;
-    let epochs = 10;
+    let epochs_per_sample = 10;
     let tolerance = 0.001;
     let batch_size = 32;
     let use_adam = true;
@@ -48,7 +48,7 @@ fn test_neural_solver_creation() {
         pre_shape,
         validation_split,
         learning_rate,
-        epochs,
+        epochs_per_sample,
         tolerance,
         batch_size,
         use_adam,

@@ -81,8 +81,6 @@ impl DecisionTrait for NeuralUserData {
 pub struct NeuralChildrenProvider {
     /// Neural network shape to use for decisions.
     shape: NeuralNetworkShape,
-    /// params for expected value provider
-    num_iterations: usize,
     training_params: TrainingParams,
     wrapped_training_data: WrappedTrainingData,
     utils: WrappedUtils,
@@ -93,12 +91,11 @@ impl NeuralChildrenProvider {
     #[must_use]
     pub const fn new(
         shape: NeuralNetworkShape,
-        num_iterations: usize,
         training_params: TrainingParams,
         wrapped_training_data: WrappedTrainingData,
         utils: WrappedUtils,
     ) -> Self {
-        Self { shape, num_iterations, training_params, wrapped_training_data, utils }
+        Self { shape, training_params, wrapped_training_data, utils }
     }
 }
 
@@ -139,7 +136,6 @@ impl ChildrenProvider<NeuralUserData> for NeuralChildrenProvider {
                 let child_state = NeuralState::new_with_nn(shape, nn);
                 let child_data = WrappedDecision::new(NeuralUserData::new(child_state));
                 let expected_value_provider = NeuralExpectedValueProvider::new(
-                    self.num_iterations,
                     self.training_params.clone(),
                     random_training_data_view.clone(),
                 );
