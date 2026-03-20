@@ -264,11 +264,15 @@ impl TrainableStretchLayer {
         let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
         let num;
         let (dense_input_size, dense_output_size) = if input_size >= output_size {
-            num = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
-            (num, 1)
+            let ratio = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
+            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
+            num = NumCast::from((input_size_f64 / ratio_f64).ceil()).unwrap_or(0);
+            (ratio, 1)
         } else {
-            num = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
-            (1, num)
+            let ratio = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
+            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
+            num = NumCast::from((output_size_f64 / ratio_f64).ceil()).unwrap_or(0);
+            (1, ratio)
         };
 
         for i in 0..num {
