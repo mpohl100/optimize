@@ -313,7 +313,10 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
         let mut output = vec![0.0; self.output_size];
         for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
             let start = i * dense_layer.input_size();
-            let end = start + dense_layer.input_size();
+            let mut end = start + dense_layer.input_size();
+            if end > input.len() {
+                end = input.len() - 1;
+            }
             let input_slice = &input[start..end];
             let dense_output = dense_layer.forward(input_slice, utils.clone());
             for (j, &value) in dense_output.iter().enumerate() {
