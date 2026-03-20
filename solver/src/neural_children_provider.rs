@@ -218,7 +218,7 @@ fn generate_layer_shapes(
                 activation: activation.clone(),
             };
             let layer2 = LayerShape {
-                layer_type: LayerType::Dense {
+                layer_type: LayerType::Stretch {
                     input_size: dimension[1].0,
                     output_size: dimension[1].1,
                     matrix_params,
