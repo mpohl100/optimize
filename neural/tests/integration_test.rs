@@ -132,7 +132,8 @@ fn test_training_session() {
     let utils = create_test_utils();
     let model_directory = format!("{}/model_dir", utils.get_workspace());
     let internal_model_directory = format!("{}/internal_model_dir", utils.get_workspace());
-    let training_session = train_model(model_directory.clone(), internal_model_directory.clone(), utils.clone());
+    let training_session =
+        train_model(model_directory.clone(), internal_model_directory.clone(), utils.clone());
     // Clean up workspace after test
     cleanup_workspace(&utils);
 }
