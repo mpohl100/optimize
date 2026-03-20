@@ -43,11 +43,15 @@ impl StretchLayer {
         let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
         let num;
         let (dense_input_size, dense_output_size) = if input_size >= output_size {
-            num = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
-            (num, 1)
+            let ratio = NumCast::from((input_size_f64 / output_size_f64).ceil()).unwrap_or(0);
+            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
+            num = NumCast::from((input_size_f64 / ratio_f64).ceil()).unwrap_or(0);
+            (ratio, 1)
         } else {
-            num = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
-            (1, num)
+            let ratio = NumCast::from((output_size_f64 / input_size_f64).ceil()).unwrap_or(0);
+            let ratio_f64: f64 = NumCast::from(ratio).unwrap_or(0.0);
+            num = NumCast::from((output_size_f64 / ratio_f64).ceil()).unwrap_or(0);
+            (1, ratio)
         };
 
         for i in 0..num {
@@ -308,6 +312,11 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
                 let output_index = i * dense_layer.output_size() + j;
                 if output_index < self.output_size {
                     output[output_index] = value;
+                } else {
+                    panic!(
+                        "Output index {} is out of bounds for output size {}",
+                        output_index, self.output_size
+                    );
                 }
             }
         }
@@ -492,6 +501,11 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
                 let ret_index = i * dense_layer.input_size() + j;
                 if ret_index < self.input_size {
                     ret[ret_index] += value;
+                } else {
+                    panic!(
+                        "Ret index {} is out of bounds for input size {}",
+                        ret_index, self.input_size
+                    );
                 }
             }
         }
