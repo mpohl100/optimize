@@ -52,22 +52,31 @@ impl StretchLayer {
         let (dense_input_size, dense_output_size) =
             if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
 
+        let mut current_input_used = 0;
+        let mut current_output_used = 0;        
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
+            let input_size = if i == num - 1 {
+                input_size - current_input_used
+            } else {
+                dense_input_size
+            };
             let output_size = if i == num - 1 {
-                NumCast::from(bigger_size).unwrap_or(0) % dense_output_size
+                output_size - current_output_used
             } else {
                 dense_output_size
             };
             let dense_layer = DenseLayer::new(
-                dense_input_size,
+                input_size,
                 output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
                 utils,
             );
+            current_input_used += dense_layer.input_size();
+            current_output_used += dense_layer.output_size();
             dense_layers.push(dense_layer);
         }
         Self {
@@ -276,22 +285,31 @@ impl TrainableStretchLayer {
         let (dense_input_size, dense_output_size) =
             if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
 
+        let mut current_input_used = 0;
+        let mut current_output_used = 0;
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
+            let input_size = if i == num - 1 {
+                input_size - current_input_used
+            } else {
+                dense_input_size
+            };
             let output_size = if i == num - 1 {
-                NumCast::from(bigger_size).unwrap_or(0) % dense_output_size
+                output_size - current_output_used
             } else {
                 dense_output_size
             };
             let dense_layer = TrainableDenseLayer::new(
-                dense_input_size,
+                input_size,
                 output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
                 utils,
             );
+            current_input_used += dense_layer.input_size();
+            current_output_used += dense_layer.output_size();
             dense_layers.push(dense_layer);
         }
         Self {
