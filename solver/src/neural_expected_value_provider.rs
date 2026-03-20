@@ -35,8 +35,9 @@ impl DataImporter for SubsetDataImporter {
 
 impl NeuralExpectedValueProvider {
     /// Creates a new neural expected value provider.
+    #[allow(clippy::missing_const_for_fn)]
     #[must_use]
-    pub const fn new(
+    pub fn new(
         training_params: TrainingParams,
         random_training_data_view: RandomTrainingDataView,
     ) -> Self {
