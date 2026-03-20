@@ -39,46 +39,23 @@ impl StretchLayer {
     ) -> Self {
         let mut dense_layers = Vec::new();
 
-        let input_size_f64: f64 = NumCast::from(input_size).unwrap_or(0.0);
-        let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
-        let (bigger_size, smaller_size) = if input_size >= output_size {
-            (input_size_f64, output_size_f64)
-        } else {
-            (output_size_f64, input_size_f64)
-        };
-        let ratio = NumCast::from((bigger_size / smaller_size).ceil()).unwrap_or(0);
-        let ratio_f64 = NumCast::from(ratio).unwrap_or(0.0);
-        let num = NumCast::from(bigger_size / ratio_f64).unwrap_or(0);
-        let (dense_input_size, dense_output_size) =
-            if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
+        let dense_layer_dims = DenseLayerDims::new(input_size, output_size);
+        let dimensions = dense_layer_dims.get_dimensions();
 
-        let mut current_input_used = 0;
-        let mut current_output_used = 0;        
-        for i in 0..num {
+        for (i, (dense_input_size, dense_output_size)) in dimensions.iter().enumerate() {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
-            let input_size = if i == num - 1 {
-                input_size - current_input_used
-            } else {
-                dense_input_size
-            };
-            let output_size = if i == num - 1 {
-                output_size - current_output_used
-            } else {
-                dense_output_size
-            };
             let dense_layer = DenseLayer::new(
-                input_size,
-                output_size,
+                *dense_input_size,
+                *dense_output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
                 utils,
             );
-            current_input_used += dense_layer.input_size();
-            current_output_used += dense_layer.output_size();
             dense_layers.push(dense_layer);
         }
+
         Self {
             input_size,
             output_size,
@@ -97,8 +74,9 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
         utils: WrappedUtils,
     ) -> Vec<f64> {
         let mut output = vec![0.0; self.output_size];
+        let mut current_input_dim_start = 0;
         for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
-            let start = i * dense_layer.input_size();
+            let start = current_input_dim_start;
             let end = start + dense_layer.input_size();
             let input_slice = &input[start..end];
             let dense_output = dense_layer.forward(input_slice, utils.clone());
@@ -108,6 +86,7 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
                     output[output_index] = value;
                 }
             }
+            current_input_dim_start = end;
         }
         output
     }
@@ -272,46 +251,24 @@ impl TrainableStretchLayer {
     ) -> Self {
         let mut dense_layers = Vec::new();
 
-        let input_size_f64: f64 = NumCast::from(input_size).unwrap_or(0.0);
-        let output_size_f64: f64 = NumCast::from(output_size).unwrap_or(0.0);
-        let (bigger_size, smaller_size) = if input_size >= output_size {
-            (input_size_f64, output_size_f64)
-        } else {
-            (output_size_f64, input_size_f64)
-        };
-        let ratio = NumCast::from((bigger_size / smaller_size).ceil()).unwrap_or(0);
-        let ratio_f64 = NumCast::from(ratio).unwrap_or(0.0);
-        let num = NumCast::from(bigger_size / ratio_f64).unwrap_or(0);
-        let (dense_input_size, dense_output_size) =
-            if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
+        let dense_layer_dims = DenseLayerDims::new(input_size, output_size);
+        let dimensions = dense_layer_dims.get_dimensions();
 
-        let mut current_input_used = 0;
-        let mut current_output_used = 0;
-        for i in 0..num {
+        for (i, (dense_input_size, dense_output_size)) in dimensions.iter().enumerate() {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
-            let input_size = if i == num - 1 {
-                input_size - current_input_used
-            } else {
-                dense_input_size
-            };
-            let output_size = if i == num - 1 {
-                output_size - current_output_used
-            } else {
-                dense_output_size
-            };
+
             let dense_layer = TrainableDenseLayer::new(
-                input_size,
-                output_size,
+                *dense_input_size,
+                *dense_output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
                 utils,
             );
-            current_input_used += dense_layer.input_size();
-            current_output_used += dense_layer.output_size();
             dense_layers.push(dense_layer);
         }
+
         Self {
             input_size,
             output_size,
@@ -331,12 +288,10 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
         utils: WrappedUtils,
     ) -> Vec<f64> {
         let mut output = vec![0.0; self.output_size];
+        let mut current_input_dim_start = 0;
         for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
-            let start = i * dense_layer.input_size();
-            let mut end = start + dense_layer.input_size();
-            if end > input.len() {
-                end = input.len() - 1;
-            }
+            let start = current_input_dim_start;
+            let end = start + dense_layer.input_size();
             let input_slice = &input[start..end];
             let dense_output = dense_layer.forward(input_slice, utils.clone());
             for (j, &value) in dense_output.iter().enumerate() {
@@ -350,6 +305,7 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
                     );
                 }
             }
+            current_input_dim_start = end;
         }
         output
     }
@@ -521,15 +477,18 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
         })
         */
         let mut ret = vec![0.0; self.input_size];
-        for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
+        let mut current_output_dim_start = 0;
+        let mut current_input_dim_start = 0;
+        for dense_layer in &mut self.trainable_dense_layers {
             // Slice d_out based on output dimensions
-            let start = i * dense_layer.output_size();
+            let start = current_output_dim_start;
             let end = start + dense_layer.output_size();
             let d_vec_slice = &d_out[start..end];
             let dense_output = dense_layer.backward(d_vec_slice, utils.clone());
-            // Accumulate gradients based on input dimensions
+            // Accumulate gradients based on input dimensions;
+            let input_start = current_input_dim_start;
             for (j, &value) in dense_output.iter().enumerate() {
-                let ret_index = i * dense_layer.input_size() + j;
+                let ret_index = input_start + j;
                 if ret_index < self.input_size {
                     ret[ret_index] += value;
                 } else {
@@ -539,6 +498,8 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
                     );
                 }
             }
+            current_output_dim_start = end;
+            current_input_dim_start += dense_layer.input_size();
         }
         ret
     }
@@ -596,6 +557,49 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
             dense_layer.read_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
         }
         Ok(())
+    }
+}
+
+struct DenseLayerDims {
+    dense_layer_dimensions: Vec<(usize, usize)>,
+}
+
+impl DenseLayerDims {
+    pub fn new(
+        input_size: usize,
+        output_size: usize,
+    ) -> Self {
+        let (bigger_size, smaller_size) = if input_size >= output_size {
+            (input_size, output_size)
+        } else {
+            (output_size, input_size)
+        };
+        let bigger_size_f64: f64 = NumCast::from(bigger_size).unwrap_or(0.0);
+        let smaller_size_f64: f64 = NumCast::from(smaller_size).unwrap_or(0.0);
+        let ratio = NumCast::from((bigger_size_f64 / smaller_size_f64).ceil()).unwrap_or(0);
+        let num = NumCast::from(smaller_size).unwrap_or(0);
+        let (dense_input_size, dense_output_size) =
+            if input_size >= output_size { (ratio, 1) } else { (1, ratio) };
+        let (dense_input_size_smaller, dense_output_size_smaller) =
+            if dense_input_size >= dense_output_size { (ratio - 1, 1) } else { (1, ratio - 1) };
+
+        let mut dense_layer_dimensions = Vec::new();
+        let num_ratio = num - bigger_size % num;
+        let num_ratio_minus_one = num - num_ratio;
+
+        for _ in 0..num_ratio {
+            dense_layer_dimensions.push((dense_input_size, dense_output_size));
+        }
+
+        for _ in 0..num_ratio_minus_one {
+            dense_layer_dimensions.push((dense_input_size_smaller, dense_output_size_smaller));
+        }
+
+        Self { dense_layer_dimensions }
+    }
+
+    pub fn get_dimensions(&self) -> &Vec<(usize, usize)> {
+        &self.dense_layer_dimensions
     }
 }
 
