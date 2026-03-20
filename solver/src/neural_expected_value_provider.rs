@@ -6,21 +6,14 @@ use neural::training::data_importer::{DataImporter, SessionData};
 use neural::training::training_data::RandomTrainingDataView;
 use neural::training::training_params::TrainingParams;
 use neural::training::training_session::TrainingSession;
-use num_traits::NumCast;
 use regret::provider::ExpectedValueProvider;
 use regret::user_data::WrappedDecision;
-use std::sync::{Arc, Mutex};
-use utils::safer::safe_lock;
 
 use crate::neural_children_provider::NeuralUserData;
 
 /// Expected value provider for neural network-based decisions.
 #[derive(Debug, Clone)]
 pub struct NeuralExpectedValueProvider {
-    /// Counter to track how many times `get_expected_value` was called.
-    counter: Arc<Mutex<usize>>,
-    /// Number of iterations to split training data.
-    num_iterations: usize,
     /// Training parameters.
     training_params: TrainingParams,
     /// Randomly shuffled view of the training data.
@@ -43,17 +36,11 @@ impl DataImporter for SubsetDataImporter {
 impl NeuralExpectedValueProvider {
     /// Creates a new neural expected value provider.
     #[must_use]
-    pub fn new(
-        num_iterations: usize,
+    pub const fn new(
         training_params: TrainingParams,
         random_training_data_view: RandomTrainingDataView,
     ) -> Self {
-        Self {
-            counter: Arc::new(Mutex::new(0)),
-            num_iterations,
-            training_params,
-            random_training_data_view,
-        }
+        Self { training_params, random_training_data_view }
     }
 }
 
@@ -63,14 +50,6 @@ impl ExpectedValueProvider<NeuralUserData> for NeuralExpectedValueProvider {
         &self,
         parents_data: Vec<WrappedDecision<NeuralUserData>>,
     ) -> f64 {
-        // Get and increment counter
-        let current_counter = {
-            let mut counter = safe_lock(&self.counter);
-            let current = *counter;
-            *counter += 1;
-            current
-        };
-
         // Extract the neural network from the first parent's state
         let neural_network = if let Some(parent) = parents_data.first() {
             let user_data = parent.get_decision_data();
@@ -86,19 +65,8 @@ impl ExpectedValueProvider<NeuralUserData> for NeuralExpectedValueProvider {
             return 0.0;
         };
 
-        // Derive `from` and `to` fractions from the counter and num_iterations
-        let num_iterations_float: f64 = NumCast::from(self.num_iterations).unwrap_or(1.0);
-        let current_float: f64 = NumCast::from(current_counter).unwrap_or(0.0);
-        let from = current_float / num_iterations_float;
-        let to = ((current_float + 1.0) / num_iterations_float).min(1.0);
-
-        // If we're beyond the available data range, return 0.0
-        if from >= 1.0 {
-            return 0.0;
-        }
-
-        // Retrieve the random subset for this iteration
-        let subset = self.random_training_data_view.get_samples_and_labels(from, to);
+        // Always train on the complete randomized training set.
+        let subset = self.random_training_data_view.get_samples_and_labels(0.0, 1.0);
         let inputs = subset.inputs();
         let targets = subset.targets();
 

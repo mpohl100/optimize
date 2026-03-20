@@ -78,7 +78,6 @@ impl NeuralSolver {
                 WrappedTrainingData::new(self.all_inputs.clone(), self.all_targets.clone());
             let children_provider = NeuralChildrenProvider::new(
                 current_shape.clone(),
-                num_iterations,
                 self.training_params.clone(),
                 wrapped_training_data,
                 self.utils.clone(),
