@@ -74,18 +74,64 @@ impl ExpectedValueProvider<NeuralUserData> for NeuralExpectedValueProvider {
         // Create a simple data importer for this subset
         let data_importer = Box::new(SubsetDataImporter { data: inputs, labels: targets });
 
-        // Create a modified training params with validation_split set to 1.0
-        let mut modified_params = self.training_params.clone();
-        modified_params.set_validation_split(1.0);
-
         // Create a new TrainingSession from the neural network
-        let Ok(mut training_session) =
-            TrainingSession::new_from_nn(neural_network, modified_params, data_importer)
-        else {
+        let Ok(mut training_session) = TrainingSession::new_from_nn(
+            neural_network,
+            self.training_params.clone(),
+            data_importer,
+        ) else {
             return 0.0;
         };
 
         // Train and return accuracy
         training_session.train().unwrap_or(0.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::neural_children_provider::NeuralUserData;
+    use crate::neural_state::NeuralState;
+    use neural::layer::dense_layer::MatrixParams;
+    use neural::nn::nn_factory::{new_trainable_neural_network, NeuralNetworkCreationArguments};
+    use neural::nn::shape::{
+        ActivationData, ActivationType, LayerShape, LayerType, NeuralNetworkShape,
+    };
+    use neural::training::training_data::WrappedTrainingData;
+    use neural::utilities::util::{Utils, WrappedUtils};
+    use regret::provider::ExpectedValueProvider;
+
+    #[test]
+    fn uses_passed_validation_split() {
+        let shape = NeuralNetworkShape::new(vec![LayerShape {
+            layer_type: LayerType::Dense {
+                input_size: 2,
+                output_size: 1,
+                matrix_params: MatrixParams { slice_rows: 10, slice_cols: 10 },
+            },
+            activation: ActivationData::new(ActivationType::Sigmoid),
+        }]);
+        let training_params =
+            TrainingParams::new(shape.clone(), None, None, 0.5, 0.01, 1, 0.1, 1, false, 0.0);
+        let wrapped_training_data = WrappedTrainingData::new(
+            vec![vec![0.0, 0.0], vec![0.0, 1.0], vec![1.0, 0.0], vec![1.0, 1.0]],
+            vec![vec![0.0], vec![1.0], vec![1.0], vec![0.0]],
+        );
+        let random_training_data_view = RandomTrainingDataView::new(wrapped_training_data);
+        let provider = NeuralExpectedValueProvider::new(training_params, random_training_data_view);
+        let utils = WrappedUtils::new(Utils::new(1_000_000_000, 1));
+        let nn = new_trainable_neural_network(NeuralNetworkCreationArguments::new(
+            shape.clone(),
+            None,
+            None,
+            "neural_expected_value_provider_test".to_string(),
+            utils,
+        ));
+        let parent = WrappedDecision::new(NeuralUserData::new(NeuralState::new_with_nn(shape, nn)));
+
+        let value = provider.get_expected_value(vec![parent]);
+
+        assert!(value.is_finite(), "expected finite accuracy when validation_split < 1.0");
     }
 }
