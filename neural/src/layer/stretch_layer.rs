@@ -598,7 +598,7 @@ impl DenseLayerDims {
         Self { dense_layer_dimensions }
     }
 
-    pub fn get_dimensions(&self) -> &Vec<(usize, usize)> {
+    pub const fn get_dimensions(&self) -> &Vec<(usize, usize)> {
         &self.dense_layer_dimensions
     }
 }
