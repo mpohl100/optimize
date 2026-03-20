@@ -57,9 +57,11 @@ impl StretchLayer {
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
+            let output_size =
+                if i == num - 1 { input_size % dense_output_size } else { dense_output_size };
             let dense_layer = DenseLayer::new(
                 dense_input_size,
-                dense_output_size,
+                output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
@@ -278,9 +280,11 @@ impl TrainableStretchLayer {
         for i in 0..num {
             let sub_directory = format!("dense_layer_{i}");
             let dense_layer_path = model_directory.expand(&sub_directory);
+            let output_size =
+                if i == num - 1 { input_size % dense_output_size } else { dense_output_size };
             let dense_layer = TrainableDenseLayer::new(
                 dense_input_size,
-                dense_output_size,
+                output_size,
                 &dense_layer_path,
                 position_in_nn,
                 matrix_params,
