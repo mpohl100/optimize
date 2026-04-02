@@ -23,7 +23,7 @@ impl<T: Default + Clone> MatrixBuffer<T> {
     /// # Errors
     /// Returns `None` if the provided indices are out of bounds.
     #[must_use]
-    fn get(
+    fn get_val(
         &self,
         row: usize,
         col: usize,
@@ -51,8 +51,13 @@ impl<T: Default + Clone> MatrixBuffer<T> {
             Err("Index out of bounds".to_string())
         }
     }
+
+    fn shape(&self) -> (usize, usize) {
+        (self.rows, self.cols)
+    }
 }
 
+#[derive(Clone)]
 pub struct WrappedMatrixBuffer<T: Default + Clone> {
     buffer: Arc<Mutex<MatrixBuffer<T>>>,
 }
@@ -72,19 +77,19 @@ impl<T: Default + Clone> WrappedMatrixBuffer<T> {
     /// # Errors
     /// Returns `None` if the provided indices are out of bounds.
     #[must_use]
-    pub fn get(
+    pub fn get_val(
         &self,
         row: usize,
         col: usize,
     ) -> Option<T> {
         let buffer = safe_lock(&self.buffer);
-        buffer.get(row, col).cloned()
+        buffer.get_val(row, col).cloned()
     }
 
     /// Sets a value in the matrix buffer at the specified row and column.
     /// # Errors
     /// Returns `Err` if the provided indices are out of bounds.
-    pub fn set(
+    pub fn set_val(
         &self,
         row: usize,
         col: usize,
@@ -92,5 +97,10 @@ impl<T: Default + Clone> WrappedMatrixBuffer<T> {
     ) -> Result<(), String> {
         let mut buffer = safe_lock(&self.buffer);
         buffer.set(row, col, value)
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        let buffer = safe_lock(&self.buffer);
+        buffer.shape()
     }
 }
