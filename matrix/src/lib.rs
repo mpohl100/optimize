@@ -81,6 +81,8 @@
 
 pub mod ai_types;
 pub mod composite_matrix;
+pub mod composite_matrix_buffer;
+pub mod composite_matrix_view;
 pub mod directory;
 pub mod mat;
 pub mod matrix_buffer;

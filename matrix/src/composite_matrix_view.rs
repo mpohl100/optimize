@@ -1,26 +1,16 @@
-use crate::matrix_buffer::WrappedMatrixBuffer;
+use crate::composite_matrix_buffer::WrappedCompositeMatrixBuffer;
+use crate::matrix_view::mat_apply;
+use crate::matrix_view::MatrixView;
+use crate::matrix_view::{AccessorType, ApplierFunc, WrappedAccessorType};
 
 use std::sync::{Arc, Mutex};
 
-pub type AccessorFunc<T, BufferT> = Arc<Mutex<dyn FnMut(&BufferT) -> T + Send + Sync>>;
-pub type MutatorFunc<T, BufferT> = Arc<Mutex<dyn FnMut(&mut BufferT, T)>>;
-
-#[derive(Clone)]
-pub enum AccessorType<T: Default + Clone, BufferT: Default + Clone> {
-    Get(AccessorFunc<T, BufferT>),
-    Set(MutatorFunc<T, BufferT>),
-}
-
-pub struct WrappedAccessorType<T: Default + Clone, BufferT: Default + Clone> {
-    pub accessor_type: Arc<Mutex<AccessorType<T, BufferT>>>,
-}
-
-pub struct MatrixView<T: Default + Clone, BufferT: Default + Clone> {
-    buffer: WrappedMatrixBuffer<BufferT>,
+pub struct CompositeMatrixView<T: Default + Clone, BufferT: Default + Clone> {
+    buffer: WrappedCompositeMatrixBuffer<BufferT>,
     accessor_type: WrappedAccessorType<T, BufferT>,
 }
 
-impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
+impl<T: Default + Clone, BufferT: Default + Clone> CompositeMatrixView<T, BufferT> {
     /// Applies an accessor function to the given buffer value.
     /// # Arguments
     /// * `buffer_val` - The buffer value to be accessed.
@@ -58,12 +48,16 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     }
 }
 
-impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
+impl<T: Default + Clone, BufferT: Default + Clone> CompositeMatrixView<T, BufferT> {
     /// Returns the shape (nrows, ncols) of the matrix view.
     #[must_use]
     pub fn shape(&self) -> (usize, usize) {
-        // Placeholder: actual implementation depends on buffer API
         self.buffer.shape()
+    }
+
+    #[must_use]
+    pub fn num_sub_matrices(&self) -> (usize, usize) {
+        self.buffer.num_sub_matrices()
     }
 
     /// Returns the value at (row, col).
@@ -75,13 +69,32 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     ) -> T {
         self.apply_accessor(&self.buffer.get_val(row, col).unwrap_or_default())
     }
+
+    /// Returns a view of the sub-matrix at the specified position.
+    /// # Arguments
+    /// * `num_row` - The row index of the sub-matrix.
+    /// * `num_col` - The column index of the sub-matrix.
+    /// # Returns
+    /// A `MatrixView` representing the sub-matrix at the specified position.
+    /// # Panics
+    /// Panics if the specified sub-matrix indices are out of bounds.
+    #[must_use]
+    pub fn get_sub_matrix_view(
+        &self,
+        num_row: usize,
+        num_col: usize,
+    ) -> MatrixView<T, BufferT> {
+        let sub_buffer = self.buffer.get_sub_matrix_buffer(num_row, num_col);
+        let accessor_type = self.accessor_type.accessor_type.lock().unwrap().clone();
+        MatrixView::new(sub_buffer.unwrap(), accessor_type)
+    }
 }
 
-impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
-    /// Creates a new `MatrixView` with the specified number of rows and columns.
+impl<T: Default + Clone, BufferT: Default + Clone> CompositeMatrixView<T, BufferT> {
+    /// Creates a new `CompositeMatrixView` with the specified number of rows and columns.
     #[must_use]
     pub fn new(
-        wrapped_matrix_buffer: WrappedMatrixBuffer<BufferT>,
+        wrapped_matrix_buffer: WrappedCompositeMatrixBuffer<BufferT>,
         accessor_type: AccessorType<T, BufferT>,
     ) -> Self {
         Self {
@@ -93,9 +106,6 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     }
 }
 
-pub type ApplierFunc<ResultT, FirstT, SecondT> =
-    Arc<Mutex<Box<dyn FnMut(&FirstT, &SecondT) -> ResultT>>>;
-
 /// Applies a function element-wise to two input matrices and stores the result in a third matrix.
 /// # Arguments
 /// * `result` - The matrix view where the results will be stored.
@@ -104,7 +114,7 @@ pub type ApplierFunc<ResultT, FirstT, SecondT> =
 /// * `applier_func` - The function to apply to corresponding elements from the input matrices
 /// # Panics
 /// Panics if the shapes of the input matrices are not compatible for the operation.
-pub fn mat_apply<
+pub fn composite_mat_apply<
     ResultT: Default + Clone + std::ops::AddAssign,
     ResultBufferT: Default + Clone,
     FirstT: Default + Clone,
@@ -112,53 +122,52 @@ pub fn mat_apply<
     SecondT: Default + Clone,
     SecondBufferT: Default + Clone,
 >(
-    result: &mut MatrixView<ResultT, ResultBufferT>,
-    first: &MatrixView<FirstT, FirstBufferT>,
-    second: &MatrixView<SecondT, SecondBufferT>,
+    result: &mut CompositeMatrixView<ResultT, ResultBufferT>,
+    first: &CompositeMatrixView<FirstT, FirstBufferT>,
+    second: &CompositeMatrixView<SecondT, SecondBufferT>,
     applier_func: &ApplierFunc<ResultT, FirstT, SecondT>,
 ) {
-    for num_row in 0..result.shape().0 {
-        for num_col in 0..result.shape().1 {
-            let mut cell_value = ResultT::default();
-            for k in 0..first.shape().1 {
-                let f_cell = first.get(num_row, k);
-                let s_cell = second.get(k, num_col);
-                cell_value += applier_func.lock().unwrap()(&f_cell, &s_cell);
+    for num_row in 0..result.num_sub_matrices().0 {
+        for num_col in 0..result.num_sub_matrices().1 {
+            for k in 0..first.num_sub_matrices().1 {
+                let mut result_sub_matrix = result.get_sub_matrix_view(num_row, num_col);
+                let first_sub_matrix = first.get_sub_matrix_view(num_row, k);
+                let second_sub_matrix = second.get_sub_matrix_view(k, num_col);
+                mat_apply(
+                    &mut result_sub_matrix,
+                    &first_sub_matrix,
+                    &second_sub_matrix,
+                    applier_func,
+                );
             }
-            result.apply_mutator(
-                &mut result.buffer.get_val(num_row, num_col).unwrap_or_default(),
-                cell_value,
-            );
         }
     }
 }
 
-pub fn mat_mult<
+pub fn composite_mat_mult<
     ResultBufferT: Default + Clone,
     FirstBufferT: Default + Clone,
     SecondBufferT: Default + Clone,
 >(
-    result: &mut MatrixView<f64, ResultBufferT>,
-    first: &MatrixView<f64, FirstBufferT>,
-    second: &MatrixView<f64, SecondBufferT>,
+    result: &mut CompositeMatrixView<f64, ResultBufferT>,
+    first: &CompositeMatrixView<f64, FirstBufferT>,
+    second: &CompositeMatrixView<f64, SecondBufferT>,
 ) {
     let func = |f: &f64, s: &f64| f * s;
     let applier_func = Arc::new(Mutex::new(Box::new(func) as Box<dyn FnMut(&f64, &f64) -> f64>));
-    mat_apply(result, first, second, &applier_func);
+    composite_mat_apply(result, first, second, &applier_func);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::mat_mult;
-    use crate::matrix_buffer::WrappedMatrixBuffer;
-    use crate::matrix_view::{AccessorType, MatrixView};
+    use super::*;
     use std::sync::{Arc, Mutex};
 
     #[test]
     fn test_matrix_view() {
-        let buffer = WrappedMatrixBuffer::<f64>::new(2, 2);
+        let buffer = WrappedCompositeMatrixBuffer::<f64>::new(2, 2, 2, 2);
         let accessor_type = AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &f64| *x))));
-        let matrix_view = MatrixView::new(buffer, accessor_type);
+        let matrix_view = CompositeMatrixView::new(buffer, accessor_type);
 
         // Test getting values (should be default 0.0)
         assert_eq!(matrix_view.get(0, 0), 0.0);
@@ -174,19 +183,20 @@ mod tests {
 
     #[test]
     fn test_matrix_multiplication() {
-        let result_buffer = WrappedMatrixBuffer::<MyVals>::new(2, 2);
+        let result_buffer = WrappedCompositeMatrixBuffer::<MyVals>::new(2, 2, 2, 2);
         let result_accessor =
             AccessorType::Set(Arc::new(Mutex::new(Box::new(|buffer: &mut MyVals, value: f64| {
-                buffer.result = value;
+                // remember to add to the existing value
+                buffer.result += value;
             }))));
-        let mut result_view = MatrixView::new(result_buffer.clone(), result_accessor);
+        let mut result_view = CompositeMatrixView::new(result_buffer.clone(), result_accessor);
         let first_accessor =
             AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.first))));
-        let first_view = MatrixView::new(result_buffer.clone(), first_accessor);
+        let first_view = CompositeMatrixView::new(result_buffer.clone(), first_accessor);
         let second_accessor =
             AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.second))));
-        let second_view = MatrixView::new(result_buffer, second_accessor);
+        let second_view = CompositeMatrixView::new(result_buffer, second_accessor);
 
-        mat_mult(&mut result_view, &first_view, &second_view);
+        composite_mat_mult(&mut result_view, &first_view, &second_view);
     }
 }
