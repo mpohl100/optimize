@@ -1,28 +1,30 @@
 use crate::matrix_buffer::WrappedMatrixBuffer;
 
+use utils::safer::safe_lock;
+
 use std::sync::{Arc, Mutex};
 
 pub struct CompositeMatrixBuffer<T: Default + Clone> {
-    slice_x: usize,
-    slice_y: usize,
+    tile_x: usize,
+    tile_y: usize,
     rows: usize,
     cols: usize,
     buffers: Vec<WrappedMatrixBuffer<T>>,
 }
 
 impl<T: Default + Clone> CompositeMatrixBuffer<T> {
-    /// Creates a new `CompositeMatrixBuffer` with the specified dimensions and slice sizes.
+    /// Creates a new `CompositeMatrixBuffer` with the specified dimensions and tile sizes.
     #[must_use]
     pub fn new(
-        slice_x: usize,
-        slice_y: usize,
+        tile_x: usize,
+        tile_y: usize,
         rows: usize,
         cols: usize,
     ) -> Self {
-        let buffers = (0..(rows / slice_x) * (cols / slice_y))
-            .map(|_| WrappedMatrixBuffer::new(slice_x, slice_y))
+        let buffers = (0..(rows / tile_x + 1) * (cols / tile_y + 1))
+            .map(|_| WrappedMatrixBuffer::new(tile_x, tile_y))
             .collect::<Vec<_>>();
-        Self { slice_x, slice_y, rows, cols, buffers }
+        Self { tile_x, tile_y, rows, cols, buffers }
     }
 
     /// Gets a value from the composite matrix buffer at the specified row and column.
@@ -35,12 +37,12 @@ impl<T: Default + Clone> CompositeMatrixBuffer<T> {
         col: usize,
     ) -> Option<T> {
         if row < self.rows && col < self.cols {
-            let buffer_row = row / self.slice_x;
-            let buffer_col = col / self.slice_y;
-            let buffer_index = buffer_row * (self.cols / self.slice_y) + buffer_col;
+            let buffer_row = row / self.tile_x;
+            let buffer_col = col / self.tile_y;
+            let buffer_index = buffer_row * (self.cols / self.tile_y + 1) + buffer_col;
             let buffer = self.buffers.get(buffer_index)?;
-            let inner_row = row % self.slice_x;
-            let inner_col = col % self.slice_y;
+            let inner_row = row % self.tile_x;
+            let inner_col = col % self.tile_y;
             buffer.get_val(inner_row, inner_col)
         } else {
             None
@@ -57,12 +59,12 @@ impl<T: Default + Clone> CompositeMatrixBuffer<T> {
         value: T,
     ) -> Result<(), String> {
         if row < self.rows && col < self.cols {
-            let buffer_row = row / self.slice_x;
-            let buffer_col = col / self.slice_y;
-            let buffer_index = buffer_row * (self.cols / self.slice_y) + buffer_col;
+            let buffer_row = row / self.tile_x;
+            let buffer_col = col / self.tile_y;
+            let buffer_index = buffer_row * (self.cols / self.tile_y + 1) + buffer_col;
             let buffer = self.buffers.get_mut(buffer_index).ok_or("Buffer not found")?;
-            let inner_row = row % self.slice_x;
-            let inner_col = col % self.slice_y;
+            let inner_row = row % self.tile_x;
+            let inner_col = col % self.tile_y;
             buffer.set_val(inner_row, inner_col, value)
         } else {
             Err("Indices out of bounds".to_string())
@@ -75,7 +77,7 @@ impl<T: Default + Clone> CompositeMatrixBuffer<T> {
         sub_row: usize,
         sub_col: usize,
     ) -> Option<WrappedMatrixBuffer<T>> {
-        let buffer_index = sub_row * (self.cols / self.slice_y) + sub_col;
+        let buffer_index = sub_row * (self.cols / self.tile_y) + sub_col;
         self.buffers.get(buffer_index).cloned()
     }
 
@@ -86,12 +88,12 @@ impl<T: Default + Clone> CompositeMatrixBuffer<T> {
 
     #[must_use]
     pub const fn sub_matrix_shape(&self) -> (usize, usize) {
-        (self.slice_x, self.slice_y)
+        (self.tile_x, self.tile_y)
     }
 
     #[must_use]
     pub const fn num_sub_matrices(&self) -> (usize, usize) {
-        (self.rows / self.slice_x, self.cols / self.slice_y)
+        (self.rows / self.tile_x, self.cols / self.tile_y)
     }
 }
 
@@ -103,13 +105,13 @@ pub struct WrappedCompositeMatrixBuffer<T: Default + Clone> {
 impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
     #[must_use]
     pub fn new(
-        slice_x: usize,
-        slice_y: usize,
+        tile_x: usize,
+        tile_y: usize,
         rows: usize,
         cols: usize,
     ) -> Self {
         Self {
-            buffer: Arc::new(Mutex::new(CompositeMatrixBuffer::new(slice_x, slice_y, rows, cols))),
+            buffer: Arc::new(Mutex::new(CompositeMatrixBuffer::new(tile_x, tile_y, rows, cols))),
         }
     }
 
@@ -131,7 +133,7 @@ impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
     /// Panics if the internal locking mechanism fails (e.g., if the mutex is poisoned
     #[must_use]
     pub fn sub_matrix_shape(&self) -> (usize, usize) {
-        let buffer = self.buffer.lock().unwrap();
+        let buffer = safe_lock(&self.buffer);
         buffer.sub_matrix_shape()
     }
 
@@ -142,7 +144,7 @@ impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
     /// Panics if the internal locking mechanism fails (e.g., if the mutex is poisoned
     #[must_use]
     pub fn num_sub_matrices(&self) -> (usize, usize) {
-        let buffer = self.buffer.lock().unwrap();
+        let buffer = safe_lock(&self.buffer);
         buffer.num_sub_matrices()
     }
 
@@ -157,7 +159,7 @@ impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
         row: usize,
         col: usize,
     ) -> Option<T> {
-        let buffer = self.buffer.lock().unwrap();
+        let buffer = safe_lock(&self.buffer);
         buffer.get_val(row, col)
     }
 
@@ -172,7 +174,7 @@ impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
         col: usize,
         value: T,
     ) -> Result<(), String> {
-        let mut buffer = self.buffer.lock().unwrap();
+        let mut buffer = safe_lock(&self.buffer);
         buffer.set_val(row, col, value)
     }
 
@@ -192,7 +194,7 @@ impl<T: Default + Clone> WrappedCompositeMatrixBuffer<T> {
         sub_row: usize,
         sub_col: usize,
     ) -> Option<WrappedMatrixBuffer<T>> {
-        let buffer = self.buffer.lock().unwrap();
+        let buffer = safe_lock(&self.buffer);
         buffer.get_sub_matrix_buffer(sub_row, sub_col)
     }
 }
