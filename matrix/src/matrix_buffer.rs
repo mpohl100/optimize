@@ -52,7 +52,8 @@ impl<T: Default + Clone> MatrixBuffer<T> {
         }
     }
 
-    fn shape(&self) -> (usize, usize) {
+    #[must_use]
+    const fn shape(&self) -> (usize, usize) {
         (self.rows, self.cols)
     }
 }
@@ -99,6 +100,7 @@ impl<T: Default + Clone> WrappedMatrixBuffer<T> {
         buffer.set(row, col, value)
     }
 
+    #[must_use]
     pub fn shape(&self) -> (usize, usize) {
         let buffer = safe_lock(&self.buffer);
         buffer.shape()

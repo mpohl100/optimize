@@ -46,9 +46,7 @@ impl<T: Default + Clone, BufferT: Default + Clone> CompositeMatrixView<T, Buffer
             AccessorType::Get(_) => panic!("Cannot apply a getter as a mutator"),
         }
     }
-}
 
-impl<T: Default + Clone, BufferT: Default + Clone> CompositeMatrixView<T, BufferT> {
     /// Returns the shape (nrows, ncols) of the matrix view.
     #[must_use]
     pub fn shape(&self) -> (usize, usize) {
@@ -154,7 +152,8 @@ pub fn composite_mat_mult<
     second: &CompositeMatrixView<f64, SecondBufferT>,
 ) {
     let func = |f: &f64, s: &f64| f * s;
-    let applier_func = Arc::new(Mutex::new(Box::new(func) as Box<dyn FnMut(&f64, &f64) -> f64>));
+    let applier_func =
+        Arc::new(Mutex::new(Box::new(func) as Box<dyn FnMut(&f64, &f64) -> f64 + Send + Sync>));
     composite_mat_apply(result, first, second, &applier_func);
 }
 
@@ -170,8 +169,8 @@ mod tests {
         let matrix_view = CompositeMatrixView::new(buffer, accessor_type);
 
         // Test getting values (should be default 0.0)
-        assert_eq!(matrix_view.get(0, 0), 0.0);
-        assert_eq!(matrix_view.get(1, 1), 0.0);
+        assert!((matrix_view.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view.get(1, 1) - 0.0).abs() < f64::EPSILON);
     }
 
     #[derive(Default, Clone)]
@@ -179,6 +178,30 @@ mod tests {
         pub result: f64,
         pub first: f64,
         pub second: f64,
+    }
+
+    #[test]
+    fn test_all_values_are_accessible() {
+        let buffer = WrappedCompositeMatrixBuffer::<MyVals>::new(2, 2, 3, 3);
+        let accessor_type = AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.first))));
+        let matrix_view_first = CompositeMatrixView::new(buffer.clone(), accessor_type);
+        assert!((matrix_view_first.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_first.get(1, 1) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_first.get(2, 2) - 0.0).abs() < f64::EPSILON);
+
+        let accessor_type =
+            AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.second))));
+        let matrix_view_second = CompositeMatrixView::new(buffer.clone(), accessor_type);
+        assert!((matrix_view_second.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_second.get(1, 1) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_second.get(2, 2) - 0.0).abs() < f64::EPSILON);
+
+        let accessor_type =
+            AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.result))));
+        let matrix_view_result = CompositeMatrixView::new(buffer, accessor_type);
+        assert!((matrix_view_result.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_result.get(1, 1) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view_result.get(2, 2) - 0.0).abs() < f64::EPSILON);
     }
 
     #[test]

@@ -56,9 +56,7 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
             AccessorType::Get(_) => panic!("Cannot apply a getter as a mutator"),
         }
     }
-}
 
-impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     /// Returns the shape (nrows, ncols) of the matrix view.
     #[must_use]
     pub fn shape(&self) -> (usize, usize) {
@@ -75,9 +73,7 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     ) -> T {
         self.apply_accessor(&self.buffer.get_val(row, col).unwrap_or_default())
     }
-}
 
-impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
     /// Creates a new `MatrixView` with the specified number of rows and columns.
     #[must_use]
     pub fn new(
@@ -94,7 +90,7 @@ impl<T: Default + Clone, BufferT: Default + Clone> MatrixView<T, BufferT> {
 }
 
 pub type ApplierFunc<ResultT, FirstT, SecondT> =
-    Arc<Mutex<Box<dyn FnMut(&FirstT, &SecondT) -> ResultT>>>;
+    Arc<Mutex<Box<dyn FnMut(&FirstT, &SecondT) -> ResultT + Send + Sync>>>;
 
 /// Applies a function element-wise to two input matrices and stores the result in a third matrix.
 /// # Arguments
@@ -143,7 +139,8 @@ pub fn mat_mult<
     second: &MatrixView<f64, SecondBufferT>,
 ) {
     let func = |f: &f64, s: &f64| f * s;
-    let applier_func = Arc::new(Mutex::new(Box::new(func) as Box<dyn FnMut(&f64, &f64) -> f64>));
+    let applier_func =
+        Arc::new(Mutex::new(Box::new(func) as Box<dyn FnMut(&f64, &f64) -> f64 + Send + Sync>));
     mat_apply(result, first, second, &applier_func);
 }
 
@@ -161,8 +158,8 @@ mod tests {
         let matrix_view = MatrixView::new(buffer, accessor_type);
 
         // Test getting values (should be default 0.0)
-        assert_eq!(matrix_view.get(0, 0), 0.0);
-        assert_eq!(matrix_view.get(1, 1), 0.0);
+        assert!((matrix_view.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view.get(1, 1) - 0.0).abs() < f64::EPSILON);
     }
 
     #[derive(Default, Clone)]
@@ -170,6 +167,17 @@ mod tests {
         pub result: f64,
         pub first: f64,
         pub second: f64,
+    }
+
+    #[test]
+    fn test_all_values_are_accessible() {
+        let buffer = WrappedMatrixBuffer::<MyVals>::new(2, 2);
+        let accessor_type = AccessorType::Get(Arc::new(Mutex::new(Box::new(|x: &MyVals| x.first))));
+        let matrix_view = MatrixView::new(buffer, accessor_type);
+
+        // Test getting values (should be default 0.0)
+        assert!((matrix_view.get(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((matrix_view.get(1, 1) - 0.0).abs() < f64::EPSILON);
     }
 
     #[test]
