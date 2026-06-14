@@ -4,23 +4,9 @@ use super::super::traits::MatrixExtensionsWrappedPersistable;
 use super::super::traits::TrainableMatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsPersistable;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsWrappedPersistable;
-use alloc::allocatable::WrappedAllocatableTrait;
-pub use matrix::ai_types::Bias;
-pub use matrix::ai_types::BiasEntry;
-pub use matrix::ai_types::NumberEntry;
-pub use matrix::ai_types::Weight;
-pub use matrix::ai_types::WeightEntry;
+use matrix::ai_types::BiasEntry;
 use matrix::persistable_matrix::PersistableMatrix;
 use matrix::persistable_matrix::WrappedPersistableMatrix;
-
-use matrix::composite_matrix::CompositeMatrix;
-use matrix::composite_matrix::WrappedCompositeMatrix;
-use matrix::mat::WrappedMatrix;
-
-use matrix::persistable_matrix::PersistableValue;
-use rayon::iter::ParallelIterator;
-
-use num_traits::cast::NumCast;
 
 impl MatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
     fn forward(

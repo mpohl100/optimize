@@ -1,9 +1,6 @@
-use alloc::allocatable::WrappedAllocatableTrait;
-pub use matrix::ai_types::Bias;
-pub use matrix::ai_types::BiasEntry;
-pub use matrix::ai_types::NumberEntry;
-pub use matrix::ai_types::Weight;
-pub use matrix::ai_types::WeightEntry;
+use matrix::ai_types::BiasEntry;
+use matrix::ai_types::NumberEntry;
+use matrix::ai_types::WeightEntry;
 use matrix::persistable_matrix::PersistableMatrix;
 use matrix::persistable_matrix::WrappedPersistableMatrix;
 
@@ -13,15 +10,6 @@ use super::super::traits::TrainableMatrixExtensionsPersistable;
 use super::super::traits::TrainableMatrixExtensionsWrappedPersistable;
 use crate::layer::matrix_extend::traits::MatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensions;
-
-use matrix::composite_matrix::CompositeMatrix;
-use matrix::composite_matrix::WrappedCompositeMatrix;
-use matrix::mat::WrappedMatrix;
-
-use matrix::persistable_matrix::PersistableValue;
-use rayon::iter::ParallelIterator;
-
-use num_traits::cast::NumCast;
 
 impl MatrixExtensionsPersistable<NumberEntry, NumberEntry> for PersistableMatrix<NumberEntry> {
     fn forward(
