@@ -1,19 +1,9 @@
 use super::super::traits::MatrixExtensions;
 use super::super::traits::TrainableMatrixExtensions;
-use alloc::allocatable::WrappedAllocatableTrait;
-pub use matrix::ai_types::Bias;
 pub use matrix::ai_types::BiasEntry;
-pub use matrix::ai_types::NumberEntry;
-pub use matrix::ai_types::Weight;
-pub use matrix::ai_types::WeightEntry;
-use matrix::persistable_matrix::PersistableMatrix;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
 
-use matrix::composite_matrix::CompositeMatrix;
-use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::mat::WrappedMatrix;
 
-use matrix::persistable_matrix::PersistableValue;
 use rayon::iter::ParallelIterator;
 
 use num_traits::cast::NumCast;
