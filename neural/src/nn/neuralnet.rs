@@ -758,7 +758,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     .zip(target)
                     .map(|(o, t)| {
                         let error = o - t;
-                        loss += error * error;
+                        loss = error.mul_add(error, loss);
                         2.0 * error
                     })
                     .collect();
@@ -873,7 +873,7 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
                     for j in 0..output.len() {
                         let error = output[j] - target[j];
                         grad_output.push(2.0 * error);
-                        loss += error * error;
+                        loss = error.mul_add(error, loss);
                     }
                     self.backward_batch(grad_output);
                 }

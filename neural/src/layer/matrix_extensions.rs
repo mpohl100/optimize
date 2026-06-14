@@ -129,7 +129,7 @@ impl TrainableMatrixExtensions<Weight, Bias> for WrappedMatrix<Weight> {
     ) {
         self.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
             for weight in weights_row.iter_mut() {
-                weight.value -= learning_rate * weight.grad;
+                weight.value = learning_rate.mul_add(-weight.grad, weight.value);
             }
         });
     }
@@ -237,7 +237,7 @@ impl TrainableMatrixExtensions<WeightEntry, BiasEntry> for WrappedMatrix<WeightE
     ) {
         self.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
             for weight in weights_row.iter_mut() {
-                weight.0.value -= learning_rate * weight.0.grad;
+                weight.0.value = learning_rate.mul_add(-weight.0.grad, weight.0.value);
             }
         });
     }
@@ -326,7 +326,7 @@ impl TrainableMatrixExtensions<BiasEntry, BiasEntry> for WrappedMatrix<BiasEntry
     ) {
         self.mat().lock().unwrap().par_iter_mut().for_each(|weights_row| {
             for weight in weights_row.iter_mut() {
-                weight.0.value -= learning_rate * weight.0.grad;
+                weight.0.value = learning_rate.mul_add(-weight.0.grad, weight.0.value);
             }
         });
     }

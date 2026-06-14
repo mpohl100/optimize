@@ -56,9 +56,11 @@ impl ActivationTrait for Softmax {
         for i in 0..softmax_output.len() {
             for j in 0..softmax_output.len() {
                 if i == j {
-                    grad_input[i] += softmax_output[i] * (1.0 - softmax_output[i]) * grad_output[j];
+                    grad_input[i] = (softmax_output[i] * (1.0 - softmax_output[i]))
+                        .mul_add(grad_output[j], grad_input[i]);
                 } else {
-                    grad_input[i] += -softmax_output[i] * softmax_output[j] * grad_output[j];
+                    grad_input[i] = (-softmax_output[i] * softmax_output[j])
+                        .mul_add(grad_output[j], grad_input[i]);
                 }
             }
             // Adjust gradients for temperature
