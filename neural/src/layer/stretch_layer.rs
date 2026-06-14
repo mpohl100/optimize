@@ -5,8 +5,8 @@ use crate::layer::layer_trait::Layer;
 use crate::layer::layer_trait::TrainableLayer;
 use crate::utilities::util::WrappedUtils;
 
-use crate::layer::matrix_extensions::BiasEntry;
-use crate::layer::matrix_extensions::WeightEntry;
+use crate::layer::matrix_extend::bias::matrix::BiasEntry;
+use crate::layer::matrix_extend::weight::matrix::WeightEntry;
 use alloc::alloc_manager::WrappedAllocManager;
 use matrix::ai_types::NumberEntry;
 use matrix::composite_matrix::CompositeMatrix;
