@@ -1,7 +1,7 @@
 use super::layer_trait::Layer;
 use super::layer_trait::TrainableLayer;
-use crate::layer::matrix_extensions::MatrixExtensionsWrappedComposite;
-use crate::layer::matrix_extensions::TrainableMatrixExtensionsWrappedComposite;
+use crate::layer::matrix_extend::traits::MatrixExtensionsWrappedComposite;
+use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsWrappedComposite;
 use crate::utilities::util::WrappedUtils;
 use matrix::ai_types::Bias;
 use matrix::ai_types::BiasEntry;
