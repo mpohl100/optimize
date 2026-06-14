@@ -4,7 +4,10 @@
     "containerEnv":{
       "EXECUTE_BIN_BASH": "0",
       "RUN_POSTCREATE": "false"
-    },
+    },   
+    "runArgs": [
+      "--gpus=all"
+    ],
     "customizations": {
         "vscode": {
             "extensions": [

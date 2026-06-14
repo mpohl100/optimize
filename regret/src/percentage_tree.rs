@@ -153,7 +153,8 @@ impl<Decision: DecisionTrait> PercentageNode<Decision> {
                 .expect("Failed to convert random number");
         let mut cumulative_probability = 0.0;
         for (index, child) in self.children.iter().enumerate() {
-            cumulative_probability += child.get_probability() * 100_000.0;
+            cumulative_probability =
+                child.get_probability().mul_add(100_000.0, cumulative_probability);
             if cumulative_probability >= random_number {
                 let selected_child = &self.children[index];
                 // Get random decision from the selected child
