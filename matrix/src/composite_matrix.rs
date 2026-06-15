@@ -1,6 +1,8 @@
 use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
-use crate::persistable_matrix::{PersistableMatrix, PersistableValue, WrappedPersistableMatrix};
+use crate::persist::cpu_matrix::PersistableMatrix;
+use crate::persist::traits::PersistableValue;
+use crate::persist::wrapped::WrappedPersistableMatrix;
 
 use alloc::alloc_manager::WrappedAllocManager;
 use utils::safer::safe_lock;

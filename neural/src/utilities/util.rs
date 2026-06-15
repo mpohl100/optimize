@@ -4,7 +4,7 @@ use alloc::memory_counter;
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
 use matrix::ai_types::WeightEntry;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
+use matrix::persist::wrapped::WrappedPersistableMatrix;
 use utils::safer::safe_lock;
 
 use std::sync::{Arc, Mutex};

@@ -1,8 +1,8 @@
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
 use matrix::ai_types::WeightEntry;
-use matrix::persistable_matrix::PersistableMatrix;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
+use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 use super::super::traits::MatrixExtensionsPersistable;
 use super::super::traits::MatrixExtensionsWrappedPersistable;

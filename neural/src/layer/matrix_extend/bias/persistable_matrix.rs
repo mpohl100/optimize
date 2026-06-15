@@ -5,8 +5,8 @@ use super::super::traits::TrainableMatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsPersistable;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsWrappedPersistable;
 use matrix::ai_types::BiasEntry;
-use matrix::persistable_matrix::PersistableMatrix;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
+use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 impl MatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
     fn forward(
