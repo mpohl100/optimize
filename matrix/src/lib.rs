@@ -87,5 +87,5 @@ pub mod directory;
 pub mod mat;
 pub mod matrix_buffer;
 pub mod matrix_view;
-pub mod persistable_matrix;
+pub mod persist;
 pub mod sum_mat;

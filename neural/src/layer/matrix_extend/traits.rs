@@ -1,11 +1,10 @@
-use matrix::persistable_matrix::PersistableMatrix;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
+use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::traits::PersistableValue;
+use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::mat::WrappedMatrix;
-
-use matrix::persistable_matrix::PersistableValue;
 
 pub trait MatrixExtensions<
     WeightT: Default + Clone + From<f64> + 'static,

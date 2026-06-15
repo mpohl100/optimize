@@ -12,7 +12,7 @@ use matrix::ai_types::NumberEntry;
 use matrix::composite_matrix::CompositeMatrix;
 use matrix::composite_matrix::WrappedCompositeMatrix;
 use matrix::directory::Directory;
-use matrix::persistable_matrix::WrappedPersistableMatrix;
+use matrix::persist::wrapped::WrappedPersistableMatrix;
 use num_traits::NumCast;
 
 use std::error::Error;

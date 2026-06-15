@@ -3,7 +3,7 @@ use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
 use matrix::ai_types::WeightEntry;
 use matrix::composite_matrix::WrappedCompositeMatrix;
-use matrix::persistable_matrix::PersistableValue;
+use matrix::persist::traits::PersistableValue;
 use utils::safer::safe_lock;
 
 use std::error::Error;

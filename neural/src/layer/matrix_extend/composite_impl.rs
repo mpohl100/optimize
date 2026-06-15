@@ -1,6 +1,6 @@
 use alloc::allocatable::WrappedAllocatableTrait;
 use matrix::composite_matrix::CompositeMatrix;
-use matrix::persistable_matrix::PersistableValue;
+use matrix::persist::traits::PersistableValue;
 use rayon::iter::ParallelIterator;
 
 pub fn forward_impl<

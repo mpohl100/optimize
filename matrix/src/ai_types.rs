@@ -1,4 +1,4 @@
-use crate::persistable_matrix::PersistableValue;
+use crate::persist::traits::PersistableValue;
 use std::error::Error;
 
 #[derive(Default, Debug, Clone, Copy)]
