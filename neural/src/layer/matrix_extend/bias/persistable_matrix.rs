@@ -14,7 +14,7 @@ impl MatrixExtensionsPersistable<BiasEntry, BiasEntry>
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &Box<dyn PersistableMatrixTrait<BiasEntry> + Send>,
+        biases: &(dyn PersistableMatrixTrait<BiasEntry> + Send),
     ) -> Vec<f64> {
         self.mat().unwrap().forward(inputs, biases.mat().unwrap())
     }
@@ -28,7 +28,7 @@ impl MatrixExtensionsWrappedPersistable<BiasEntry, BiasEntry>
         inputs: &[f64],
         biases: &Self,
     ) -> Vec<f64> {
-        self.mat().lock().unwrap().forward(inputs, &biases.mat().lock().unwrap())
+        self.mat().lock().unwrap().forward(inputs, biases.mat().lock().unwrap().as_ref())
     }
 }
 

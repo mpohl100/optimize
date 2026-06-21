@@ -55,7 +55,7 @@ pub trait MatrixExtensionsPersistable<
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &Box<dyn PersistableMatrixTrait<BiasT> + Send>,
+        biases: &(dyn PersistableMatrixTrait<BiasT> + Send),
     ) -> Vec<f64>;
 }
 
