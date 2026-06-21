@@ -12,7 +12,7 @@ use crate::layer::matrix_extend::traits::MatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensions;
 
 impl MatrixExtensionsPersistable<NumberEntry, NumberEntry>
-    for Box<dyn PersistableMatrixTrait<NumberEntry>>
+    for Box<dyn PersistableMatrixTrait<NumberEntry> + Send>
 {
     fn forward(
         &self,
@@ -24,12 +24,12 @@ impl MatrixExtensionsPersistable<NumberEntry, NumberEntry>
 }
 
 impl MatrixExtensionsPersistable<WeightEntry, BiasEntry>
-    for Box<dyn PersistableMatrixTrait<WeightEntry>>
+    for Box<dyn PersistableMatrixTrait<WeightEntry> + Send>
 {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &Box<dyn PersistableMatrixTrait<BiasEntry>>,
+        biases: &Box<dyn PersistableMatrixTrait<BiasEntry> + Send>,
     ) -> Vec<f64> {
         self.mat().unwrap().forward(inputs, biases.mat().unwrap())
     }
@@ -60,7 +60,7 @@ impl MatrixExtensionsWrappedPersistable<WeightEntry, BiasEntry>
 }
 
 impl TrainableMatrixExtensionsPersistable<WeightEntry, BiasEntry>
-    for Box<dyn PersistableMatrixTrait<WeightEntry>>
+    for Box<dyn PersistableMatrixTrait<WeightEntry> + Send>
 {
     fn backward_calculate_gradients(
         &self,

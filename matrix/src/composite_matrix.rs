@@ -10,7 +10,9 @@ use utils::safer::safe_lock;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
-pub struct CompositeMatrix<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> {
+pub struct CompositeMatrix<
+    T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static,
+> {
     slice_num_cols: usize,
     slice_num_rows: usize,
     rows: usize,
@@ -20,7 +22,7 @@ pub struct CompositeMatrix<T: PersistableValue + From<f64> + std::fmt::Debug + '
     directory: Directory,
 }
 
-impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> CompositeMatrix<T> {
+impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static> CompositeMatrix<T> {
     ///  Create a new ``CompositeMatrix``
     /// # Panics
     /// Panics if ``set_mut_unchecked`` fails
@@ -222,11 +224,15 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> CompositeMatri
 }
 
 #[derive(Debug, Clone)]
-pub struct WrappedCompositeMatrix<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> {
+pub struct WrappedCompositeMatrix<
+    T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static,
+> {
     cm: Arc<Mutex<CompositeMatrix<T>>>,
 }
 
-impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> WrappedCompositeMatrix<T> {
+impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static>
+    WrappedCompositeMatrix<T>
+{
     #[must_use]
     pub fn new(cm: CompositeMatrix<T>) -> Self {
         Self { cm: std::sync::Arc::new(std::sync::Mutex::new(cm)) }

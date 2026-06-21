@@ -10,10 +10,10 @@ use utils::safer::safe_lock;
 
 #[derive(Debug, Clone)]
 pub struct WrappedPersistableMatrix<T: PersistableValue + From<f64> + 'static> {
-    pm: Arc<Mutex<Box<dyn PersistableMatrixTrait<T>>>>,
+    pm: Arc<Mutex<Box<dyn PersistableMatrixTrait<T> + Send>>>,
 }
 
-impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> Default
+impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static> Default
     for WrappedPersistableMatrix<T>
 {
     fn default() -> Self {
@@ -22,15 +22,17 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> Default
 }
 
 #[allow(clippy::fallible_impl_from)]
-impl<T: PersistableValue + From<f64> + 'static> From<f64> for WrappedPersistableMatrix<T> {
+impl<T: PersistableValue + From<f64> + Send + Sync + 'static> From<f64>
+    for WrappedPersistableMatrix<T>
+{
     fn from(_value: f64) -> Self {
         panic!("Cannot convert f64 to WrappedPersistableMatrix");
     }
 }
 
-impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
+impl<T: PersistableValue + From<f64> + Send + Sync + 'static> WrappedPersistableMatrix<T> {
     #[must_use]
-    pub fn new(pm: Box<dyn PersistableMatrixTrait<T>>) -> Self {
+    pub fn new(pm: Box<dyn PersistableMatrixTrait<T> + Send>) -> Self {
         Self { pm: Arc::new(Mutex::new(pm)) }
     }
 
@@ -67,7 +69,7 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
     }
 
     #[must_use]
-    pub fn mat(&self) -> Arc<Mutex<Box<dyn PersistableMatrixTrait<T>>>> {
+    pub fn mat(&self) -> Arc<Mutex<Box<dyn PersistableMatrixTrait<T> + Send>>> {
         self.pm.clone()
     }
 
