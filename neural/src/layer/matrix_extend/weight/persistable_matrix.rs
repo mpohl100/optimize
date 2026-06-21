@@ -1,7 +1,7 @@
 use matrix::ai_types::BiasEntry;
 use matrix::ai_types::NumberEntry;
 use matrix::ai_types::WeightEntry;
-use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::traits::PersistableMatrixTrait;
 use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 use super::super::traits::MatrixExtensionsPersistable;
@@ -11,7 +11,9 @@ use super::super::traits::TrainableMatrixExtensionsWrappedPersistable;
 use crate::layer::matrix_extend::traits::MatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensions;
 
-impl MatrixExtensionsPersistable<NumberEntry, NumberEntry> for PersistableMatrix<NumberEntry> {
+impl MatrixExtensionsPersistable<NumberEntry, NumberEntry>
+    for Box<dyn PersistableMatrixTrait<NumberEntry>>
+{
     fn forward(
         &self,
         inputs: &[f64],
@@ -21,11 +23,13 @@ impl MatrixExtensionsPersistable<NumberEntry, NumberEntry> for PersistableMatrix
     }
 }
 
-impl MatrixExtensionsPersistable<WeightEntry, BiasEntry> for PersistableMatrix<WeightEntry> {
+impl MatrixExtensionsPersistable<WeightEntry, BiasEntry>
+    for Box<dyn PersistableMatrixTrait<WeightEntry>>
+{
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &PersistableMatrix<BiasEntry>,
+        biases: &Box<dyn PersistableMatrixTrait<BiasEntry>>,
     ) -> Vec<f64> {
         self.mat().unwrap().forward(inputs, biases.mat().unwrap())
     }
@@ -56,7 +60,7 @@ impl MatrixExtensionsWrappedPersistable<WeightEntry, BiasEntry>
 }
 
 impl TrainableMatrixExtensionsPersistable<WeightEntry, BiasEntry>
-    for PersistableMatrix<WeightEntry>
+    for Box<dyn PersistableMatrixTrait<WeightEntry>>
 {
     fn backward_calculate_gradients(
         &self,

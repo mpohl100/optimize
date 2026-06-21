@@ -5,15 +5,16 @@ use super::super::traits::TrainableMatrixExtensions;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsPersistable;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsWrappedPersistable;
 use matrix::ai_types::BiasEntry;
-use matrix::persist::cpu_matrix::PersistableMatrix;
 use matrix::persist::traits::PersistableMatrixTrait;
 use matrix::persist::wrapped::WrappedPersistableMatrix;
 
-impl MatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
+impl MatrixExtensionsPersistable<BiasEntry, BiasEntry>
+    for Box<dyn PersistableMatrixTrait<BiasEntry>>
+{
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &Self,
+        biases: &Box<dyn PersistableMatrixTrait<BiasEntry>>,
     ) -> Vec<f64> {
         self.mat().unwrap().forward(inputs, biases.mat().unwrap())
     }
@@ -31,7 +32,9 @@ impl MatrixExtensionsWrappedPersistable<BiasEntry, BiasEntry>
     }
 }
 
-impl TrainableMatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
+impl TrainableMatrixExtensionsPersistable<BiasEntry, BiasEntry>
+    for Box<dyn PersistableMatrixTrait<BiasEntry>>
+{
     fn backward_calculate_gradients(
         &self,
         d_out_vec: &[f64],

@@ -4,8 +4,8 @@ use matrix::persist::traits::PersistableValue;
 use rayon::iter::ParallelIterator;
 
 pub fn forward_impl<
-    WeightT: Default + Clone + PersistableValue + From<f64> + Sync + 'static,
-    BiasT: Default + Clone + PersistableValue + From<f64> + Sync + 'static,
+    WeightT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + Sync + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + Sync + 'static,
 >(
     mat: &CompositeMatrix<WeightT>,
     inputs: &[f64],

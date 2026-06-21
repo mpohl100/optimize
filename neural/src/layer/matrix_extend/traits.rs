@@ -1,4 +1,4 @@
-use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::traits::PersistableMatrixTrait;
 use matrix::persist::traits::PersistableValue;
 use matrix::persist::wrapped::WrappedPersistableMatrix;
 
@@ -55,7 +55,7 @@ pub trait MatrixExtensionsPersistable<
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &PersistableMatrix<BiasT>,
+        biases: &Box<dyn PersistableMatrixTrait<BiasT>>,
     ) -> Vec<f64>;
 }
 
@@ -130,8 +130,8 @@ pub trait TrainableMatrixExtensionsWrappedPersistable<
 }
 
 pub trait MatrixExtensionsComposite<
-    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
 >
 {
     fn forward(
@@ -142,8 +142,8 @@ pub trait MatrixExtensionsComposite<
 }
 
 pub trait TrainableMatrixExtensionsComposite<
-    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
 >: MatrixExtensionsComposite<WeightT, BiasT>
 {
     fn backward_calculate_gradients(
@@ -171,8 +171,8 @@ pub trait TrainableMatrixExtensionsComposite<
 }
 
 pub trait MatrixExtensionsWrappedComposite<
-    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
 >
 {
     fn forward(
@@ -183,8 +183,8 @@ pub trait MatrixExtensionsWrappedComposite<
 }
 
 pub trait TrainableMatrixExtensionsWrappedComposite<
-    WeightT: Default + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Default + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
+    BiasT: Default + Clone + PersistableValue + From<f64> + std::fmt::Debug + 'static,
 >: MatrixExtensionsWrappedComposite<WeightT, BiasT>
 {
     fn backward_calculate_gradients(
