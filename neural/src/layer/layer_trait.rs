@@ -12,8 +12,8 @@ use std::sync::{Arc, Mutex};
 // A trait representing a layer in a neural network.
 /// Provides methods for the forward pass, backward pass, weight updates, and layer size information.
 pub trait Layer<
-    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Debug + Clone + PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static,
 >: Debug
 {
     /// Performs the forward pass of the layer, computing the output based on the input vector.
@@ -104,8 +104,8 @@ pub struct WrappedLayer<
 }
 
 impl<
-        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
-        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        WeightT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
     > WrappedLayer<WeightT, BiasT>
 {
     #[must_use]
@@ -193,8 +193,8 @@ impl<
     }
 }
 pub trait TrainableLayer<
-    WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
-    BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+    WeightT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
+    BiasT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
 >: Layer<WeightT, BiasT>
 {
     /// Performs the backward pass of the layer, computing the gradient based on the output gradient.
@@ -271,8 +271,8 @@ pub struct WrappedTrainableLayer<
 }
 
 impl<
-        WeightT: Debug + Clone + PersistableValue + From<f64> + 'static,
-        BiasT: Debug + Clone + PersistableValue + From<f64> + 'static,
+        WeightT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
+        BiasT: Debug + Clone + PersistableValue + From<f64> + Send + Sync + 'static,
     > WrappedTrainableLayer<WeightT, BiasT>
 {
     #[must_use]

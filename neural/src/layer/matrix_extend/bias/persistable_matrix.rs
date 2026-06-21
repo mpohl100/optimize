@@ -9,12 +9,12 @@ use matrix::persist::traits::PersistableMatrixTrait;
 use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 impl MatrixExtensionsPersistable<BiasEntry, BiasEntry>
-    for Box<dyn PersistableMatrixTrait<BiasEntry>>
+    for Box<dyn PersistableMatrixTrait<BiasEntry> + Send>
 {
     fn forward(
         &self,
         inputs: &[f64],
-        biases: &Box<dyn PersistableMatrixTrait<BiasEntry>>,
+        biases: &Box<dyn PersistableMatrixTrait<BiasEntry> + Send>,
     ) -> Vec<f64> {
         self.mat().unwrap().forward(inputs, biases.mat().unwrap())
     }
@@ -33,7 +33,7 @@ impl MatrixExtensionsWrappedPersistable<BiasEntry, BiasEntry>
 }
 
 impl TrainableMatrixExtensionsPersistable<BiasEntry, BiasEntry>
-    for Box<dyn PersistableMatrixTrait<BiasEntry>>
+    for Box<dyn PersistableMatrixTrait<BiasEntry> + Send>
 {
     fn backward_calculate_gradients(
         &self,
