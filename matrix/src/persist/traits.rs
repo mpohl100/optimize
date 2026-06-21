@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::fmt::Debug;
 
+use alloc::allocatable::Allocatable;
+
 use crate::mat::WrappedMatrix;
 
 pub trait PersistableValue: Default + Clone {
@@ -13,7 +15,7 @@ pub trait PersistableValue: Default + Clone {
 }
 
 pub trait PersistableMatrixTrait<T: PersistableValue + From<f64> + 'static>:
-    Debug + Default
+    Debug + Allocatable
 {
     fn get_unchecked(
         &self,

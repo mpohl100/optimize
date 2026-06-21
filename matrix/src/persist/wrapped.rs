@@ -1,7 +1,6 @@
 use crate::persist::cpu_matrix::PersistableMatrix;
 use crate::persist::traits::PersistableMatrixTrait;
 use crate::persist::traits::PersistableValue;
-use alloc::allocatable::Allocatable;
 use alloc::allocatable::WrappedAllocatableTrait;
 
 use std::sync::Arc;
@@ -9,9 +8,17 @@ use std::sync::Mutex;
 
 use utils::safer::safe_lock;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct WrappedPersistableMatrix<T: PersistableValue + From<f64> + 'static> {
     pm: Arc<Mutex<Box<dyn PersistableMatrixTrait<T>>>>,
+}
+
+impl<T: PersistableValue + From<f64> + std::fmt::Debug + 'static> Default
+    for WrappedPersistableMatrix<T>
+{
+    fn default() -> Self {
+        Self { pm: Arc::new(Mutex::new(Box::new(PersistableMatrix::<T>::default()))) }
+    }
 }
 
 #[allow(clippy::fallible_impl_from)]
@@ -23,7 +30,7 @@ impl<T: PersistableValue + From<f64> + 'static> From<f64> for WrappedPersistable
 
 impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
     #[must_use]
-    pub fn new(pm: PersistableMatrix<T>) -> Self {
+    pub fn new(pm: Box<dyn PersistableMatrixTrait<T>>) -> Self {
         Self { pm: Arc::new(Mutex::new(pm)) }
     }
 
@@ -60,7 +67,7 @@ impl<T: PersistableValue + From<f64> + 'static> WrappedPersistableMatrix<T> {
     }
 
     #[must_use]
-    pub fn mat(&self) -> Arc<Mutex<PersistableMatrix<T>>> {
+    pub fn mat(&self) -> Arc<Mutex<Box<dyn PersistableMatrixTrait<T>>>> {
         self.pm.clone()
     }
 

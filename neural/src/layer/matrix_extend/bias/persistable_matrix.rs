@@ -6,6 +6,7 @@ use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsPersistable;
 use crate::layer::matrix_extend::traits::TrainableMatrixExtensionsWrappedPersistable;
 use matrix::ai_types::BiasEntry;
 use matrix::persist::cpu_matrix::PersistableMatrix;
+use matrix::persist::traits::PersistableMatrixTrait;
 use matrix::persist::wrapped::WrappedPersistableMatrix;
 
 impl MatrixExtensionsPersistable<BiasEntry, BiasEntry> for PersistableMatrix<BiasEntry> {
