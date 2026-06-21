@@ -1,4 +1,5 @@
 use crate::persist::cpu_matrix::PersistableMatrix;
+use crate::persist::traits::PersistableMatrixTrait;
 use crate::persist::traits::PersistableValue;
 use alloc::allocatable::Allocatable;
 use alloc::allocatable::WrappedAllocatableTrait;
@@ -10,7 +11,7 @@ use utils::safer::safe_lock;
 
 #[derive(Debug, Default, Clone)]
 pub struct WrappedPersistableMatrix<T: PersistableValue + From<f64> + 'static> {
-    pm: Arc<Mutex<PersistableMatrix<T>>>,
+    pm: Arc<Mutex<Box<dyn PersistableMatrixTrait<T>>>>,
 }
 
 #[allow(clippy::fallible_impl_from)]

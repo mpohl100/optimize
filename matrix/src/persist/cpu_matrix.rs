@@ -1,7 +1,7 @@
 use crate::directory::Directory;
 use crate::mat::WrappedMatrix;
 use crate::persist::persist_impl::{read, save};
-use crate::persist::traits::PersistableValue;
+use crate::persist::traits::{PersistableMatrixTrait, PersistableValue};
 use alloc::allocatable::Allocatable;
 use std::path::Path;
 
@@ -37,11 +37,18 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         Self { matrix_file_path: matrix_path, rows, cols, mat: None, in_use: false }
     }
 
-    /// # Panics
-    /// Panics if the matrix is not allocated.
-    /// Returns the value at the specified (x, y) position.
-    #[must_use]
-    pub fn get_unchecked(
+    fn save_internal(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(mat) = &self.mat {
+            save(self.matrix_file_path.path(), mat)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: PersistableValue + From<f64> + std::fmt::Debug> PersistableMatrixTrait<T>
+    for PersistableMatrix<T>
+{
+    fn get_unchecked(
         &self,
         x: usize,
         y: usize,
@@ -54,9 +61,7 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         )
     }
 
-    /// # Panics
-    /// Panics if the matrix is not allocated.
-    pub fn set_mut_unchecked(
+    fn set_mut_unchecked(
         &mut self,
         x: usize,
         y: usize,
@@ -69,35 +74,22 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         }
     }
 
-    #[must_use]
-    pub const fn mat(&self) -> Option<&WrappedMatrix<T>> {
+    fn mat(&self) -> Option<&WrappedMatrix<T>> {
         self.mat.as_ref()
     }
 
-    #[must_use]
-    pub const fn rows(&self) -> usize {
+    fn rows(&self) -> usize {
         self.rows
     }
 
-    #[must_use]
-    pub const fn cols(&self) -> usize {
+    fn cols(&self) -> usize {
         self.cols
     }
 
-    /// Save the matrix to disk
-    /// # Errors
-    /// Returns an error if saving fails
-    pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // set the matrix file path to user so that the data remains on disk
         self.matrix_file_path = self.matrix_file_path.to_user();
         self.save_internal()
-    }
-
-    fn save_internal(&self) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(mat) = &self.mat {
-            save(self.matrix_file_path.path(), mat)?;
-        }
-        Ok(())
     }
 }
 
