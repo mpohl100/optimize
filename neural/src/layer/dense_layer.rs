@@ -97,16 +97,16 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
 
     fn save(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        self.weights.save()?;
-        self.biases.save()?;
+        self.weights.save(&(path.to_string() + "/weights"))?;
+        self.biases.save(&(path.to_string() + "/biases"))?;
         Ok(())
     }
 
     fn read(
         &mut self,
-        _path: String,
+        _path: &str,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
@@ -257,17 +257,17 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn save(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         // assign weights and biases to a matrix and vector
-        self.weights.save()?;
-        self.biases.save()?;
+        self.weights.save(&(path.to_string() + "/weights"))?;
+        self.biases.save(&(path.to_string() + "/biases"))?;
         Ok(())
     }
 
     fn read(
         &mut self,
-        _path: String,
+        _path: &str,
     ) -> Result<(), Box<dyn Error>> {
         // Read weights and biases from a file at the specified path
         Ok(())
@@ -425,16 +425,16 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
 
     fn save_weight(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        self.weights.save()?;
-        self.biases.save()?;
+        self.weights.save(&(path.to_string() + "/weights"))?;
+        self.biases.save(&(path.to_string() + "/biases"))?;
         Ok(())
     }
 
     fn read_weight(
         &mut self,
-        _path: String,
+        _path: &str,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
@@ -684,7 +684,7 @@ mod tests {
         train_simple_layer(&mut trainable_layer, &utils, 10);
 
         // Save the trainable layer
-        trainable_layer.save(String::new()).expect("Failed to save trainable layer");
+        trainable_layer.save("").expect("Failed to save trainable layer");
 
         // Get the weights from the trainable layer before it's dropped
         let trainable_weights = trainable_layer.get_weights();
@@ -756,7 +756,7 @@ mod tests {
         }
 
         // Save the dense layer to verify the save API works
-        dense_layer.save(String::new()).expect("Failed to save dense layer");
+        dense_layer.save("").expect("Failed to save dense layer");
 
         // Cleanup
         trainable_layer.cleanup();

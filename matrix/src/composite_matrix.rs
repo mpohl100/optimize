@@ -134,11 +134,14 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static> 
     /// - New loop: ``0..self.matrices.rows()`` = 0..4, correctly saving all 16 sub-matrices
     ///
     /// This bug caused edge weights to appear different because they were never saved/loaded from disk.
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(
+        &self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         for i in 0..self.matrices.rows() {
             for j in 0..self.matrices.cols() {
                 let mut persistable_matrix = self.matrices.get_unchecked(i, j);
-                persistable_matrix.save()?;
+                persistable_matrix.save(path)?;
             }
         }
         Ok(())
@@ -289,9 +292,12 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static>
     /// Save the composite matrix to disk
     /// # Errors
     /// Returns an error if saving fails
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(
+        &self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let cm = safe_lock(&self.cm);
-        cm.save()
+        cm.save(path)
     }
 
     #[must_use]

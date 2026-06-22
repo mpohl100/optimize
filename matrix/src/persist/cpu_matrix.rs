@@ -12,6 +12,7 @@ pub struct PersistableMatrix<T: PersistableValue + From<f64> + 'static> {
     cols: usize,
     mat: Option<WrappedMatrix<T>>,
     in_use: bool,
+    previous_paths: Vec<Directory>,
 }
 
 #[allow(clippy::fallible_impl_from)]
@@ -34,7 +35,14 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
             Directory::Internal(path) => Directory::Internal(format!("{path}/matrix_{label}.txt")),
         };
 
-        Self { matrix_file_path: matrix_path, rows, cols, mat: None, in_use: false }
+        Self {
+            matrix_file_path: matrix_path,
+            rows,
+            cols,
+            mat: None,
+            in_use: false,
+            previous_paths: Vec::new(),
+        }
     }
 
     fn save_internal(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -42,6 +50,31 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
             save(self.matrix_file_path.path(), mat)?;
         }
         Ok(())
+    }
+
+    fn change_to_path(
+        &mut self,
+        new_path: Directory,
+    ) {
+        self.previous_paths.push(self.matrix_file_path.clone());
+        let current_file_name = match &self.matrix_file_path {
+            Directory::User(path) | Directory::Internal(path) => {
+                Path::new(path).file_name().unwrap().to_str().unwrap()
+            },
+        };
+        // change the filename of the passed path to match the current filename
+        // check if new_path is a directory and only append if it is
+        let new_path = if Path::new(&new_path.path()).is_dir() {
+            match new_path {
+                Directory::User(path) => Directory::User(format!("{path}/{current_file_name}")),
+                Directory::Internal(path) => {
+                    Directory::Internal(format!("{path}/{current_file_name}"))
+                },
+            }
+        } else {
+            new_path
+        };
+        self.matrix_file_path = new_path;
     }
 }
 
@@ -86,9 +119,15 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug> PersistableMatrixTrait<T
         self.cols
     }
 
-    fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    /// Save the matrix to disk
+    /// # Errors
+    /// Returns an error if saving fails
+    fn save(
+        &mut self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // set the matrix file path to user so that the data remains on disk
-        self.matrix_file_path = self.matrix_file_path.to_user();
+        self.change_to_path(Directory::User(path.to_string()));
         self.save_internal()
     }
 }
@@ -108,7 +147,15 @@ impl<T: PersistableValue + From<f64>> Drop for PersistableMatrix<T> {
             let path = Path::new(dir);
             // delete the file
             if path.is_file() {
-                std::fs::remove_file(dir).expect("Failed to remove file");
+                std::fs::remove_file(dir).expect("Failed to remove current internal file");
+            }
+        }
+        for prev_path in &self.previous_paths {
+            if let Directory::Internal(dir) = prev_path {
+                let path = Path::new(dir);
+                if path.is_file() {
+                    std::fs::remove_file(dir).expect("Failed to remove previous internal file");
+                }
             }
         }
     }

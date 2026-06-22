@@ -58,7 +58,7 @@ pub trait Layer<
     /// Returns an error if the layer could not be saved to the specified path.
     fn save(
         &self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
@@ -68,7 +68,7 @@ pub trait Layer<
     /// Returns an error if the layer could not be read from the specified path.
     fn read(
         &mut self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>>;
 
     /// Returns the weights of the layer.
@@ -149,7 +149,7 @@ impl<
     /// Returns an error if the layer could not be saved to the specified path.
     pub fn save(
         &self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).save(path)
     }
@@ -161,7 +161,7 @@ impl<
     /// Returns an error if the layer could not be read from the specified path.
     pub fn read(
         &mut self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).read(path)
     }
@@ -248,7 +248,7 @@ pub trait TrainableLayer<
     /// Returns an error if the layer weights could not be saved to the specified path.
     fn save_weight(
         &self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>>;
 
     /// Reads the layer from a file at the specified path.
@@ -258,7 +258,7 @@ pub trait TrainableLayer<
     /// Returns an error if the layer weights could not be read from the specified path.
     fn read_weight(
         &mut self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>>;
 }
 
@@ -316,7 +316,7 @@ impl<
     /// Returns an error if the layer could not be read from the specified path.
     pub fn read(
         &mut self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).read(path)
     }
@@ -373,7 +373,7 @@ impl<
     /// Returns an error if the layer weights could not be saved to the specified path.
     pub fn save_weights(
         &self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).save_weight(path)
     }
@@ -385,7 +385,7 @@ impl<
     /// Returns an error if the layer weights could not be read from the specified path.
     pub fn read_weight(
         &mut self,
-        path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         safe_lock(&self.layer).read_weight(path)
     }

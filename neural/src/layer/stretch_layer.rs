@@ -108,20 +108,20 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
 
     fn save(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         for (i, dense_layer) in self.dense_layers.iter().enumerate() {
-            dense_layer.save(format!("dense_layer_{i}"))?;
+            dense_layer.save(&format!("{path}/dense_layer_{i}"))?;
         }
         Ok(())
     }
 
     fn read(
         &mut self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
-            dense_layer.read(format!("dense_layer_{i}"))?;
+            dense_layer.read(&format!("{path}/dense_layer_{i}"))?;
         }
         Ok(())
     }
@@ -327,20 +327,20 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
 
     fn save(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
-            dense_layer.save(format!("dense_layer_{i}"))?;
+            dense_layer.save(&(path.to_string() + &format!("dense_layer_{i}")))?;
         }
         Ok(())
     }
 
     fn read(
         &mut self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
         for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
-            dense_layer.read(format!("dense_layer_{i}"))?;
+            dense_layer.read(&(path.to_string() + &format!("dense_layer_{i}")))?;
         }
         Ok(())
     }
@@ -541,20 +541,20 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableStretchLayer {
 
     fn save_weight(
         &self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        for dense_layer in &self.trainable_dense_layers {
-            dense_layer.save_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
+        for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
+            dense_layer.save_weight(&format!("{path}/dense_layer_{i}"))?;
         }
         Ok(())
     }
 
     fn read_weight(
         &mut self,
-        _path: String,
+        path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        for dense_layer in &mut self.trainable_dense_layers {
-            dense_layer.read_weight(format!("dense_layer_{}", dense_layer.output_size()))?;
+        for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
+            dense_layer.read_weight(&format!("{path}/dense_layer_{i}"))?;
         }
         Ok(())
     }
