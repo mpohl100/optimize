@@ -684,7 +684,7 @@ mod tests {
         train_simple_layer(&mut trainable_layer, &utils, 10);
 
         // Save the trainable layer
-        trainable_layer.save("").expect("Failed to save trainable layer");
+        trainable_layer.save("layer").expect("Failed to save trainable layer");
 
         // Get the weights from the trainable layer before it's dropped
         let trainable_weights = trainable_layer.get_weights();
@@ -756,11 +756,12 @@ mod tests {
         }
 
         // Save the dense layer to verify the save API works
-        dense_layer.save("").expect("Failed to save dense layer");
+        dense_layer.save("layer").expect("Failed to save dense layer");
 
         // Cleanup
         trainable_layer.cleanup();
         dense_layer.cleanup();
         let _ = std::fs::remove_dir_all("test_save_load_final");
+        let _ = std::fs::remove_dir_all("layer");
     }
 }
