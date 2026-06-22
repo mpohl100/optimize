@@ -35,5 +35,8 @@ pub trait PersistableMatrixTrait<T: PersistableValue + From<f64> + 'static>:
     /// Save the matrix to disk
     /// # Errors
     /// Returns an error if saving fails
-    fn save(&mut self) -> Result<(), Box<dyn std::error::Error>>;
+    fn save(
+        &mut self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }

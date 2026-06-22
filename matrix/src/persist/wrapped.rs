@@ -76,9 +76,12 @@ impl<T: PersistableValue + From<f64> + Send + Sync + 'static> WrappedPersistable
     /// Save the matrix to disk
     /// # Errors
     /// Returns an error if saving fails
-    pub fn save(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(
+        &mut self,
+        path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut pm = safe_lock(&self.pm);
-        pm.save()
+        pm.save(path)
     }
 }
 

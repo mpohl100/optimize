@@ -175,7 +175,7 @@ impl ClassicNeuralNetwork {
         // make a layers subdirectory
         std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         for (i, layer) in self.layers.iter().enumerate() {
-            layer.save(format!("{model_directory}/layers/layer_{i}"))?;
+            layer.save(format!("{model_directory}/layers/layer_{i}").as_str())?;
         }
         Ok(())
     }
@@ -437,8 +437,8 @@ impl TrainableClassicNeuralNetwork {
         if std::fs::metadata(format!("{model_directory}/layers")).is_err() {
             std::fs::create_dir_all(format!("{model_directory}/layers"))?;
         }
-        for layer in &self.layers {
-            layer.save_weights(String::new())?;
+        for (i, layer) in self.layers.iter().enumerate() {
+            layer.save_weights(format!("{model_directory}/layers/layer_{i}").as_str())?;
         }
         Ok(())
     }
