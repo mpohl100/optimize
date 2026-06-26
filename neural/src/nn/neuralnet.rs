@@ -61,9 +61,12 @@ impl ClassicNeuralNetwork {
 
         // Initialize layers and activations based on the provided shape.
         for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
-            // Here you would instantiate the appropriate Layer and Activation objects.
-            let layer_box =
-                new_layer(&layer_shape.layer_type(), &network.model_directory, i, &network.utils);
+            let layer_path = format!("{}/layers/layer_{i}", network.model_directory.path());
+            let layer_box = new_layer(
+                &layer_shape.layer_type(),
+                &Directory::Internal(layer_path),
+                &network.utils,
+            );
             let layer = WrappedLayer::new(layer_box);
             let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -107,8 +110,12 @@ impl ClassicNeuralNetwork {
         };
 
         for i in 0..sh.layers.len() {
-            let layer_box =
-                new_layer(&sh.layers[i].layer_type(), &network.model_directory, i, &network.utils);
+            let layer_directory = format!("{}/layers/layer_{i}", network.model_directory.path());
+            let layer_box = new_layer(
+                &sh.layers[i].layer_type(),
+                &Directory::User(layer_directory),
+                &network.utils,
+            );
             let layer = WrappedLayer::new(layer_box);
             let activation = match sh.layers[i].activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
@@ -258,10 +265,10 @@ impl NeuralNetwork for ClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
+            let layer_directory = format!("{model_directory}/layers/layer_{i}");
             let layer_box = new_layer(
                 &self.shape.layers[i].layer_type(),
-                &Directory::Internal(model_directory.clone()),
-                i,
+                &Directory::Internal(layer_directory),
                 &self.utils,
             );
             let mut new_layer = WrappedLayer::new(layer_box);
@@ -344,11 +351,10 @@ impl TrainableClassicNeuralNetwork {
 
         // Initialize layers and activations based on the provided shape.
         for (i, layer_shape) in shape_clone.layers.iter().enumerate() {
-            // Here you would instantiate the appropriate Layer and Activation objects.
+            let layer_directory = format!("{}/layers/layer_{i}", network.model_directory.path());
             let layer_box = new_trainable_layer(
                 &layer_shape.layer_type(),
-                &network.model_directory,
-                i,
+                &Directory::Internal(layer_directory),
                 &network.utils,
             );
             let layer = WrappedTrainableLayer::new(layer_box);
@@ -545,10 +551,10 @@ impl TrainableClassicNeuralNetwork {
         };
 
         for i in 0..sh.layers.len() {
+            let layer_directory = format!("{}/layers/layer_{i}", network.model_directory.path());
             let layer_box = new_trainable_layer(
                 &sh.layers[i].layer_type(),
-                &network.model_directory,
-                i,
+                &Directory::User(layer_directory),
                 &network.utils,
             );
             let layer = WrappedTrainableLayer::new(layer_box);
@@ -909,10 +915,10 @@ impl TrainableNeuralNetwork for TrainableClassicNeuralNetwork {
         // Clone the neural network by cloning its layers and activations
         let mut new_layers = Vec::new();
         for (i, layer) in self.layers.iter().enumerate() {
+            let layer_directory = format!("{model_directory}/layers/layer_{i}");
             let layer_box = new_trainable_layer(
                 &self.shape.layers[i].layer_type(),
-                &Directory::Internal(model_directory.clone()),
-                i,
+                &Directory::Internal(layer_directory),
                 &self.utils,
             );
             let mut new_layer = WrappedTrainableLayer::new(layer_box);

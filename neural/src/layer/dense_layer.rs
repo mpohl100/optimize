@@ -41,13 +41,12 @@ impl DenseLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: &Directory,
-        position_in_nn: usize,
+        layer_directory: &Directory,
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
         // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}
-        let layer_path = model_directory.expand(&format!("layers/layer_{position_in_nn}"));
+        let layer_path = layer_directory.clone();
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
@@ -191,13 +190,12 @@ impl TrainableDenseLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: &Directory,
-        position_in_nn: usize,
+        layer_directory: &Directory,
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
-        // create a Directory type which has the path model_directory/layers/layer_{position_in_nn}
-        let layer_path = model_directory.expand(&format!("layers/layer_{position_in_nn}"));
+        let layer_path = layer_directory.clone();
+        // create a Directory type
         let weights = WrappedCompositeMatrix::new(CompositeMatrix::new(
             matrix_params.slice_rows,
             matrix_params.slice_cols,
@@ -454,7 +452,6 @@ mod tests {
             3,
             2,
             &Directory::Internal("test_model_unit".to_string()),
-            0,
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -552,7 +549,6 @@ mod tests {
             10,
             10,
             &Directory::Internal("test_transfer_trainable_1".to_string()),
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -569,7 +565,6 @@ mod tests {
             10,
             10,
             &Directory::Internal("test_transfer_trainable_2".to_string()),
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -604,7 +599,6 @@ mod tests {
             10,
             10,
             &Directory::Internal("test_conversion_trainable".to_string()),
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -621,7 +615,6 @@ mod tests {
             10,
             10,
             &Directory::Internal("test_conversion_dense".to_string()),
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -669,13 +662,12 @@ mod tests {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));
 
         // Create a trainable layer
-        let trainable_base_dir = Directory::Internal("test_save_load_final".to_string());
+        let trainable_base_dir = Directory::Internal("trainable_layer_internal".to_string());
 
         let mut trainable_layer = TrainableDenseLayer::new(
             10,
             10,
             &trainable_base_dir,
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -684,19 +676,18 @@ mod tests {
         train_simple_layer(&mut trainable_layer, &utils, 10);
 
         // Save the trainable layer
-        trainable_layer.save("layer").expect("Failed to save trainable layer");
+        trainable_layer.save("trainable_layer_user").expect("Failed to save trainable layer");
 
         // Get the weights from the trainable layer before it's dropped
         let trainable_weights = trainable_layer.get_weights();
         let trainable_biases = trainable_layer.get_biases();
 
         // Create a DenseLayer in a different directory
-        let dense_base_dir = Directory::Internal("test_save_load_final".to_string());
+        let dense_base_dir = Directory::User("trainable_layer_user".to_string());
         let dense_layer = DenseLayer::new(
             10,
             10,
             &dense_base_dir,
-            0,
             MatrixParams { slice_rows: 3, slice_cols: 3 },
             &utils,
         );
@@ -756,12 +747,16 @@ mod tests {
         }
 
         // Save the dense layer to verify the save API works
-        dense_layer.save("layer").expect("Failed to save dense layer");
+        dense_layer.save("dense_layer_user").expect("Failed to save dense layer");
+        // assert that the directory trainable_layer_user exists
+        assert!(std::path::Path::new("trainable_layer_user").exists());
+        // assert that the directory dense_layer_user exists
+        assert!(std::path::Path::new("dense_layer_user").exists());
 
         // Cleanup
         trainable_layer.cleanup();
         dense_layer.cleanup();
-        let _ = std::fs::remove_dir_all("test_save_load_final");
-        let _ = std::fs::remove_dir_all("layer");
+        let _ = std::fs::remove_dir_all("trainable_layer_user");
+        let _ = std::fs::remove_dir_all("dense_layer_user");
     }
 }

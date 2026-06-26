@@ -135,12 +135,13 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static> 
     ///
     /// This bug caused edge weights to appear different because they were never saved/loaded from disk.
     pub fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for i in 0..self.matrices.rows() {
             for j in 0..self.matrices.cols() {
                 let mut persistable_matrix = self.matrices.get_unchecked(i, j);
+                self.wrapped_alloc_manager.allocate(&persistable_matrix);
                 persistable_matrix.save(path)?;
             }
         }
@@ -296,7 +297,7 @@ impl<T: PersistableValue + From<f64> + std::fmt::Debug + Send + Sync + 'static>
         &self,
         path: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let cm = safe_lock(&self.cm);
+        let mut cm = safe_lock(&self.cm);
         cm.save(path)
     }
 
