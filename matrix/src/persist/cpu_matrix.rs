@@ -8,6 +8,7 @@ use std::path::Path;
 #[derive(Default, Debug, Clone)]
 pub struct PersistableMatrix<T: PersistableValue + From<f64> + 'static> {
     matrix_file_path: Directory,
+    matrix_file_name: String,
     rows: usize,
     cols: usize,
     mat: Option<WrappedMatrix<T>>,
@@ -30,13 +31,15 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         rows: usize,
         cols: usize,
     ) -> Self {
+        let matrix_file_name = format!("matrix_{label}.txt");
         let matrix_path = match matrix_file_path {
-            Directory::User(path) => Directory::User(format!("{path}/matrix_{label}.txt")),
-            Directory::Internal(path) => Directory::Internal(format!("{path}/matrix_{label}.txt")),
+            Directory::User(path) => Directory::User(format!("{path}/{matrix_file_name}")),
+            Directory::Internal(path) => Directory::Internal(format!("{path}/{matrix_file_name}")),
         };
 
         Self {
             matrix_file_path: matrix_path,
+            matrix_file_name,
             rows,
             cols,
             mat: None,
@@ -57,18 +60,14 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
         new_path: Directory,
     ) {
         self.previous_paths.push(self.matrix_file_path.clone());
-        let current_file_name = match &self.matrix_file_path {
-            Directory::User(path) | Directory::Internal(path) => {
-                Path::new(path).file_name().unwrap().to_str().unwrap()
-            },
-        };
+        let matrix_file_name = self.matrix_file_name.clone();
         // change the filename of the passed path to match the current filename
         // check if new_path is a directory and only append if it is
         let new_path = if Path::new(&new_path.path()).is_dir() {
             match new_path {
-                Directory::User(path) => Directory::User(format!("{path}/{current_file_name}")),
+                Directory::User(path) => Directory::User(format!("{path}/{matrix_file_name}")),
                 Directory::Internal(path) => {
-                    Directory::Internal(format!("{path}/{current_file_name}"))
+                    Directory::Internal(format!("{path}/{matrix_file_name}"))
                 },
             }
         } else {

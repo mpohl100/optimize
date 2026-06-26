@@ -32,8 +32,7 @@ impl StretchLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: Directory,
-        position_in_nn: usize,
+        layer_directory: &Directory,
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
@@ -44,12 +43,11 @@ impl StretchLayer {
 
         for (i, (dense_input_size, dense_output_size)) in dimensions.iter().enumerate() {
             let sub_directory = format!("dense_layer_{i}");
-            let dense_layer_path = model_directory.expand(&sub_directory);
+            let dense_layer_path = layer_directory.expand(&sub_directory);
             let dense_layer = DenseLayer::new(
                 *dense_input_size,
                 *dense_output_size,
                 &dense_layer_path,
-                position_in_nn,
                 matrix_params,
                 utils,
             );
@@ -60,7 +58,7 @@ impl StretchLayer {
             input_size,
             output_size,
             dense_layers,
-            layer_path: model_directory,
+            layer_path: layer_directory.clone(),
             matrix_params,
             alloc_manager: utils.get_matrix_alloc_manager(),
         }
@@ -244,8 +242,7 @@ impl TrainableStretchLayer {
     pub fn new(
         input_size: usize,
         output_size: usize,
-        model_directory: Directory,
-        position_in_nn: usize,
+        layer_directory: &Directory,
         matrix_params: MatrixParams,
         utils: &WrappedUtils,
     ) -> Self {
@@ -256,13 +253,12 @@ impl TrainableStretchLayer {
 
         for (i, (dense_input_size, dense_output_size)) in dimensions.iter().enumerate() {
             let sub_directory = format!("dense_layer_{i}");
-            let dense_layer_path = model_directory.expand(&sub_directory);
+            let dense_layer_path = layer_directory.expand(&sub_directory);
 
             let dense_layer = TrainableDenseLayer::new(
                 *dense_input_size,
                 *dense_output_size,
                 &dense_layer_path,
-                position_in_nn,
                 matrix_params,
                 utils,
             );
@@ -273,7 +269,7 @@ impl TrainableStretchLayer {
             input_size,
             output_size,
             trainable_dense_layers: dense_layers,
-            layer_path: model_directory,
+            layer_path: layer_directory.clone(),
             matrix_params,
             weight_alloc_manager: utils.get_trainable_weight_matrix_alloc_manager(),
             bias_alloc_manager: utils.get_trainable_bias_matrix_alloc_manager(),
@@ -634,8 +630,7 @@ mod tests {
         let mut layer = TrainableStretchLayer::new(
             50,
             10,
-            Directory::Internal("test_stretch_50_10".to_string()),
-            0,
+            &Directory::Internal("test_stretch_50_10".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -668,8 +663,7 @@ mod tests {
         let mut layer = TrainableStretchLayer::new(
             25,
             10,
-            Directory::Internal("test_stretch_25_10".to_string()),
-            0,
+            &Directory::Internal("test_stretch_25_10".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -702,8 +696,7 @@ mod tests {
         let mut layer = TrainableStretchLayer::new(
             10,
             10,
-            Directory::Internal("test_stretch_10_10".to_string()),
-            0,
+            &Directory::Internal("test_stretch_10_10".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -736,8 +729,7 @@ mod tests {
         let mut layer = TrainableStretchLayer::new(
             10,
             25,
-            Directory::Internal("test_stretch_10_25".to_string()),
-            0,
+            &Directory::Internal("test_stretch_10_25".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -770,8 +762,7 @@ mod tests {
         let mut layer = TrainableStretchLayer::new(
             10,
             50,
-            Directory::Internal("test_stretch_10_50".to_string()),
-            0,
+            &Directory::Internal("test_stretch_10_50".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -807,8 +798,7 @@ mod tests {
         let mut layer1 = TrainableStretchLayer::new(
             10,
             10,
-            Directory::Internal("test_transfer_stretch_trainable_1".to_string()),
-            0,
+            &Directory::Internal("test_transfer_stretch_trainable_1".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -832,8 +822,7 @@ mod tests {
         let mut layer2 = TrainableStretchLayer::new(
             10,
             10,
-            Directory::Internal("test_transfer_stretch_trainable_2".to_string()),
-            0,
+            &Directory::Internal("test_transfer_stretch_trainable_2".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -916,8 +905,7 @@ mod tests {
         let mut trainable_layer = TrainableStretchLayer::new(
             10,
             20,
-            Directory::Internal("test_conversion_stretch_trainable".to_string()),
-            0,
+            &Directory::Internal("test_conversion_stretch_trainable".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
@@ -941,8 +929,7 @@ mod tests {
         let mut stretch_layer = StretchLayer::new(
             10,
             20,
-            Directory::Internal("test_conversion_stretch_dense".to_string()),
-            0,
+            &Directory::Internal("test_conversion_stretch_dense".to_string()),
             MatrixParams { slice_rows: 10, slice_cols: 10 },
             &utils,
         );
