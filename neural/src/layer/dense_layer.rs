@@ -34,6 +34,7 @@ pub struct DenseLayer {
     weights: WrappedCompositeMatrix<NumberEntry>,
     biases: WrappedCompositeMatrix<NumberEntry>,
     layer_path: Directory,
+    previous_paths: Vec<Directory>, // Store previous paths for cleanup
 }
 
 impl DenseLayer {
@@ -63,7 +64,14 @@ impl DenseLayer {
             &layer_path.expand("biases"),
             utils.get_matrix_alloc_manager(),
         ));
-        Self { rows: output_size, cols: input_size, weights, biases, layer_path }
+        Self {
+            rows: output_size,
+            cols: input_size,
+            weights,
+            biases,
+            layer_path,
+            previous_paths: Vec::new(),
+        }
     }
 }
 
@@ -95,11 +103,13 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     }
 
     fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn Error>> {
         self.weights.save(&(path.to_string() + "/weights"))?;
         self.biases.save(&(path.to_string() + "/biases"))?;
+        self.previous_paths.push(self.layer_path.clone());
+        self.layer_path = Directory::User(path.to_string());
         Ok(())
     }
 
@@ -172,6 +182,30 @@ impl Layer<NumberEntry, NumberEntry> for DenseLayer {
     }
 }
 
+impl Drop for DenseLayer {
+    fn drop(&mut self) {
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete all subdirectories and files in the directory
+            if std::fs::metadata(dir).is_ok() {
+                let path = Path::new(dir);
+                if path.is_dir() {
+                    std::fs::remove_dir_all(dir).expect("Failed to remove directory");
+                }
+            }
+        }
+        for prev_path in &self.previous_paths {
+            if let Directory::Internal(dir) = prev_path {
+                let path = Path::new(dir);
+                if path.is_dir() {
+                    std::fs::remove_dir_all(dir)
+                        .expect("Failed to remove previous internal directory");
+                }
+            }
+        }
+    }
+}
+
 /// A fully connected neural network layer (Dense layer).
 #[derive(Debug, Clone)]
 pub struct TrainableDenseLayer {
@@ -182,6 +216,7 @@ pub struct TrainableDenseLayer {
     input_cache: Option<Vec<f64>>,                // Cache input for use in backward pass
     _input_batch_cache: Option<Vec<Vec<f64>>>,    // Cache batch input for use in backward pass
     layer_path: Directory,
+    previous_paths: Vec<Directory>, // Store previous paths for cleanup
 }
 
 impl TrainableDenseLayer {
@@ -220,6 +255,7 @@ impl TrainableDenseLayer {
             input_cache: None,
             _input_batch_cache: None,
             layer_path,
+            previous_paths: Vec::new(),
         }
     }
 }
@@ -254,12 +290,14 @@ impl Layer<WeightEntry, BiasEntry> for TrainableDenseLayer {
     }
 
     fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn Error>> {
         // assign weights and biases to a matrix and vector
         self.weights.save(&(path.to_string() + "/weights"))?;
         self.biases.save(&(path.to_string() + "/biases"))?;
+        self.previous_paths.push(self.layer_path.clone());
+        self.layer_path = Directory::User(path.to_string());
         Ok(())
     }
 
@@ -435,6 +473,30 @@ impl TrainableLayer<WeightEntry, BiasEntry> for TrainableDenseLayer {
         _path: &str,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())
+    }
+}
+
+impl Drop for TrainableDenseLayer {
+    fn drop(&mut self) {
+        // Remove the internal model directory from disk
+        if let Directory::Internal(dir) = &self.layer_path {
+            // delete all subdirectories and files in the directory
+            if std::fs::metadata(dir).is_ok() {
+                let path = Path::new(dir);
+                if path.is_dir() {
+                    std::fs::remove_dir_all(dir).expect("Failed to remove directory");
+                }
+            }
+        }
+        for prev_path in &self.previous_paths {
+            if let Directory::Internal(dir) = prev_path {
+                let path = Path::new(dir);
+                if path.is_dir() {
+                    std::fs::remove_dir_all(dir)
+                        .expect("Failed to remove previous internal directory");
+                }
+            }
+        }
     }
 }
 
@@ -684,7 +746,7 @@ mod tests {
 
         // Create a DenseLayer in a different directory
         let dense_base_dir = Directory::User("trainable_layer_user".to_string());
-        let dense_layer = DenseLayer::new(
+        let mut dense_layer = DenseLayer::new(
             10,
             10,
             &dense_base_dir,

@@ -57,7 +57,7 @@ pub trait Layer<
     ///
     /// Returns an error if the layer could not be saved to the specified path.
     fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn Error>>;
 
