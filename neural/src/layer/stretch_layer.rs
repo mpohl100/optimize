@@ -105,10 +105,10 @@ impl Layer<NumberEntry, NumberEntry> for StretchLayer {
     }
 
     fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        for (i, dense_layer) in self.dense_layers.iter().enumerate() {
+        for (i, dense_layer) in self.dense_layers.iter_mut().enumerate() {
             dense_layer.save(&format!("{path}/dense_layer_{i}"))?;
         }
         Ok(())
@@ -322,10 +322,10 @@ impl Layer<WeightEntry, BiasEntry> for TrainableStretchLayer {
     }
 
     fn save(
-        &self,
+        &mut self,
         path: &str,
     ) -> Result<(), Box<dyn Error>> {
-        for (i, dense_layer) in self.trainable_dense_layers.iter().enumerate() {
+        for (i, dense_layer) in self.trainable_dense_layers.iter_mut().enumerate() {
             dense_layer.save(&(path.to_string() + &format!("dense_layer_{i}")))?;
         }
         Ok(())

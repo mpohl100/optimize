@@ -61,6 +61,12 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
     ) {
         self.previous_paths.push(self.matrix_file_path.clone());
         let matrix_file_name = self.matrix_file_name.clone();
+        // create the directory if it does not exist
+        let p = new_path.path();
+        let dir = Path::new(&p);
+        if !dir.exists() {
+            std::fs::create_dir_all(dir).expect("Failed to create directory");
+        }
         // change the filename of the passed path to match the current filename
         // check if new_path is a directory and only append if it is
         let new_path = if Path::new(&new_path.path()).is_dir() {
@@ -71,7 +77,7 @@ impl<T: PersistableValue + From<f64>> PersistableMatrix<T> {
                 },
             }
         } else {
-            new_path
+            panic!("New path must be a directory");
         };
         self.matrix_file_path = new_path;
     }

@@ -15,7 +15,10 @@ pub fn save<T: PersistableValue + From<f64>>(
     // Ensure the directory exists
     let p = Path::new(&path);
     if let Some(dir) = p.parent() {
-        std::fs::create_dir_all(dir).expect("Failed to create directory");
+        // if dir does not exist, create it
+        if !dir.exists() {
+            std::fs::create_dir_all(dir).expect("Failed to create directory");
+        }
     }
     // create a lock file which acts as a lock
     let lock_file_path = format!("{path}.lock");
