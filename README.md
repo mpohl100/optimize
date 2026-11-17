@@ -20,9 +20,9 @@ As counterfactual regret minimization is the algorithm used in Poker solvers to 
 
 # Current state
 
-[x] linear regression libary on the CPU
-[x] generic counterfactual regret solver
-[] first POC to combine linear regression with counterfactual regret minimization
+- [x] linear regression libary on the CPU
+- [x] generic counterfactual regret solver
+- [] first POC to combine linear regression with counterfactual regret minimization
 
 # Outlook
 
