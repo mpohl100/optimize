@@ -2,12 +2,12 @@
 
 This GitHub repository is a collection of my Rust implementations of my favorite optimization algortihms in Rust.
 It contains:
-  - a library for linear regression on the CPU with efforts to target the CPU
+  - a library for linear regression on the CPU with efforts to target the GPU
   - a library for genetic algorithms
   - a library for counterfactual regret minimization
   - a library to optimize Markov processes using counterfactual regret minimization
 
-These crates are not meant for production use, they are meant to enable my research that I find intereseting for AI.
+These crates are not meant for production use, they are meant to enable my research that I find interesting for AI.
 
 # Goal
 
