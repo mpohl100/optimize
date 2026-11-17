@@ -658,7 +658,7 @@ mod tests {
     };
 
     // ignore this test for now
-    #[ignore]
+    #[ignore = "training test is temporarily disabled"]
     #[test]
     fn test_either_neural_network_train() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));

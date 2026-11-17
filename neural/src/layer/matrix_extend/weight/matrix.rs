@@ -115,7 +115,7 @@ impl TrainableMatrixExtensions<Weight, Bias> for WrappedMatrix<Weight> {
 
                 // Adjusted learning rate and update
                 let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-                weight.value -= adjusted_learning_rate * m_hat;
+                weight.value = adjusted_learning_rate.mul_add(-m_hat, weight.value);
             }
         });
     }
@@ -223,7 +223,7 @@ impl TrainableMatrixExtensions<WeightEntry, BiasEntry> for WrappedMatrix<WeightE
 
                 // Adjusted learning rate and update
                 let adjusted_learning_rate = learning_rate / (v_hat.sqrt() + epsilon);
-                weight.0.value -= adjusted_learning_rate * m_hat;
+                weight.0.value = adjusted_learning_rate.mul_add(-m_hat, weight.0.value);
             }
         });
     }

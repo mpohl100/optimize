@@ -89,7 +89,7 @@ impl ChildrenProvider<RoshamboData> for RoshamboChildrenProvider {
                             ProviderType::Children(WrappedChildrenProvider::new(Box::new(
                                 Self::new(),
                             ))),
-                            Some(data.clone()),
+                            Some(data),
                         )),
                         None,
                     );
@@ -110,7 +110,7 @@ impl ChildrenProvider<RoshamboData> for RoshamboChildrenProvider {
                         ProviderType::ExpectedValue(WrappedExpectedValueProvider::new(Box::new(
                             RoshamboExpectedValueProvider::new(),
                         ))),
-                        Some(data.clone()),
+                        Some(data),
                     );
                     let node = RegretNode::new(
                         probabilities[i],
