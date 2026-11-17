@@ -26,5 +26,5 @@ As counterfactual regret minimization is the algorithm used in Poker solvers to 
 
 # Outlook
 
-If the idea turns out to be useful I expect the possibility of significantly reducing AI training costs. 
+If the idea turns out to be useful I expect the possibility of significantly reducing AI training costs.
 

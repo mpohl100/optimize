@@ -637,14 +637,14 @@ mod tests {
 
         // Create input with alternating 1s and 0s
         let mut input = vec![0.0; 50];
-        for i in 0..50 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         // Target with alternating pattern
         let mut target = vec![0.0; 10];
-        for i in 0..10 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         train_stretch_layer(&mut layer, &input, &target, &utils);
@@ -670,14 +670,14 @@ mod tests {
 
         // Create input with alternating 1s and 0s
         let mut input = vec![0.0; 25];
-        for i in 0..25 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         // Target with alternating pattern
         let mut target = vec![0.0; 10];
-        for i in 0..10 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         train_stretch_layer(&mut layer, &input, &target, &utils);
@@ -703,14 +703,14 @@ mod tests {
 
         // Create input with alternating 1s and 0s
         let mut input = vec![0.0; 10];
-        for i in 0..10 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         // Target should be the same as input (no transformation needed)
         let mut target = vec![0.0; 10];
-        for i in 0..10 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         train_stretch_layer(&mut layer, &input, &target, &utils);
@@ -736,14 +736,14 @@ mod tests {
 
         // Create input with alternating 1s and 0s
         let mut input = vec![0.0; 10];
-        for i in 0..10 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         // Target with alternating pattern
         let mut target = vec![0.0; 25];
-        for i in 0..25 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         train_stretch_layer(&mut layer, &input, &target, &utils);
@@ -769,14 +769,14 @@ mod tests {
 
         // Create input with alternating 1s and 0s
         let mut input = vec![0.0; 10];
-        for i in 0..10 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         // Target with alternating pattern
         let mut target = vec![0.0; 50];
-        for i in 0..50 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
 
         train_stretch_layer(&mut layer, &input, &target, &utils);
@@ -805,12 +805,12 @@ mod tests {
 
         // Train the layer
         let mut input = vec![0.0; 10];
-        for i in 0..10 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         let mut target = vec![0.0; 10];
-        for i in 0..10 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         train_stretch_layer(&mut layer1, &input, &target, &utils);
 
@@ -912,12 +912,12 @@ mod tests {
 
         // Train the layer
         let mut input = vec![0.0; 10];
-        for i in 0..10 {
-            input[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in input.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         let mut target = vec![0.0; 20];
-        for i in 0..20 {
-            target[i] = if i % 2 == 0 { 1.0 } else { 0.0 };
+        for (i, value) in target.iter_mut().enumerate() {
+            *value = if i % 2 == 0 { 1.0 } else { 0.0 };
         }
         train_stretch_layer(&mut trainable_layer, &input, &target, &utils);
 
@@ -960,8 +960,7 @@ mod tests {
                 if diff > 1e-10 {
                     weight_mismatches.push((i, j, tv, dv, diff));
                     println!(
-                        "Weight mismatch at [{}, {}]: trainable={}, stretch={}, diff={}",
-                        i, j, tv, dv, diff
+                        "Weight mismatch at [{i}, {j}]: trainable={tv}, stretch={dv}, diff={diff}"
                     );
                 }
             }
@@ -991,10 +990,7 @@ mod tests {
             let diff = (tv - dv).abs();
             if diff > 1e-10 {
                 bias_mismatches.push((i, tv, dv, diff));
-                println!(
-                    "Bias mismatch at [{}]: trainable={}, stretch={}, diff={}",
-                    i, tv, dv, diff
-                );
+                println!("Bias mismatch at [{i}]: trainable={tv}, stretch={dv}, diff={diff}");
             }
         }
         if !bias_mismatches.is_empty() {

@@ -109,20 +109,20 @@ impl ClassicNeuralNetwork {
             utils,
         };
 
-        for i in 0..sh.layers.len() {
+        for (i, layer_shape) in sh.layers.iter().enumerate() {
             let layer_directory = format!("{}/layers/layer_{i}", network.model_directory.path());
             let layer_box = new_layer(
-                &sh.layers[i].layer_type(),
+                &layer_shape.layer_type(),
                 &Directory::User(layer_directory),
                 &network.utils,
             );
             let layer = WrappedLayer::new(layer_box);
-            let activation = match sh.layers[i].activation.activation_type() {
+            let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Softmax => {
-                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
+                    Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
                 },
             };
@@ -550,20 +550,20 @@ impl TrainableClassicNeuralNetwork {
             utils,
         };
 
-        for i in 0..sh.layers.len() {
+        for (i, layer_shape) in sh.layers.iter().enumerate() {
             let layer_directory = format!("{}/layers/layer_{i}", network.model_directory.path());
             let layer_box = new_trainable_layer(
-                &sh.layers[i].layer_type(),
+                &layer_shape.layer_type(),
                 &Directory::User(layer_directory),
                 &network.utils,
             );
             let layer = WrappedTrainableLayer::new(layer_box);
-            let activation = match sh.layers[i].activation.activation_type() {
+            let activation = match layer_shape.activation.activation_type() {
                 ActivationType::ReLU => Box::new(ReLU::new()) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Sigmoid => Box::new(Sigmoid) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Tanh => Box::new(Tanh) as Box<dyn ActivationTrait + Send>,
                 ActivationType::Softmax => {
-                    Box::new(Softmax::new(sh.layers[i].activation.temperature().unwrap()))
+                    Box::new(Softmax::new(layer_shape.activation.temperature().unwrap()))
                         as Box<dyn ActivationTrait + Send>
                 },
             };

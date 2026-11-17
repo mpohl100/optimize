@@ -153,7 +153,7 @@ fn add_internal_dimensions(shape: &NeuralNetworkShape) -> NeuralNetworkShape {
                 output_size: internal_layer.output_size() + 1,
                 matrix_params: internal_layer.matrix_params(),
             },
-            activation: internal_layer.activation.clone(),
+            activation: internal_layer.activation,
         };
         annotated_shape.change_layer(i + 1, new_dense_layer_type);
     }
@@ -555,7 +555,7 @@ mod tests {
     };
 
     // ignore this test for now
-    #[ignore]
+    #[ignore = "training test is temporarily disabled"]
     #[test]
     fn test_retry_neural_network_train() {
         let utils = WrappedUtils::new(Utils::new(1_000_000_000, 4));

@@ -1,7 +1,5 @@
 use matrix::directory::Directory;
 use neural::layer::dense_layer::MatrixParams;
-use neural::nn::neuralnet::ClassicNeuralNetwork;
-use neural::nn::nn_trait::NeuralNetwork;
 use neural::nn::shape::NeuralNetworkShape;
 use neural::nn::shape::{ActivationData, ActivationType, LayerShape, LayerType};
 use neural::training::data_importer::{DataImporter, SessionData};
@@ -132,7 +130,7 @@ fn test_training_session() {
     let utils = create_test_utils();
     let model_directory = format!("{}/model_dir", utils.get_workspace());
     let internal_model_directory = format!("{}/internal_model_dir", utils.get_workspace());
-    let training_session =
+    let _training_session =
         train_model(model_directory.clone(), internal_model_directory.clone(), utils.clone());
     // Clean up workspace after test
     cleanup_workspace(&utils);

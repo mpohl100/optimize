@@ -375,6 +375,11 @@ mod tests {
     use crate::directory::Directory;
     use alloc::alloc_manager::AllocManager;
     use alloc::memory_counter::{MemoryCounter, WrappedMemoryCounter};
+    use num_traits::cast::NumCast;
+
+    fn f64_from_usize(value: usize) -> f64 {
+        NumCast::from(value).expect("test value should fit in f64")
+    }
 
     #[test]
     fn test_set_get_submatrix_basic() {
@@ -384,13 +389,13 @@ mod tests {
         )));
         let dir = Directory::Internal("test_composite_basic".to_string());
         let matrix: CompositeMatrix<NumberEntry> =
-            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager.clone());
+            CompositeMatrix::new(5, 5, 10, 10, &dir, alloc_manager);
         let wrapped = WrappedCompositeMatrix::new(matrix);
 
         // Fill with test values
         for i in 0..10 {
             for j in 0..10 {
-                wrapped.set_mut_unchecked(i, j, NumberEntry((i * 10 + j) as f64));
+                wrapped.set_mut_unchecked(i, j, NumberEntry(f64_from_usize(i * 10 + j)));
             }
         }
 
@@ -400,9 +405,9 @@ mod tests {
         // Verify values
         for i in 0..3 {
             for j in 0..3 {
-                let expected = NumberEntry(((i + 2) * 10 + (j + 3)) as f64);
+                let expected = NumberEntry(f64_from_usize((i + 2) * 10 + (j + 3)));
                 let actual = submatrix.get_unchecked(i, j);
-                assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i, j);
+                assert_eq!(expected.0, actual.0, "Mismatch at ({i}, {j})");
             }
         }
 
@@ -431,12 +436,12 @@ mod tests {
         // Create a 3x3 submatrix with specific values
         let sub_dir = Directory::Internal("test_composite_sub".to_string());
         let sub_matrix: CompositeMatrix<NumberEntry> =
-            CompositeMatrix::new(3, 3, 3, 3, &sub_dir, alloc_manager.clone());
+            CompositeMatrix::new(3, 3, 3, 3, &sub_dir, alloc_manager);
         let sub_wrapped = WrappedCompositeMatrix::new(sub_matrix);
 
         for i in 0..3 {
             for j in 0..3 {
-                sub_wrapped.set_mut_unchecked(i, j, NumberEntry(100.0 + (i * 3 + j) as f64));
+                sub_wrapped.set_mut_unchecked(i, j, NumberEntry(100.0 + f64_from_usize(i * 3 + j)));
             }
         }
 
@@ -446,7 +451,7 @@ mod tests {
         // Verify that the submatrix was set correctly
         for i in 0..3 {
             for j in 0..3 {
-                let expected = NumberEntry(100.0 + (i * 3 + j) as f64);
+                let expected = NumberEntry(100.0 + f64_from_usize(i * 3 + j));
                 let actual = wrapped.get_unchecked(i + 2, j + 3);
                 assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i + 2, j + 3);
             }
@@ -476,7 +481,7 @@ mod tests {
         // Fill with test values
         for i in 0..20 {
             for j in 0..20 {
-                wrapped.set_mut_unchecked(i, j, NumberEntry((i * 100 + j) as f64));
+                wrapped.set_mut_unchecked(i, j, NumberEntry(f64_from_usize(i * 100 + j)));
             }
         }
 
@@ -486,7 +491,7 @@ mod tests {
         // Create a new matrix and set the submatrix
         let dir2 = Directory::Internal("test_composite_roundtrip2".to_string());
         let matrix2: CompositeMatrix<NumberEntry> =
-            CompositeMatrix::new(5, 5, 20, 20, &dir2, alloc_manager.clone());
+            CompositeMatrix::new(5, 5, 20, 20, &dir2, alloc_manager);
         let wrapped2 = WrappedCompositeMatrix::new(matrix2);
 
         // Initialize with zeros
@@ -504,7 +509,7 @@ mod tests {
             for j in 7..15 {
                 let expected = wrapped.get_unchecked(i, j);
                 let actual = wrapped2.get_unchecked(i, j);
-                assert_eq!(expected.0, actual.0, "Mismatch at ({}, {})", i, j);
+                assert_eq!(expected.0, actual.0, "Mismatch at ({i}, {j})");
             }
         }
 
